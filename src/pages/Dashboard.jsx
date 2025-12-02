@@ -645,6 +645,26 @@ const Dashboard = () => {
                     </table>
                 </div>
             </div>
+
+            {/* DEBUG PANEL */}
+            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                        <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
+                        <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
+                        <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
+                    </div>
+                    <div>
+                        <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
+                        <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
+                        <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
+                    </div>
+                </div>
+                <p style={{ marginTop: '0.5rem' }}>
+                    <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
+                </p>
+            </div>
         </div>
     );
 };
