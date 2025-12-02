@@ -441,13 +441,13 @@ const Dashboard = () => {
                     overflowY: 'auto'
                 }}>
                     <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio</h3>
+                        <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio (PRUEBA)</h3>
                         <form onSubmit={handleSubmit}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ marginBottom: '1rem' }}>
                                     <label className="label">Cliente</label>
                                     {!isAddingCustomer ? (
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
                                             <select
                                                 className="input"
                                                 required
@@ -462,12 +462,21 @@ const Dashboard = () => {
                                             </select>
                                             <button
                                                 type="button"
-                                                className="btn btn-primary"
+                                                className="btn"
                                                 onClick={() => setIsAddingCustomer(true)}
                                                 title="Nuevo Cliente"
-                                                style={{ flexShrink: 0, minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                style={{
+                                                    backgroundColor: 'red',
+                                                    color: 'white',
+                                                    flexShrink: 0,
+                                                    minWidth: '80px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontWeight: 'bold'
+                                                }}
                                             >
-                                                <Plus size={20} />
+                                                <Plus size={20} /> NUEVO
                                             </button>
                                         </div>
                                     ) : (
