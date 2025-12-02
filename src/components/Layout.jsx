@@ -64,7 +64,7 @@ const Layout = ({ children }) => {
             }} className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
 
                 <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '32px', height: '32px', backgroundColor: 'var(--primary)', borderRadius: '8px' }}></div>
+                    <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }} />
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>CarWash SaaS</h2>
                 </div>
 
