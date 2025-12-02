@@ -70,6 +70,7 @@ const Dashboard = () => {
         customerId: '',
         serviceId: '',
         employeeId: '',
+        selectedEmployees: [], // Inicializar array vacío
         price: '',
         commissionAmount: '',
         tipAmount: '',
@@ -146,15 +147,20 @@ const Dashboard = () => {
         const [hours, minutes] = formData.serviceTime.split(':');
         transactionDate.setHours(hours, minutes, 0, 0);
 
-        const finalEmployeeId = formData.employeeId || myEmployeeId;
+        // Lógica Multi-Empleado
+        // Si es Admin, usa los seleccionados. Si es Empleado, se asigna a sí mismo.
+        let assignedEmployees = [];
+        if (userRole === 'admin') {
+            assignedEmployees = formData.selectedEmployees;
+            // Si no seleccionó a nadie, forzar al admin actual (fallback)
+            if (assignedEmployees.length === 0) assignedEmployees = [myEmployeeId];
+        } else {
+            assignedEmployees = [myEmployeeId];
+        }
 
-        console.log("DEBUG TRANSACTION SUBMIT:", {
-            formDataEmployeeId: formData.employeeId,
-            myEmployeeId: myEmployeeId,
-            finalEmployeeId: finalEmployeeId
-        });
+        const primaryEmployeeId = assignedEmployees[0]; // Para compatibilidad con columna vieja
 
-        if (!finalEmployeeId) {
+        if (!primaryEmployeeId) {
             alert("Error: No se ha podido identificar al empleado. Por favor recarga la página.");
             return;
         }
@@ -163,7 +169,7 @@ const Dashboard = () => {
             date: transactionDate.toISOString(),
             customer_id: formData.customerId,
             service_id: formData.serviceId,
-            employee_id: finalEmployeeId,
+            employee_id: primaryEmployeeId, // ID principal (legacy)
             price: basePrice,
             commission_amount: parseFloat(formData.commissionAmount),
             tip_amount: tip,
@@ -173,12 +179,29 @@ const Dashboard = () => {
         };
 
         try {
-            await createTransaction(newTransaction);
+            // 1. Crear la transacción base
+            const [createdTx] = await createTransaction(newTransaction);
+
+            if (createdTx) {
+                // 2. Crear las asignaciones en la tabla intermedia
+                const assignments = assignedEmployees.map(empId => ({
+                    transaction_id: createdTx.id,
+                    employee_id: empId
+                }));
+
+                const { error: assignError } = await supabase
+                    .from('transaction_assignments')
+                    .insert(assignments);
+
+                if (assignError) console.error("Error asignando empleados:", assignError);
+            }
+
             setIsModalOpen(false);
             setFormData({
                 customerId: '',
                 serviceId: '',
                 employeeId: '',
+                selectedEmployees: [], // Reset selección múltiple
                 price: '',
                 commissionAmount: '',
                 tipAmount: '',
@@ -286,20 +309,52 @@ const Dashboard = () => {
                                 </select>
                             </div>
 
-                            {/* SELECTOR DE EMPLEADO (SOLO ADMIN) */}
+                            {/* SELECTOR DE EMPLEADO (SOLO ADMIN) - AHORA MULTIPLE */}
                             {userRole === 'admin' && (
                                 <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Realizado por</label>
-                                    <select
-                                        className="input"
-                                        value={formData.employeeId}
-                                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                                    >
-                                        <option value="">Yo (Admin)</option>
+                                    <label className="label">Realizado por (Selección Múltiple)</label>
+                                    <div style={{
+                                        maxHeight: '150px',
+                                        overflowY: 'auto',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: 'var(--radius-md)',
+                                        padding: '0.5rem',
+                                        backgroundColor: 'var(--bg-card)'
+                                    }}>
+                                        <div style={{ marginBottom: '0.5rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.selectedEmployees.includes(myEmployeeId)}
+                                                    onChange={(e) => {
+                                                        const newSelection = e.target.checked
+                                                            ? [...formData.selectedEmployees, myEmployeeId]
+                                                            : formData.selectedEmployees.filter(id => id !== myEmployeeId);
+                                                        setFormData({ ...formData, selectedEmployees: newSelection });
+                                                    }}
+                                                />
+                                                <span>Yo (Admin)</span>
+                                            </label>
+                                        </div>
                                         {employees.filter(e => e.role !== 'admin').map(emp => (
-                                            <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                            <div key={emp.id} style={{ marginBottom: '0.5rem' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.selectedEmployees.includes(emp.id)}
+                                                        onChange={(e) => {
+                                                            const newSelection = e.target.checked
+                                                                ? [...formData.selectedEmployees, emp.id]
+                                                                : formData.selectedEmployees.filter(id => id !== emp.id);
+                                                            setFormData({ ...formData, selectedEmployees: newSelection });
+                                                        }}
+                                                    />
+                                                    <span>{emp.name}</span>
+                                                </label>
+                                            </div>
                                         ))}
-                                    </select>
+                                    </div>
+                                    <small style={{ color: 'var(--text-muted)' }}>Selecciona todos los que participaron.</small>
                                 </div>
                             )}
 
@@ -412,8 +467,13 @@ const Dashboard = () => {
                                         {getServiceName(t.service_id)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
                                     </td>
-                                    <td style={{ padding: '1rem' }}>{getEmployeeName(t.employee_id)}</td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {t.transaction_assignments && t.transaction_assignments.length > 0
+                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                            : getEmployeeName(t.employee_id) // Fallback
+                                        }
+                                    </td>
+                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price.toFixed(2)}</td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
                                             padding: '0.25rem 0.75rem',
