@@ -40,33 +40,51 @@
         display: block !important;
     }
 
-    /* Typography Adjustments */
+    /* Typography Adjustments - Larger for readability */
+    html,
+    body {
+        font-size: 16px !important;
+        /* Base size */
+    }
+
     h1 {
-        font-size: 1.5rem !important;
+        font-size: 1.75rem !important;
+        margin-bottom: 1rem !important;
     }
 
     h2 {
-        font-size: 1.25rem !important;
+        font-size: 1.5rem !important;
+        margin-bottom: 0.75rem !important;
     }
 
     h3 {
-        font-size: 1.1rem !important;
+        font-size: 1.25rem !important;
+        margin-bottom: 0.75rem !important;
     }
 
-    p {
-        font-size: 0.9rem !important;
+    p,
+    span,
+    div,
+    label {
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
     }
 
-    /* Card Adjustments */
+    small {
+        font-size: 0.875rem !important;
+    }
+
+    /* Card Adjustments - More breathing room */
     .card {
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
+        padding: 1.25rem !important;
+        margin-bottom: 1.25rem !important;
+        border-radius: var(--radius-md) !important;
     }
 
     /* Grid Stacking - Force 1 column for most grids */
     div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
-        gap: 1rem !important;
+        gap: 1.25rem !important;
     }
 
     /* Table Adjustments - Horizontal Scroll */
@@ -75,18 +93,41 @@
         overflow-x: auto;
         white-space: nowrap;
         width: 100%;
+        margin-bottom: 1rem !important;
     }
 
     th,
     td {
-        padding: 0.75rem !important;
-        font-size: 0.85rem;
+        padding: 1rem !important;
+        /* Larger touch area */
+        font-size: 1rem !important;
     }
 
-    /* Form Adjustments */
-    .input {
-        font-size: 16px !important;
+    /* Form Adjustments - Larger Inputs */
+    .input,
+    select.input {
+        font-size: 1rem !important;
         /* Prevent zoom on iOS */
+        padding: 0.875rem 1rem !important;
+        min-height: 50px !important;
+        /* Easy to tap */
+        margin-bottom: 0.5rem !important;
+    }
+
+    .label {
+        font-size: 1rem !important;
+        margin-bottom: 0.5rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Button Adjustments - Larger Touch Targets */
+    .btn {
+        min-height: 50px !important;
+        font-size: 1rem !important;
+        padding: 0.75rem 1.5rem !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* Modal Adjustments */
@@ -100,18 +141,20 @@
     /* Stack Modal Actions */
     .modal-actions {
         flex-direction: column;
-        gap: 0.75rem !important;
+        gap: 1rem !important;
+        margin-top: 2rem !important;
     }
 
     .modal-actions .btn {
         width: 100%;
-        padding: 1rem !important;
-        /* Larger touch target */
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
     }
 
     /* Stack Extras Inputs */
     .extras-input-group {
         flex-direction: column !important;
+        gap: 0.75rem !important;
     }
 
     .extras-input-group .input,
@@ -122,8 +165,7 @@
 
     /* Ensure all inputs in modal are full width */
     .modal-card .input {
-        font-size: 16px !important;
-        /* Prevent zoom */
+        font-size: 1rem !important;
     }
 }
 
