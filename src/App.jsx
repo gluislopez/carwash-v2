@@ -92,7 +92,7 @@ function App() {
                                 <Route path="/customers" element={<Customers />} />
                                 <Route path="/reports" element={<Reports />} />
                                 <Route path="/expenses" element={<Expenses />} />
-                                {/* <Route path="/gamification-settings" element={<GamificationSettings />} /> */}
+                                <Route path="/gamification-settings" element={<GamificationSettings />} />
                                 <Route path="/settings" element={<div>Configuración (Próximamente)</div>} />
                             </Routes>
                         </Layout>

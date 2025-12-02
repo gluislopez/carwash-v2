@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Trophy, Star, Zap, Crown, Medal, Plus, Trash2, Save, X } from 'lucide-react';
+import { Trophy, Star, Zap, Crown, Medal, Plus, Trash, Check, X } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const GamificationSettings = () => {
@@ -141,10 +141,10 @@ const GamificationSettings = () => {
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                             <button className="btn" onClick={() => handleEdit(level)} style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}>
-                                                <Save size={18} /> {/* Using Save icon as Edit placeholder if Edit2 not imported, but let's assume standard Edit/Pencil */}
+                                                <Check size={18} />
                                             </button>
                                             <button className="btn" onClick={() => handleDelete(level.id)} style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}>
-                                                <Trash2 size={18} />
+                                                <Trash size={18} />
                                             </button>
                                         </div>
                                     </td>
