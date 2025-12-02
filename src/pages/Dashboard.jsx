@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'purple', fontWeight: 'bold' }}>v3.14 ADD TIP {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.15 FIX SUM {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -736,7 +736,9 @@ const Dashboard = () => {
                                             : getEmployeeName(t.employee_id) // Fallback
                                         }
                                     </td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price.toFixed(2)}</td>
+                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                                        ${(parseFloat(t.price || 0) + parseFloat(t.tip || 0)).toFixed(2)}
+                                    </td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
                                             padding: '0.25rem 0.75rem',
@@ -749,10 +751,10 @@ const Dashboard = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem', color: 'var(--success)' }}>
-                                        ${((parseFloat(t.commission_amount) || 0) / ((t.transaction_assignments?.length) || 1)).toFixed(2)}
+                                        ${((parseFloat(t.commission_amount || 0) / ((t.transaction_assignments?.length) || 1)).toFixed(2))}
                                     </td>
                                     <td style={{ padding: '1rem', color: 'var(--warning)' }}>
-                                        ${((parseFloat(t.tip_amount) || 0) / ((t.transaction_assignments?.length) || 1)).toFixed(2)}
+                                        ${((parseFloat(t.tip || 0) / ((t.transaction_assignments?.length) || 1)).toFixed(2))}
                                     </td>
                                     {/* BOTÓN DE BORRAR (SOLO ADMIN) */}
                                     {userRole === 'admin' && (
