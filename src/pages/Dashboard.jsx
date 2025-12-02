@@ -342,11 +342,11 @@ const Dashboard = () => {
             // Lógica condicional para servicio de $35:
             // Si es $35 y hay más de 1 empleado, la comisión total es $12.
             // Si es $35 y es 1 empleado, la comisión es la normal ($10).
-            commission_amount: (basePrice === 35 && assignedEmployees.length > 1)
+            commission_amount: ((basePrice === 35 && assignedEmployees.length > 1)
                 ? 12
-                : parseFloat(formData.commissionAmount),
+                : parseFloat(formData.commissionAmount)) || 0,
             tip: 0, // Inicialmente 0
-            payment_method: 'pending', // Inicialmente pendiente
+            payment_method: 'cash', // Placeholder válido (evitar error de constraint)
             extras: [], // Inicialmente sin extras
             total_price: basePrice, // Solo el precio base
             status: 'pending' // NUEVO ESTADO
@@ -409,7 +409,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'indigo', fontWeight: 'bold' }}>v3.31 RECONNECT CHECK {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.32 FIX REGISTRATION {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
