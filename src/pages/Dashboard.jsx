@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2 } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
+import EditTransactionModal from '../components/EditTransactionModal';
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
@@ -665,6 +666,15 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* EDIT TRANSACTION MODAL */}
+            <EditTransactionModal
+                isOpen={!!editingTransaction}
+                onClose={() => setEditingTransaction(null)}
+                transaction={editingTransaction}
+                onUpdate={handleUpdateTransaction}
+                services={services}
+            />
+
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (
                 <ServiceAnalyticsChart transactions={transactions} />
@@ -721,7 +731,15 @@ const Dashboard = () => {
                                     </td>
                                     {/* BOTÓN DE BORRAR (SOLO ADMIN) */}
                                     {userRole === 'admin' && (
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                        <td style={{ padding: '1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                            <button
+                                                className="btn"
+                                                style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
+                                                onClick={() => setEditingTransaction(t)}
+                                                title="Editar"
+                                            >
+                                                <Edit2 size={18} />
+                                            </button>
                                             <button
                                                 className="btn"
                                                 style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}
@@ -734,6 +752,7 @@ const Dashboard = () => {
                                                         }
                                                     }
                                                 }}
+                                                title="Eliminar"
                                             >
                                                 <Trash2 size={18} />
                                             </button>
