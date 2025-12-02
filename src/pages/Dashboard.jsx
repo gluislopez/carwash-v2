@@ -396,7 +396,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'var(--text-muted)', opacity: 0.7 }}>v2.2</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'red', fontWeight: 'bold' }}>v3.0 DEBUG</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -678,7 +678,8 @@ const Dashboard = () => {
             )}
 
             {/* EDIT TRANSACTION MODAL */}
-            {/* EDIT TRANSACTION MODAL */}
+            {/* EDIT TRANSACTION MODAL - DISABLED FOR DEBUGGING */}
+            {/* 
             {editingTransaction && (
                 <EditTransactionModal
                     key={editingTransaction.id}
@@ -689,6 +690,7 @@ const Dashboard = () => {
                     services={services}
                 />
             )}
+            */}
 
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (
@@ -750,7 +752,10 @@ const Dashboard = () => {
                                             <button
                                                 className="btn"
                                                 style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                                onClick={() => setEditingTransaction(t)}
+                                                onClick={() => {
+                                                    alert("DEBUG: Clicked Edit for ID " + t.id);
+                                                    // setEditingTransaction(t); // DISABLED FOR DEBUG
+                                                }}
                                                 title="Editar"
                                             >
                                                 <Edit2 size={18} />
