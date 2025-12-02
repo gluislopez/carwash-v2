@@ -659,6 +659,8 @@ const Dashboard = () => {
                         <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
                         <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
                         <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
+                        <p><strong>Fecha Hoy (App):</strong> {today}</p>
+                        <p><strong>Ej. Fecha Venta:</strong> {transactions[0] ? getPRDateString(transactions[0].date) : 'N/A'}</p>
                     </div>
                 </div>
                 <p style={{ marginTop: '0.5rem' }}>
