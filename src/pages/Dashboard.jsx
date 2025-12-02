@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'deeppink', fontWeight: 'bold' }}>v3.10 FORCE {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'blue', fontWeight: 'bold' }}>v3.11 FORM RESTORE {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -688,12 +688,15 @@ const Dashboard = () => {
             )}
 
             {/* EDIT TRANSACTION MODAL */}
-            {/* v3.8 REBUILD: MINIMAL MODAL */}
+            {/* v3.11 FORM RESTORE */}
             {editingTransactionId && (
                 <EditTransactionModal
+                    key={editingTransactionId}
                     isOpen={!!editingTransactionId}
                     onClose={() => setEditingTransactionId(null)}
-                    transactionId={editingTransactionId}
+                    transaction={transactions.find(t => t.id === editingTransactionId)}
+                    services={services}
+                    onUpdate={handleUpdateTransaction}
                 />
             )}
 
