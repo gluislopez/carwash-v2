@@ -53,18 +53,6 @@ const Login = () => {
                         CarWash SaaS
                     </h1>
                     <p style={{ color: 'var(--text-muted)' }}>Sistema de Gestión de Lavado</p>
-                    <span style={{
-                        display: 'inline-block',
-                        marginTop: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: 'blue',
-                        color: 'white',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                    }}>
-                        v2.6 - CONNECTED
-                    </span>
                 </div>
 
                 {error && (

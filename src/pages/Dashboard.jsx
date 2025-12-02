@@ -394,22 +394,6 @@ const Dashboard = () => {
                 </button>
             </div>
 
-            {/* DEBUG VERSION BADGE */}
-            <div style={{
-                position: 'fixed',
-                bottom: '10px',
-                right: '10px',
-                backgroundColor: 'blue',
-                color: 'white',
-                padding: '5px 10px',
-                borderRadius: '5px',
-                zIndex: 9999,
-                fontSize: '12px',
-                fontWeight: 'bold'
-            }}>
-                v2.6 - RECONNECT TEST
-            </div>
-
             {/* GAMIFICATION BAR */}
             <ProductivityBar
                 dailyCount={dailyProductivityCount}
