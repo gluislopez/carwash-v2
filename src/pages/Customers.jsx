@@ -120,7 +120,16 @@ const Customers = () => {
                         type="text"
                         placeholder="Buscar por nombre, tablilla o teléfono..."
                         className="input"
-                        style={{ paddingLeft: '3rem', width: '100%' }}
+                        style={{
+                            paddingLeft: '3rem',
+                            width: '100%',
+                            backgroundColor: 'var(--bg-card)',
+                            color: 'white',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-md)',
+                            paddingTop: '0.75rem',
+                            paddingBottom: '0.75rem'
+                        }}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
