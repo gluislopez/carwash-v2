@@ -118,10 +118,7 @@ const Dashboard = () => {
         selectedEmployees: [], // Inicializar array vacío
         price: '',
         commissionAmount: '',
-        tipAmount: '',
-        paymentMethod: 'cash',
-        serviceTime: new Date().toTimeString().slice(0, 5),
-        extras: []
+        serviceTime: new Date().toTimeString().slice(0, 5)
     });
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
@@ -348,10 +345,11 @@ const Dashboard = () => {
             commission_amount: (basePrice === 35 && assignedEmployees.length > 1)
                 ? 12
                 : parseFloat(formData.commissionAmount),
-            tip: tip,
-            payment_method: formData.paymentMethod,
-            extras: formData.extras,
-            total_price: totalPrice
+            tip: 0, // Inicialmente 0
+            payment_method: 'pending', // Inicialmente pendiente
+            extras: [], // Inicialmente sin extras
+            total_price: basePrice, // Solo el precio base
+            status: 'pending' // NUEVO ESTADO
         };
 
         try {
@@ -411,7 +409,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'lime', fontWeight: 'bold' }}>v3.26 FORCE UPDATE {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'yellow', fontWeight: 'bold' }}>v3.27 PENDING FLOW {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -637,68 +635,7 @@ const Dashboard = () => {
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                <label className="label" style={{ marginBottom: '0.5rem', display: 'block' }}>Servicios Adicionales (Extras)</label>
 
-                                {formData.extras.map((extra, index) => (
-                                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                                        <span>{extra.description}</span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <span>${extra.price.toFixed(2)}</span>
-                                            <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-
-
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                    <input
-                                        type="text"
-                                        placeholder="Descripción (ej. Asientos)"
-                                        className="input"
-                                        style={{ flex: 2 }}
-                                        value={newExtra.description}
-                                        onChange={(e) => setNewExtra({ ...newExtra, description: e.target.value })}
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder="Precio"
-                                        className="input"
-                                        style={{ flex: 1 }}
-                                        value={newExtra.price}
-                                        onChange={(e) => setNewExtra({ ...newExtra, price: e.target.value })}
-                                    />
-                                    <button type="button" onClick={handleAddExtra} className="btn" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
-                                        <Plus size={18} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Propina</label>
-                                    <input
-                                        type="number"
-                                        className="input"
-                                        value={formData.tipAmount}
-                                        onChange={(e) => setFormData({ ...formData, tipAmount: e.target.value })}
-                                    />
-                                </div>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Método de Pago</label>
-                                    <select
-                                        className="input"
-                                        value={formData.paymentMethod}
-                                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                                    >
-                                        <option value="cash">Efectivo</option>
-                                        <option value="card">Tarjeta</option>
-                                        <option value="transfer">AthMóvil</option>
-                                    </select>
-                                </div>
-                            </div>
 
                             <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                 <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
@@ -734,8 +671,9 @@ const Dashboard = () => {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '1rem' }}>Hora</th>
-                                <th style={{ padding: '1rem' }}>Cliente</th>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Hora</th>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Estado</th>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Cliente</th>
                                 <th style={{ padding: '1rem' }}>Servicio</th>
                                 <th style={{ padding: '1rem' }}>Empleado</th>
                                 <th style={{ padding: '1rem' }}>Total</th>
@@ -748,7 +686,21 @@ const Dashboard = () => {
                             {statsTransactions.map(t => (
                                 <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                     <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
-                                    <td style={{ padding: '1rem' }}>{getCustomerName(t.customer_id)}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <span style={{
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '9999px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 'bold',
+                                            backgroundColor: t.status === 'pending' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                            color: t.status === 'pending' ? '#F59E0B' : '#10B981'
+                                        }}>
+                                            {t.status === 'pending' ? 'PENDIENTE' : 'PAGADO'}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                    </td>
                                     <td style={{ padding: '1rem' }}>
                                         {getServiceName(t.service_id)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}

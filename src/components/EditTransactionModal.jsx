@@ -9,17 +9,23 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
         price: transaction.price || '',
         paymentMethod: transaction.payment_method || 'cash',
         tip: transaction.tip || 0,
-        commissionAmount: transaction.commission_amount || 0
+        commissionAmount: transaction.commission_amount || 0,
+        status: transaction.status || 'pending'
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Si estaba pendiente, al guardar se marca como pagado
+        const newStatus = formData.status === 'pending' ? 'paid' : formData.status;
+
         onUpdate(transaction.id, {
             service_id: formData.serviceId,
             price: parseFloat(formData.price),
             payment_method: formData.paymentMethod,
             tip: parseFloat(formData.tip) || 0,
-            commission_amount: parseFloat(formData.commissionAmount) || 0
+            commission_amount: parseFloat(formData.commissionAmount) || 0,
+            status: newStatus
         });
     };
 
@@ -113,7 +119,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                         </button>
                         <button type="submit" className="btn btn-primary">
                             <Save size={18} style={{ marginRight: '0.5rem' }} />
-                            Guardar Cambios
+                            {formData.status === 'pending' ? 'Completar y Pagar' : 'Guardar Cambios'}
                         </button>
                     </div>
                 </form>
