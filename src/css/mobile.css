@@ -36,6 +36,11 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Show close button inside sidebar on mobile */
+    .mobile-close-btn {
+        display: block !important;
+    }
 }
 
 /* Desktop Styles */

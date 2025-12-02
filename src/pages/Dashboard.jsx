@@ -323,7 +323,7 @@ const Dashboard = () => {
                         <tbody>
                             {todaysTransactions.map(t => (
                                 <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                    <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
                                     <td style={{ padding: '1rem' }}>{getCustomerName(t.customer_id)}</td>
                                     <td style={{ padding: '1rem' }}>
                                         {getServiceName(t.service_id)}

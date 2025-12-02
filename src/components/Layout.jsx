@@ -63,9 +63,19 @@ const Layout = ({ children }) => {
                 zIndex: 50
             }} className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
 
-                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }} />
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>CarWash SaaS</h2>
+                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>CarWash SaaS</h2>
+                    </div>
+                    {/* Close button for mobile */}
+                    <button
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="mobile-close-btn"
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'none' }}
+                    >
+                        <X size={24} />
+                    </button>
                 </div>
 
                 <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
