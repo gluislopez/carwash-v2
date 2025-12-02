@@ -8,7 +8,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
         serviceId: transaction.service_id || '',
         price: transaction.price || '',
         paymentMethod: transaction.payment_method || 'cash',
-        tip: transaction.tip || 0
+        tip: transaction.tip || 0,
+        commissionAmount: transaction.commission_amount || 0
     });
 
     const handleSubmit = (e) => {
@@ -17,7 +18,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
             service_id: formData.serviceId,
             price: parseFloat(formData.price),
             payment_method: formData.paymentMethod,
-            tip: parseFloat(formData.tip) || 0
+            tip: parseFloat(formData.tip) || 0,
+            commission_amount: parseFloat(formData.commissionAmount) || 0
         });
     };
 
@@ -55,7 +57,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                                 setFormData({
                                     ...formData,
                                     serviceId: newServiceId,
-                                    price: service ? service.price : formData.price
+                                    price: service ? service.price : formData.price,
+                                    commissionAmount: service ? service.commission : formData.commissionAmount
                                 });
                             }}
                         >
