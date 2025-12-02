@@ -83,7 +83,7 @@ const Layout = ({ children }) => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--bg-secondary)' }} />
                     </div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>CarWash</h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>Express CarWash</h2>
                     {/* Close button for mobile - moved to absolute position */}
                     <button
                         onClick={() => setIsMobileMenuOpen(false)}

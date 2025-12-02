@@ -329,7 +329,7 @@ const Reports = () => {
             {/* PRINT HEADER (Logo & Title) */}
             <div className="print-header">
                 <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', marginBottom: '1rem' }} />
-                <h1 style={{ fontSize: '2rem', margin: 0 }}>CarWash SaaS</h1>
+                <h1 style={{ fontSize: '2rem', margin: 0 }}>Express CarWash</h1>
                 <p style={{ color: '#666' }}>Reporte de Operaciones: {dateRange}</p>
             </div>
 
