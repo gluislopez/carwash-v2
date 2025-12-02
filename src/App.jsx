@@ -14,12 +14,31 @@ import Reports from './pages/Reports';
 const RequireAuth = ({ children }) => {
     const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const location = useLocation();
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        // Timeout de seguridad: si Supabase no responde en 5 segundos, mostramos error
+        const timer = setTimeout(() => {
+            if (loading) {
+                setLoading(false);
+                setError("Tiempo de espera agotado conectando a Supabase. Verifica tu conexión o configuración.");
+            }
+        }, 5000);
+
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error) {
+                console.error("Error getting session:", error);
+                setError(error.message);
+            }
             setSession(session);
             setLoading(false);
+            clearTimeout(timer);
+        }).catch(err => {
+            console.error("Critical Auth Error:", err);
+            setError(err.message || "Error desconocido al iniciar sesión");
+            setLoading(false);
+            clearTimeout(timer);
         });
 
         const {
@@ -28,11 +47,24 @@ const RequireAuth = ({ children }) => {
             setSession(session);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+            clearTimeout(timer);
+        };
     }, []);
 
     if (loading) {
-        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a', color: 'white' }}>Cargando...</div>;
+        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a', color: 'white' }}>Cargando... (Esperando a Supabase)</div>;
+    }
+
+    if (error) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a', color: 'red', padding: '20px', textAlign: 'center' }}>
+                <h2>Error de Conexión</h2>
+                <p>{error}</p>
+                <button onClick={() => window.location.reload()} style={{ marginTop: '20px', padding: '10px 20px' }}>Reintentar</button>
+            </div>
+        );
     }
 
     if (!session) {
