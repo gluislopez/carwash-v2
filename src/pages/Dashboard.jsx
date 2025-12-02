@@ -401,11 +401,12 @@ const Dashboard = () => {
         }
     };
 
+    console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'black', fontWeight: 'bold' }}>v3.6 RESET</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'red', fontWeight: 'bold' }}>v3.7 NUCLEAR</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
