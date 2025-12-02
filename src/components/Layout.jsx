@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag } from 'lucide-react';
+import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
