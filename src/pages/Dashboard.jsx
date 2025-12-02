@@ -4,7 +4,7 @@ import { Plus, Car, DollarSign, Users, Trash2, Edit2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
-// import EditTransactionModal from '../components/EditTransactionModal'; // DISABLED IMPORT
+import EditTransactionModal from '../components/EditTransactionModal';
 
 // INLINE MODAL FOR DEBUGGING
 // EditTransactionModal removed to prevent unused variable build error
@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'red', fontWeight: 'bold' }}>v3.7 NUCLEAR</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'teal', fontWeight: 'bold' }}>v3.8 REBUILD</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -688,7 +688,14 @@ const Dashboard = () => {
             )}
 
             {/* EDIT TRANSACTION MODAL */}
-            {/* v3.6 RESET: NO MODAL RENDERED */}
+            {/* v3.8 REBUILD: MINIMAL MODAL */}
+            {editingTransactionId && (
+                <EditTransactionModal
+                    isOpen={!!editingTransactionId}
+                    onClose={() => setEditingTransactionId(null)}
+                    transactionId={editingTransactionId}
+                />
+            )}
 
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (
@@ -750,7 +757,7 @@ const Dashboard = () => {
                                             <button
                                                 className="btn"
                                                 style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                                onClick={() => alert("v3.6 RESET: ID " + t.id)}
+                                                onClick={() => setEditingTransactionId(t.id)}
                                                 title="Editar"
                                             >
                                                 <Edit2 size={18} />
