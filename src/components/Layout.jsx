@@ -59,7 +59,7 @@ const Layout = ({ children }) => {
                 position: 'fixed', // Fixed for desktop
                 height: '100vh',
                 transition: 'transform 0.3s ease',
-                transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(0)', // Handle mobile via CSS class ideally
+                // transform removed to let CSS handle mobile state
                 zIndex: 50
             }} className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
 
