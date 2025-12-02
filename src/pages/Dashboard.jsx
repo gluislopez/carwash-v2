@@ -593,6 +593,8 @@ const Dashboard = () => {
                                 <th style={{ padding: '1rem' }}>Empleado</th>
                                 <th style={{ padding: '1rem' }}>Total</th>
                                 <th style={{ padding: '1rem' }}>Pago</th>
+                                <th style={{ padding: '1rem' }}>Comisión</th>
+                                <th style={{ padding: '1rem' }}>Propina</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -622,6 +624,12 @@ const Dashboard = () => {
                                             {getPaymentMethodLabel(t.payment_method)}
                                         </span>
                                     </td>
+                                    <td style={{ padding: '1rem', color: 'var(--success)' }}>
+                                        ${((parseFloat(t.commission_amount) || 0) / ((t.transaction_assignments?.length) || 1)).toFixed(2)}
+                                    </td>
+                                    <td style={{ padding: '1rem', color: 'var(--warning)' }}>
+                                        ${((parseFloat(t.tip_amount) || 0) / ((t.transaction_assignments?.length) || 1)).toFixed(2)}
+                                    </td>
                                     {/* BOTÓN DE BORRAR (SOLO ADMIN) */}
                                     {userRole === 'admin' && (
                                         <td style={{ padding: '1rem', textAlign: 'right' }}>
@@ -646,7 +654,7 @@ const Dashboard = () => {
                             ))}
                             {statsTransactions.length === 0 && (
                                 <tr>
-                                    <td colSpan={userRole === 'admin' ? "7" : "6"} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    <td colSpan={userRole === 'admin' ? "9" : "8"} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                         No hay ventas registradas hoy
                                     </td>
                                 </tr>
