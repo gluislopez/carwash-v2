@@ -28,6 +28,12 @@ const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
     const [userEmail, setUserEmail] = useState(''); // Nuevo: Email para debug
     const [myEmployeeId, setMyEmployeeId] = useState(null); // Nuevo: ID del perfil de empleado
+
+    const [dateFilter, setDateFilter] = useState('today');
+    const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
+
+    // REFACTOR: Store ID only, not the whole object
+    const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
     const [userRole, setUserRole] = useState(null); // Estado para el rol
 
     const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
@@ -307,7 +313,7 @@ const Dashboard = () => {
     const handleUpdateTransaction = async (id, updates) => {
         try {
             await updateTransaction(id, updates);
-            setEditingTransaction(null);
+            setEditingTransactionId(null);
             await refreshTransactions();
         } catch (error) {
             console.error("Update failed:", error);
@@ -414,7 +420,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'green', fontWeight: 'bold' }}>v3.3 RAW DIV</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.4 ID STATE</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -697,18 +703,18 @@ const Dashboard = () => {
 
             {/* EDIT TRANSACTION MODAL */}
             {/* EDIT TRANSACTION MODAL - RESTORED FOR RED BOX TEST */}
-            {/* RAW DIV TEST (v3.3) */}
-            {editingTransaction && (
+            {/* RAW DIV TEST (v3.4 ID STATE) */}
+            {editingTransactionId && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0, 255, 0, 0.8)', // GREEN BACKGROUND
+                    backgroundColor: 'rgba(255, 165, 0, 0.8)', // ORANGE BACKGROUND
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
                     color: 'black', fontSize: '2rem'
                 }}>
                     <div>
-                        <h1>RAW DIV TEST</h1>
-                        <p>ID: {editingTransaction.id}</p>
-                        <button onClick={() => setEditingTransaction(null)} style={{ padding: '1rem', fontSize: '1.5rem' }}>CERRAR</button>
+                        <h1>ID STATE TEST</h1>
+                        <p>ID: {editingTransactionId}</p>
+                        <button onClick={() => setEditingTransactionId(null)} style={{ padding: '1rem', fontSize: '1.5rem' }}>CERRAR</button>
                     </div>
                 </div>
             )}
@@ -773,7 +779,7 @@ const Dashboard = () => {
                                             <button
                                                 className="btn"
                                                 style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                                onClick={() => setEditingTransaction(t)}
+                                                onClick={() => setEditingTransactionId(t.id)}
                                                 title="Editar"
                                             >
                                                 <Edit2 size={18} />
