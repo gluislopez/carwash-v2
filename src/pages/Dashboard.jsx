@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Plus, Car, DollarSign, Users, Trash2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
+import ProductivityBar from '../components/ProductivityBar';
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
@@ -163,6 +164,34 @@ const Dashboard = () => {
 
     const netCommissions = totalCommissions - totalLunches;
 
+    // GAMIFICATION CALCULATIONS
+    // 1. Daily Count: Already filtered in 'myTransactions' (todaysTransactions for Admin, myTransactions for Employee)
+    // For the bar, we want to show the specific employee's progress. If Admin, maybe show global? Let's show personal for now.
+    const dailyProductivityCount = myTransactions.length;
+
+    // 2. Total XP (Lifetime Cars): Need to fetch all-time transactions for this employee
+    // This is expensive to do on every render if we fetch all rows. Ideally we'd have a counter in 'employees' table.
+    // For now, let's fetch a count from Supabase directly in useEffect or use a separate query.
+    // optimization: We'll just fetch the count of assignments for this employee.
+    const [totalXp, setTotalXp] = useState(0);
+
+    useEffect(() => {
+        const fetchXp = async () => {
+            if (myEmployeeId) {
+                // Count assignments (Source of Truth for XP)
+                const { count, error } = await supabase
+                    .from('transaction_assignments')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('employee_id', myEmployeeId);
+
+                if (!error) {
+                    setTotalXp(count || 0);
+                }
+            }
+        };
+        fetchXp();
+    }, [myEmployeeId, transactions]); // Re-fetch when transactions change
+
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
         const service = services.find(s => s.id === serviceId);
@@ -302,6 +331,13 @@ const Dashboard = () => {
                     </button>
                 )}
             </div>
+
+            {/* GAMIFICATION BAR */}
+            <ProductivityBar
+                dailyCount={dailyProductivityCount}
+                dailyTarget={10}
+                totalXp={totalXp}
+            />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card">
