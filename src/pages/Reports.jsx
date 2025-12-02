@@ -122,17 +122,85 @@ const Reports = () => {
         }
     }, 0);
 
+    // Breakdown Logic
+    const getBreakdownData = () => {
+        const groups = {};
+
+        filteredTransactions.forEach(t => {
+            const dateKey = getPRDateString(t.date); // Group by Day
+            if (!groups[dateKey]) {
+                groups[dateKey] = {
+                    date: dateKey,
+                    count: 0,
+                    income: 0,
+                    expenses: 0
+                };
+            }
+
+            const txIncome = parseFloat(t.total_price) || 0;
+            const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0);
+
+            groups[dateKey].count += 1;
+            groups[dateKey].income += txIncome;
+            groups[dateKey].expenses += txCommission;
+        });
+
+        // Convert to array and sort
+        return Object.values(groups).sort((a, b) => new Date(b.date) - new Date(a.date));
+    };
+
+    const breakdownData = getBreakdownData();
+
+    // Export Handlers
+    const handleCopyToEmail = () => {
+        let text = `REPORTE CARWASH\nPeriodo: ${dateRange}\n\n`;
+        text += `FECHA\t\tAUTOS\tINGRESO\tGASTOS\tNETO\n`;
+        text += `----------------------------------------------------\n`;
+
+        breakdownData.forEach(row => {
+            const net = row.income - row.expenses;
+            text += `${row.date}\t${row.count}\t$${row.income.toFixed(2)}\t$${row.expenses.toFixed(2)}\t$${net.toFixed(2)}\n`;
+        });
+
+        text += `----------------------------------------------------\n`;
+        text += `TOTALES\t\t${totalCount}\t$${totalIncome.toFixed(2)}\t$${totalCommissions.toFixed(2)}\t$${(totalIncome - totalCommissions).toFixed(2)}`;
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Reporte copiado al portapapeles. ¡Listo para pegar en tu email!");
+        });
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
     return (
-        <div>
+        <div className="reports-container">
+            <style>{`
+                @media print {
+                    .no-print { display: none !important; }
+                    .card { box-shadow: none; border: 1px solid #ddd; }
+                    body { background: white; color: black; }
+                }
+            `}</style>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Historial y estadísticas</p>
                 </div>
+                <div className="no-print" style={{ display: 'flex', gap: '1rem' }}>
+                    <button className="btn" onClick={handleCopyToEmail} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
+                        Copiar para Email
+                    </button>
+                    <button className="btn btn-primary" onClick={handlePrint}>
+                        Imprimir / PDF
+                    </button>
+                </div>
             </div>
 
             {/* FILTERS */}
-            <div className="card" style={{ marginBottom: '2rem' }}>
+            <div className="card no-print" style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Filter size={20} color="var(--text-muted)" />
@@ -193,15 +261,56 @@ const Reports = () => {
                 )}
 
                 <div className="card">
-                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Totales' : 'Mis Ganancias'}</h3>
+                    <h3 className="label">{userRole === 'admin' ? 'Gastos (Comisiones)' : 'Mis Ganancias'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Users size={32} className="text-warning" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${totalCommissions.toFixed(2)}</p>
                     </div>
                 </div>
+
+                {userRole === 'admin' && (
+                    <div className="card">
+                        <h3 className="label">Ganancia Neta</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <DollarSign size={32} className="text-success" />
+                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${(totalIncome - totalCommissions).toFixed(2)}</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* TABLE */}
+            {/* FINANCIAL BREAKDOWN (DESGLOSE) */}
+            {userRole === 'admin' && (
+                <div className="card" style={{ marginBottom: '2rem' }}>
+                    <h3 className="label" style={{ marginBottom: '1rem' }}>Desglose Financiero</h3>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                                    <th style={{ padding: '1rem' }}>Fecha</th>
+                                    <th style={{ padding: '1rem' }}>Autos</th>
+                                    <th style={{ padding: '1rem', color: 'var(--success)' }}>Ingresos (+)</th>
+                                    <th style={{ padding: '1rem', color: 'var(--danger)' }}>Gastos (-)</th>
+                                    <th style={{ padding: '1rem' }}>Neto (=)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {breakdownData.map(row => (
+                                    <tr key={row.date} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '1rem' }}>{row.date}</td>
+                                        <td style={{ padding: '1rem' }}>{row.count}</td>
+                                        <td style={{ padding: '1rem', color: 'var(--success)' }}>${row.income.toFixed(2)}</td>
+                                        <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.expenses.toFixed(2)}</td>
+                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.expenses).toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* DETAILED TABLE */}
             <div className="card">
                 <h3 className="label" style={{ marginBottom: '1rem' }}>Detalle de Operaciones</h3>
                 <div style={{ overflowX: 'auto' }}>
