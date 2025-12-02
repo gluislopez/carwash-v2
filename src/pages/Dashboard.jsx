@@ -80,7 +80,7 @@ const Dashboard = () => {
     const { data: services } = useSupabase('services');
     const { data: employees } = useSupabase('employees');
     const { data: customers } = useSupabase('customers');
-    const { data: transactions, create: createTransaction } = useSupabase('transactions');
+    const { data: transactions, create: createTransaction, remove: removeTransaction } = useSupabase('transactions');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -534,10 +534,7 @@ const Dashboard = () => {
                                                 onClick={async () => {
                                                     if (window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.')) {
                                                         try {
-                                                            const { error } = await supabase.from('transactions').delete().eq('id', t.id);
-                                                            if (error) throw error;
-                                                            // Recargar datos
-                                                            fetchData();
+                                                            await removeTransaction(t.id);
                                                         } catch (err) {
                                                             alert('Error al eliminar: ' + err.message);
                                                         }
