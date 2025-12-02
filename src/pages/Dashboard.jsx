@@ -131,7 +131,9 @@ const Dashboard = () => {
             date: transactionDate.toISOString(),
             customer_id: formData.customerId,
             service_id: formData.serviceId,
-            employee_id: myUserId,
+            customer_id: formData.customerId,
+            service_id: formData.serviceId,
+            employee_id: formData.employeeId || myUserId, // Usar el seleccionado o el actual
             price: basePrice,
             commission_amount: parseFloat(formData.commissionAmount),
             tip_amount: tip,
@@ -253,6 +255,23 @@ const Dashboard = () => {
                                     ))}
                                 </select>
                             </div>
+
+                            {/* SELECTOR DE EMPLEADO (SOLO ADMIN) */}
+                            {userRole === 'admin' && (
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Realizado por</label>
+                                    <select
+                                        className="input"
+                                        value={formData.employeeId}
+                                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                                    >
+                                        <option value="">Yo (Admin)</option>
+                                        {employees.filter(e => e.role !== 'admin').map(emp => (
+                                            <option key={emp.id} value={emp.user_id}>{emp.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '1rem' }}>
                                 <label className="label">Hora del Servicio</label>
