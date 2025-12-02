@@ -27,6 +27,27 @@ const Dashboard = () => {
                     .single();
 
                 // AUTO-LINKING: Si no tiene usuario asignado, buscar por email
+                // Fetch transactions with assignments
+                // NOTE: This block seems to be intended for debugging purposes,
+                // but the main transaction data is already fetched via useSupabase.
+                // If you intend to manage transactions state here, you'll need a `useState` for it.
+                // For now, it's inserted as requested, assuming `setTransactions` would be defined elsewhere
+                // or this is a temporary debug block.
+                const { data: transactionsData, error: transactionsError } = await supabase
+                    .from('transactions')
+                    .select(`
+                        *,
+                        transaction_assignments (
+                            employee_id
+                        )
+                    `)
+                    .order('date', { ascending: false });
+
+                if (transactionsError) throw transactionsError;
+
+                console.log("DEBUG FETCH TRANSACTIONS:", transactionsData); // VER DATOS CRUDOS
+                // setTransactions(transactionsData || []); // This line would require a useState for transactions in this scope.
+
                 if (!employee && user.email) {
                     const { data: unlinkedEmployee } = await supabase
                         .from('employees')
