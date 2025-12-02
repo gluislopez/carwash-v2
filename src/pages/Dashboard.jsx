@@ -80,7 +80,12 @@ const Dashboard = () => {
     const { data: services } = useSupabase('services');
     const { data: employees } = useSupabase('employees');
     const { data: customers } = useSupabase('customers');
-    const { data: transactions, create: createTransaction, remove: removeTransaction } = useSupabase('transactions');
+    const { data: transactions, create: createTransaction, remove: removeTransaction } = useSupabase('transactions', `
+        *,
+        transaction_assignments (
+            employee_id
+        )
+    `);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
