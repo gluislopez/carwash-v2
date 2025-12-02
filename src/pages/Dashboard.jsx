@@ -624,27 +624,7 @@ const Dashboard = () => {
                                     </div>
                                 ))}
 
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="Descripción (ej. Aspirado)"
-                                        value={newExtra.description}
-                                        onChange={(e) => setNewExtra({ ...newExtra, description: e.target.value })}
-                                        style={{ flex: 2 }}
-                                    />
-                                    <input
-                                        type="number"
-                                        className="input"
-                                        placeholder="Precio"
-                                        value={newExtra.price}
-                                        onChange={(e) => setNewExtra({ ...newExtra, price: e.target.value })}
-                                        style={{ flex: 1 }}
-                                    />
-                                    <button type="button" className="btn btn-primary" onClick={handleAddExtra}>
-                                        <Plus size={16} />
-                                    </button>
-                                </div>
+
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
