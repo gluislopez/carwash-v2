@@ -44,8 +44,6 @@ const Dashboard = () => {
                     .order('date', { ascending: false });
 
                 if (transactionsError) throw transactionsError;
-
-                console.log("DEBUG FETCH TRANSACTIONS:", transactionsData); // VER DATOS CRUDOS
                 // setTransactions(transactionsData || []); // This line would require a useState for transactions in this scope.
 
                 if (!employee && user.email) {
