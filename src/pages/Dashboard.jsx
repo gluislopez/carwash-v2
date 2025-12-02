@@ -185,7 +185,7 @@ const Dashboard = () => {
 
     const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
     const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
-    const getEmployeeName = (userId) => employees.find(e => e.user_id === userId)?.name || 'Desconocido';
+    const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Desconocido';
 
     const getPaymentMethodLabel = (method) => {
         switch (method) {
