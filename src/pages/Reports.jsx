@@ -154,18 +154,29 @@ const Reports = () => {
     // Export Handlers
     const handleCopyToEmail = () => {
         // Create HTML Table for Email
+        // Note: Images in email often need to be hosted publicly. 
+        // For now we will use the text header, but if they have a public URL we could use it.
+        // We will add a nice header block.
         const htmlContent = `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: #2563eb;">Reporte CarWash</h2>
-                <p><strong>Periodo:</strong> ${dateRange}</p>
-                <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
-                    <thead style="background-color: #f3f4f6;">
+            <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto;">
+                <div style="text-align: center; padding: 20px; border-bottom: 2px solid #2563eb; margin-bottom: 20px;">
+                    <h1 style="margin: 0; color: #1e40af; font-size: 24px;">CARWASH SAAS</h1>
+                    <p style="margin: 5px 0; color: #6b7280;">Reporte de Operaciones</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Periodo:</strong> ${dateRange}</p>
+                    <p><strong>Generado:</strong> ${new Date().toLocaleDateString('es-PR')}</p>
+                </div>
+
+                <table border="1" cellpadding="12" cellspacing="0" style="border-collapse: collapse; width: 100%; border: 1px solid #e5e7eb;">
+                    <thead style="background-color: #f8fafc;">
                         <tr>
-                            <th style="text-align: left;">Fecha</th>
-                            <th style="text-align: center;">Autos</th>
-                            <th style="text-align: right; color: #10b981;">Ingreso</th>
-                            <th style="text-align: right; color: #ef4444;">Gastos</th>
-                            <th style="text-align: right;">Neto</th>
+                            <th style="text-align: left; border: 1px solid #e5e7eb; padding: 12px;">Fecha</th>
+                            <th style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">Autos</th>
+                            <th style="text-align: right; color: #10b981; border: 1px solid #e5e7eb; padding: 12px;">Ingreso</th>
+                            <th style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">Gastos</th>
+                            <th style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">Neto</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -173,25 +184,29 @@ const Reports = () => {
             const net = row.income - row.expenses;
             return `
                                 <tr>
-                                    <td>${row.date}</td>
-                                    <td style="text-align: center;">${row.count}</td>
-                                    <td style="text-align: right;">$${row.income.toFixed(2)}</td>
-                                    <td style="text-align: right;">$${row.expenses.toFixed(2)}</td>
-                                    <td style="text-align: right; font-weight: bold;">$${net.toFixed(2)}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 12px;">${row.date}</td>
+                                    <td style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">${row.count}</td>
+                                    <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${row.income.toFixed(2)}</td>
+                                    <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${row.expenses.toFixed(2)}</td>
+                                    <td style="text-align: right; font-weight: bold; border: 1px solid #e5e7eb; padding: 12px;">$${net.toFixed(2)}</td>
                                 </tr>
                             `;
         }).join('')}
                     </tbody>
-                    <tfoot style="background-color: #f3f4f6; font-weight: bold;">
+                    <tfoot style="background-color: #f8fafc; font-weight: bold;">
                         <tr>
-                            <td>TOTALES</td>
-                            <td style="text-align: center;">${totalCount}</td>
-                            <td style="text-align: right; color: #10b981;">$${totalIncome.toFixed(2)}</td>
-                            <td style="text-align: right; color: #ef4444;">$${totalCommissions.toFixed(2)}</td>
-                            <td style="text-align: right;">$${(totalIncome - totalCommissions).toFixed(2)}</td>
+                            <td style="border: 1px solid #e5e7eb; padding: 12px;">TOTALES</td>
+                            <td style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">${totalCount}</td>
+                            <td style="text-align: right; color: #10b981; border: 1px solid #e5e7eb; padding: 12px;">$${totalIncome.toFixed(2)}</td>
+                            <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${totalCommissions.toFixed(2)}</td>
+                            <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${(totalIncome - totalCommissions).toFixed(2)}</td>
                         </tr>
                     </tfoot>
                 </table>
+                
+                <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af;">
+                    <p>Generado automáticamente por CarWash SaaS</p>
+                </div>
             </div>
         `;
 
@@ -224,12 +239,23 @@ const Reports = () => {
             <style>{`
                 @media print {
                     .no-print { display: none !important; }
-                    .card { box-shadow: none; border: 1px solid #ddd; }
+                    .card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
                     body { background: white; color: black; }
+                    .print-header { display: block !important; margin-bottom: 2rem; text-align: center; }
+                    /* Hide other cards if we only want the table, but user asked for "report". 
+                       Usually we keep the summary cards. */
                 }
+                .print-header { display: none; }
             `}</style>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            {/* PRINT HEADER (Logo & Title) */}
+            <div className="print-header">
+                <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', marginBottom: '1rem' }} />
+                <h1 style={{ fontSize: '2rem', margin: 0 }}>CarWash SaaS</h1>
+                <p style={{ color: '#666' }}>Reporte de Operaciones: {dateRange}</p>
+            </div>
+
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Historial y estadísticas</p>

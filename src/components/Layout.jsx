@@ -168,6 +168,15 @@ const Layout = ({ children }) => {
                     }}
                 />
             )}
+
+            {/* Global Print Styles */}
+            <style>{`
+                @media print {
+                    .sidebar, .mobile-menu-btn { display: none !important; }
+                    .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+                    body { background-color: white !important; }
+                }
+            `}</style>
         </div>
     );
 };
