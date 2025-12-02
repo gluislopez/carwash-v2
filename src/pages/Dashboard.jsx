@@ -7,22 +7,7 @@ import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
 // import EditTransactionModal from '../components/EditTransactionModal'; // DISABLED IMPORT
 
 // INLINE MODAL FOR DEBUGGING
-const EditTransactionModal = ({ isOpen, onClose, transaction }) => {
-    return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0, 0, 255, 0.8)', // BLUE BACKGROUND FOR INLINE TEST
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
-            color: 'white', fontSize: '2rem'
-        }}>
-            <div>
-                <h1>INLINE TEST MODAL</h1>
-                <p>ID: {transaction?.id}</p>
-                <button onClick={onClose} style={{ padding: '1rem', fontSize: '1.5rem', color: 'black' }}>CERRAR</button>
-            </div>
-        </div>
-    );
-};
+// EditTransactionModal removed to prevent unused variable build error
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
@@ -420,7 +405,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.4 ID STATE</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'purple', fontWeight: 'bold' }}>v3.5 CLEAN BUILD</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -707,9 +692,9 @@ const Dashboard = () => {
             {editingTransactionId && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(255, 165, 0, 0.8)', // ORANGE BACKGROUND
+                    backgroundColor: 'rgba(128, 0, 128, 0.8)', // PURPLE BACKGROUND
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
-                    color: 'black', fontSize: '2rem'
+                    color: 'white', fontSize: '2rem'
                 }}>
                     <div>
                         <h1>ID STATE TEST</h1>
