@@ -92,8 +92,16 @@ const Dashboard = () => {
     // Filtro corregido: Compara fechas convertidas a PR, no strings crudos
     const todaysTransactions = transactions.filter(t => getPRDateString(t.date) === today);
 
+    // Para empleados: Filtrar SOLO sus transacciones para los contadores
+    const myTransactions = todaysTransactions.filter(t => t.employee_id === myEmployeeId);
+
+    // Si es Admin, usa TODO. Si es Empleado, usa SOLO LO SUYO.
+    const statsTransactions = userRole === 'admin' ? todaysTransactions : myTransactions;
+
     const totalIncome = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
-    const totalCommissions = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0), 0);
+
+    // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
+    const totalCommissions = statsTransactions.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0), 0);
 
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
@@ -200,7 +208,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'var(--text-muted)', opacity: 0.7 }}>v2.1</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'var(--text-muted)', opacity: 0.7 }}>v2.2</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -218,7 +226,7 @@ const Dashboard = () => {
                     <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy' : 'Mis Autos Lavados'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{todaysTransactions.length}</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{statsTransactions.length}</p>
                     </div>
                 </div>
 
