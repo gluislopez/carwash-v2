@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'pink', fontWeight: 'bold' }}>v3.19 FORCE SWAP {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'purple', fontWeight: 'bold' }}>v3.20 FIX TOTAL DISPLAY {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -732,7 +732,7 @@ const Dashboard = () => {
                                         }
                                     </td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                                        ${(parseFloat(t.price || 0) + parseFloat(t.tip || 0)).toFixed(2)}
+                                        ${parseFloat(t.price || 0).toFixed(2)}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
