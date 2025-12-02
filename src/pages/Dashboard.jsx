@@ -161,6 +161,7 @@ const Dashboard = () => {
 
     const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
     const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
+    const getEmployeeName = (userId) => employees.find(e => e.user_id === userId)?.name || 'Desconocido';
 
     const getPaymentMethodLabel = (method) => {
         switch (method) {
@@ -343,6 +344,7 @@ const Dashboard = () => {
                                 <th style={{ padding: '1rem' }}>Hora</th>
                                 <th style={{ padding: '1rem' }}>Cliente</th>
                                 <th style={{ padding: '1rem' }}>Servicio</th>
+                                <th style={{ padding: '1rem' }}>Empleado</th>
                                 <th style={{ padding: '1rem' }}>Total</th>
                                 <th style={{ padding: '1rem' }}>Pago</th>
                             </tr>
@@ -356,6 +358,7 @@ const Dashboard = () => {
                                         {getServiceName(t.service_id)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
                                     </td>
+                                    <td style={{ padding: '1rem' }}>{getEmployeeName(t.employee_id)}</td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price}</td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
