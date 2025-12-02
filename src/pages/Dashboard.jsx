@@ -665,6 +665,14 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* CHART DEBUG */}
+            <div style={{ padding: '1rem', backgroundColor: '#333', color: 'white', marginBottom: '1rem', borderRadius: '0.5rem' }}>
+                <p><strong>Debug Info:</strong></p>
+                <p>Role: {userRole || 'undefined'}</p>
+                <p>Transactions: {transactions ? transactions.length : '0'}</p>
+                <p>Is Admin? {userRole === 'admin' ? 'YES' : 'NO'}</p>
+            </div>
+
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (
                 <ServiceAnalyticsChart transactions={transactions} />
