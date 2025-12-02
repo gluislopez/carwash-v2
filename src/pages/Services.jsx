@@ -36,8 +36,9 @@ const Services = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (editingService) await update(editingService.id, formData);
-            else await create(formData);
+            const payload = { ...formData, commission_rate: 0 }; // Dummy value for legacy column
+            if (editingService) await update(editingService.id, payload);
+            else await create(payload);
             setIsModalOpen(false);
         } catch (error) { alert('Error al guardar servicio: ' + error.message); }
     };
