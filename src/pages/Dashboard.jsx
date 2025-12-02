@@ -19,24 +19,38 @@ const Dashboard = () => {
                 let log = `User ID: ${user.id}\nEmail: ${user.email}\n`;
 
                 // Consultar el rol del empleado
-                const { data: employee, error } = await supabase
+                let { data: employee, error } = await supabase
                     .from('employees')
-                    .select('*') // Select ALL to see what we get
+                    .select('*')
                     .eq('user_id', user.id)
                     .single();
 
-                if (error) {
-                    log += `Error fetching employee: ${error.message}\nHint: ${error.hint || 'No hint'}`;
-                    console.error("Error fetching employee:", error);
-                } else if (employee) {
-                    log += `Employee Found: ${JSON.stringify(employee, null, 2)}`;
-                    setUserRole(employee.role);
-                } else {
-                    log += "No employee record found for this user_id.";
+                // AUTO-LINKING: Si no tiene usuario asignado, buscar por email
+                if (!employee && user.email) {
+                    const { data: unlinkedEmployee } = await supabase
+                        .from('employees')
+                        .select('*')
+                        .eq('email', user.email)
+                        .is('user_id', null)
+                        .single();
+
+                    if (unlinkedEmployee) {
+                        // Vincular automáticamente
+                        const { error: linkError } = await supabase
+                            .from('employees')
+                            .update({ user_id: user.id })
+                            .eq('id', unlinkedEmployee.id);
+
+                        if (!linkError) {
+                            employee = { ...unlinkedEmployee, user_id: user.id };
+                            console.log("Cuenta vinculada automáticamente por email:", user.email);
+                        }
+                    }
                 }
-                setDebugInfo(log);
-            } else {
-                setDebugInfo("No authenticated user found.");
+
+                if (employee) {
+                    setUserRole(employee.role);
+                }
             }
         };
         getUser();
@@ -163,11 +177,6 @@ const Dashboard = () => {
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
-
-                    {/* DEBUG PANEL */}
-                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#333', color: '#0f0', fontFamily: 'monospace', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
-                        {debugInfo}
-                    </div>
                 </div>
 
                 {/* SOLO MOSTRAR SI ES ADMIN */}
