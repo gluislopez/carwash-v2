@@ -407,10 +407,10 @@ const Dashboard = () => {
     console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', backgroundColor: 'red', padding: '1rem', borderRadius: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem', color: 'white' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', fontWeight: 'bold' }}>v3.30 PACKAGE BUMP {new Date().toLocaleTimeString()}</span></h1>
-                    <p style={{ color: 'white' }}>Resumen de operaciones del día: {today}</p>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'indigo', fontWeight: 'bold' }}>v3.31 RECONNECT CHECK {new Date().toLocaleTimeString()}</span></h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
                 {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
