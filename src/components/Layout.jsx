@@ -7,6 +7,7 @@ const Layout = ({ children }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
     const [userRole, setUserRole] = useState(null);
+    const [employeeName, setEmployeeName] = useState('');
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -16,15 +17,16 @@ const Layout = ({ children }) => {
             if (user) {
                 setUserEmail(user.email);
 
-                // Fetch role
+                // Fetch role and name
                 const { data: employee } = await supabase
                     .from('employees')
-                    .select('role')
+                    .select('role, name')
                     .eq('user_id', user.id)
                     .single();
 
                 if (employee) {
                     setUserRole(employee.role);
+                    setEmployeeName(employee.name);
                 }
             }
         };
@@ -144,7 +146,7 @@ const Layout = ({ children }) => {
                             <User size={20} />
                         </div>
                         <div style={{ overflow: 'hidden' }}>
-                            <p style={{ fontSize: '0.85rem', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Usuario</p>
+                            <p style={{ fontSize: '0.85rem', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{employeeName || 'Usuario'}</p>
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={userEmail}>
                                 {userEmail || 'Cargando...'}
                             </p>
