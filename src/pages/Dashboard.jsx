@@ -80,8 +80,17 @@ const Dashboard = () => {
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
 
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
-    const todaysTransactions = transactions.filter(t => t.date && t.date.startsWith(today));
+    // Helper para manejar fechas en zona horaria de Puerto Rico
+    const getPRDateString = (dateInput) => {
+        if (!dateInput) return '';
+        const date = new Date(dateInput);
+        return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+    };
+
+    const today = getPRDateString(new Date());
+
+    // Filtro corregido: Compara fechas convertidas a PR, no strings crudos
+    const todaysTransactions = transactions.filter(t => getPRDateString(t.date) === today);
 
     const totalIncome = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
     const totalCommissions = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0), 0);
