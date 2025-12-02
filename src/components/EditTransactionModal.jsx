@@ -14,11 +14,11 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdate, services
     useEffect(() => {
         if (transaction) {
             setFormData({
-                service_id: transaction.service_id,
-                payment_method: transaction.payment_method,
-                total_price: transaction.total_price,
-                commission_amount: transaction.commission_amount || 0,
-                tip_amount: transaction.tip_amount || 0
+                service_id: transaction.service_id || '',
+                payment_method: transaction.payment_method || 'cash',
+                total_price: transaction.total_price || '',
+                commission_amount: transaction.commission_amount || '',
+                tip_amount: transaction.tip_amount || ''
             });
         }
     }, [transaction]);
@@ -93,7 +93,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdate, services
                                 type="number"
                                 step="0.01"
                                 className="input"
-                                value={formData.total_price}
+                                value={formData.total_price || ''}
                                 onChange={(e) => setFormData({ ...formData, total_price: e.target.value })}
                                 required
                             />
@@ -104,7 +104,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdate, services
                                 type="number"
                                 step="0.01"
                                 className="input"
-                                value={formData.commission_amount}
+                                value={formData.commission_amount || ''}
                                 onChange={(e) => setFormData({ ...formData, commission_amount: e.target.value })}
                             />
                         </div>
@@ -116,7 +116,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdate, services
                             type="number"
                             step="0.01"
                             className="input"
-                            value={formData.tip_amount}
+                            value={formData.tip_amount || ''}
                             onChange={(e) => setFormData({ ...formData, tip_amount: e.target.value })}
                         />
                     </div>
