@@ -87,7 +87,7 @@ const Dashboard = () => {
 
     const { data: services } = useSupabase('services');
     const { data: employees } = useSupabase('employees');
-    const { data: customers } = useSupabase('customers');
+    const { data: customers, refresh: refreshCustomers } = useSupabase('customers');
     const { data: transactions, create: createTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `
         *,
         transaction_assignments (
@@ -114,6 +114,37 @@ const Dashboard = () => {
     });
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
+
+    // Quick Add Customer State
+    const [isAddingCustomer, setIsAddingCustomer] = useState(false);
+    const [newCustomer, setNewCustomer] = useState({
+        name: '',
+        phone: '',
+        vehicle_plate: '',
+        vehicle_model: '',
+        email: '' // Optional
+    });
+
+    const { create: createCustomer } = useSupabase('customers');
+
+    const handleCreateCustomer = async () => {
+        if (!newCustomer.name || !newCustomer.vehicle_plate) {
+            alert('Nombre y Placa son obligatorios');
+            return;
+        }
+
+        try {
+            const [created] = await createCustomer(newCustomer);
+            if (created) {
+                await refreshCustomers(); // Recargar lista
+                setFormData({ ...formData, customerId: created.id }); // Seleccionar el nuevo
+                setIsAddingCustomer(false); // Cerrar mini-form
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_model: '', email: '' }); // Reset
+            }
+        } catch (error) {
+            alert('Error al crear cliente: ' + error.message);
+        }
+    };
 
     // Helper para manejar fechas en zona horaria de Puerto Rico
     const getPRDateString = (dateInput) => {
@@ -417,17 +448,83 @@ const Dashboard = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ marginBottom: '1rem' }}>
                                     <label className="label">Cliente</label>
-                                    <select
-                                        className="input"
-                                        required
-                                        value={formData.customerId}
-                                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                    >
-                                        <option value="">Seleccionar Cliente...</option>
-                                        {customers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
-                                        ))}
-                                    </select>
+                                    {!isAddingCustomer ? (
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <select
+                                                className="input"
+                                                required
+                                                value={formData.customerId}
+                                                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                                                style={{ flex: 1 }}
+                                            >
+                                                <option value="">Seleccionar Cliente...</option>
+                                                {customers.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                onClick={() => setIsAddingCustomer(true)}
+                                                title="Nuevo Cliente"
+                                            >
+                                                <Plus size={20} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
+                                            <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Nuevo Cliente Rápido</h4>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Nombre"
+                                                    value={newCustomer.name}
+                                                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Teléfono"
+                                                    value={newCustomer.phone}
+                                                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Placa"
+                                                    value={newCustomer.vehicle_plate}
+                                                    onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Modelo (Opcional)"
+                                                    value={newCustomer.vehicle_model}
+                                                    onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                <button
+                                                    type="button"
+                                                    className="btn"
+                                                    onClick={() => setIsAddingCustomer(false)}
+                                                    style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    onClick={handleCreateCustomer}
+                                                    disabled={!newCustomer.name || !newCustomer.vehicle_plate}
+                                                    style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                                                >
+                                                    Guardar Cliente
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
