@@ -51,7 +51,7 @@ const Dashboard = () => {
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
     const todaysTransactions = transactions.filter(t => t.date && t.date.startsWith(today));
 
     const totalIncome = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
