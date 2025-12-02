@@ -88,7 +88,7 @@ const Dashboard = () => {
     const { data: services } = useSupabase('services');
     const { data: employees } = useSupabase('employees');
     const { data: customers } = useSupabase('customers');
-    const { data: transactions, create: createTransaction, remove: removeTransaction } = useSupabase('transactions', `
+    const { data: transactions, create: createTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `
         *,
         transaction_assignments (
             employee_id
@@ -312,6 +312,9 @@ const Dashboard = () => {
                     .insert(assignments);
 
                 if (assignError) console.error("Error asignando empleados:", assignError);
+
+                // REFRESH CRÍTICO: Recargar para traer las asignaciones recién creadas
+                await refreshTransactions();
             }
 
             setIsModalOpen(false);
