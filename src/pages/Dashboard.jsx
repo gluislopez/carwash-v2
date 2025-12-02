@@ -340,7 +340,7 @@ const Dashboard = () => {
                     backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
                     overflowY: 'auto'
                 }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio</h3>
                         <form onSubmit={handleSubmit}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

@@ -75,7 +75,7 @@ const Services = () => {
 
             {isModalOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+                    <div className="card modal-card" style={{ width: '100%', maxWidth: '400px' }}>
                         <h3 style={{ marginBottom: '1.5rem' }}>{editingService ? 'Editar Servicio' : 'Nuevo Servicio'}</h3>
                         <form onSubmit={handleSubmit}>
                             <div style={{ marginBottom: '1rem' }}><label className="label">Nombre del Servicio</label><input type="text" className="input" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
