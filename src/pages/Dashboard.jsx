@@ -191,19 +191,24 @@ const Dashboard = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card">
-                    <h3 className="label">Autos Lavados Hoy</h3>
+                    <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy' : 'Mis Autos Lavados'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{todaysTransactions.length}</p>
                     </div>
                 </div>
+
+                {/* SOLO ADMIN VE INGRESOS TOTALES */}
+                {userRole === 'admin' && (
+                    <div className="card">
+                        <h3 className="label">Ingresos Totales Hoy</h3>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>(Incluye extras y propinas)</p>
+                    </div>
+                )}
+
                 <div className="card">
-                    <h3 className="label">Ingresos Totales Hoy</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>(Incluye extras y propinas)</p>
-                </div>
-                <div className="card">
-                    <h3 className="label">Comisiones + Propinas</h3>
+                    <h3 className="label">{userRole === 'admin' ? 'Comisiones + Propinas' : 'Mis Comisiones'}</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${totalCommissions.toFixed(2)}</p>
                 </div>
             </div>
