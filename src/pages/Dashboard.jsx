@@ -94,7 +94,14 @@ const Dashboard = () => {
     const todaysTransactions = transactions.filter(t => getPRDateString(t.date) === today);
 
     // Para empleados: Filtrar SOLO sus transacciones para los contadores
-    const myTransactions = todaysTransactions.filter(t => t.employee_id === myEmployeeId);
+    const myTransactions = todaysTransactions.filter(t => {
+        // 1. Verificar si está en la lista de asignaciones (Multi-empleado)
+        const isAssigned = t.transaction_assignments?.some(a => a.employee_id === myEmployeeId);
+        // 2. Verificar si es el empleado principal (Legacy/Fallback)
+        const isPrimary = t.employee_id === myEmployeeId;
+
+        return isAssigned || isPrimary;
+    });
 
     // Si es Admin, usa TODO. Si es Empleado, usa SOLO LO SUYO.
     const statsTransactions = userRole === 'admin' ? todaysTransactions : myTransactions;
