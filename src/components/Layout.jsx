@@ -79,16 +79,19 @@ const Layout = ({ children }) => {
                 zIndex: 50
             }} className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
 
-                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }} />
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>CarWash SaaS</h2>
+                <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--bg-secondary)' }} />
                     </div>
-                    {/* Close button for mobile */}
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>CarWash</h2>
+                    {/* Close button for mobile - moved to absolute position */}
                     <button
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="mobile-close-btn"
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'none' }}
+                        style={{
+                            background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'none',
+                            position: 'absolute', top: '1rem', right: '1rem'
+                        }}
                     >
                         <X size={24} />
                     </button>
