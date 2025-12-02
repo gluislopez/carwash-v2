@@ -342,7 +342,12 @@ const Dashboard = () => {
             service_id: formData.serviceId,
             employee_id: primaryEmployeeId, // ID principal (legacy)
             price: basePrice,
-            commission_amount: parseFloat(formData.commissionAmount),
+            // Lógica condicional para servicio de $35:
+            // Si es $35 y hay más de 1 empleado, la comisión total es $12.
+            // Si es $35 y es 1 empleado, la comisión es la normal ($10).
+            commission_amount: (basePrice === 35 && assignedEmployees.length > 1)
+                ? 12
+                : parseFloat(formData.commissionAmount),
             tip_amount: tip,
             payment_method: formData.paymentMethod,
             extras: formData.extras,
@@ -406,7 +411,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'teal', fontWeight: 'bold' }}>v3.22 SHOW TOTAL SPLIT {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.23 CONDITIONAL COMMISSION {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
