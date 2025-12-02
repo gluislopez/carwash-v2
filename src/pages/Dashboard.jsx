@@ -4,7 +4,25 @@ import { Plus, Car, DollarSign, Users, Trash2, Edit2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
-import EditTransactionModal from '../components/EditTransactionModal';
+// import EditTransactionModal from '../components/EditTransactionModal'; // DISABLED IMPORT
+
+// INLINE MODAL FOR DEBUGGING
+const EditTransactionModal = ({ isOpen, onClose, transaction }) => {
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 255, 0.8)', // BLUE BACKGROUND FOR INLINE TEST
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+            color: 'white', fontSize: '2rem'
+        }}>
+            <div>
+                <h1>INLINE TEST MODAL</h1>
+                <p>ID: {transaction?.id}</p>
+                <button onClick={onClose} style={{ padding: '1rem', fontSize: '1.5rem', color: 'black' }}>CERRAR</button>
+            </div>
+        </div>
+    );
+};
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
@@ -396,7 +414,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'red', fontWeight: 'bold' }}>v3.1 RED BOX</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'blue', fontWeight: 'bold' }}>v3.2 INLINE</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
