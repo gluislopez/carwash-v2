@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Phone, Mail, Car } from 'lucide-react';
+import { Plus, Trash2, Edit, Phone, Mail, Car, Search } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 
@@ -9,7 +9,11 @@ const Customers = () => {
     const [userRole, setUserRole] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
 
-    // Obtener el rol del usuario actual
+    // Search and Stats State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [visitCounts, setVisitCounts] = useState({});
+
+    // Obtener el rol del usuario actual y conteo de visitas
     useEffect(() => {
         const getUserRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +22,25 @@ const Customers = () => {
                 if (employee) setUserRole(employee.role);
             }
         };
+
+        const getVisitCounts = async () => {
+            const { data: transactions } = await supabase
+                .from('transactions')
+                .select('customer_id');
+
+            if (transactions) {
+                const counts = {};
+                transactions.forEach(t => {
+                    if (t.customer_id) {
+                        counts[t.customer_id] = (counts[t.customer_id] || 0) + 1;
+                    }
+                });
+                setVisitCounts(counts);
+            }
+        };
+
         getUserRole();
+        getVisitCounts();
     }, []);
 
     const [formData, setFormData] = useState({
@@ -66,21 +88,43 @@ const Customers = () => {
         }
     };
 
+    // Filter customers
+    const filteredCustomers = customers.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.vehicle_plate && c.vehicle_plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.phone && c.phone.includes(searchTerm))
+    );
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1>
+                        <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p>
+                    </div>
+
+                    {/* SOLO ADMIN PUEDE CREAR */}
+                    {userRole === 'admin' && (
+                        <button className="btn btn-primary" onClick={() => openModal()}>
+                            <Plus size={20} />
+                            Nuevo Cliente
+                        </button>
+                    )}
                 </div>
 
-                {/* SOLO ADMIN PUEDE CREAR */}
-                {userRole === 'admin' && (
-                    <button className="btn btn-primary" onClick={() => openModal()}>
-                        <Plus size={20} />
-                        Nuevo Cliente
-                    </button>
-                )}
+                {/* SEARCH BAR */}
+                <div style={{ position: 'relative', maxWidth: '400px' }}>
+                    <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, tablilla o teléfono..."
+                        className="input"
+                        style={{ paddingLeft: '3rem', width: '100%' }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
 
             <div className="card">
@@ -89,15 +133,28 @@ const Customers = () => {
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
                                 <th style={{ padding: '1rem' }}>Nombre</th>
+                                <th style={{ padding: '1rem' }}>Visitas</th>
                                 <th style={{ padding: '1rem' }}>Contacto</th>
                                 <th style={{ padding: '1rem' }}>Vehículo</th>
                                 {userRole === 'admin' && <th style={{ padding: '1rem', textAlign: 'right' }}>Acciones</th>}
                             </tr>
                         </thead>
                         <tbody>
-                            {customers.map((customer) => (
+                            {filteredCustomers.map((customer) => (
                                 <tr key={customer.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>{customer.name}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <span style={{
+                                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                            color: 'var(--primary)',
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '1rem',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            {visitCounts[customer.id] || 0}
+                                        </span>
+                                    </td>
                                     <td style={{ padding: '1rem' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.9rem' }}>
                                             {customer.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> {customer.phone}</span>}
@@ -125,10 +182,10 @@ const Customers = () => {
                                     )}
                                 </tr>
                             ))}
-                            {customers.length === 0 && (
+                            {filteredCustomers.length === 0 && (
                                 <tr>
-                                    <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        No hay clientes registrados.
+                                    <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        {searchTerm ? 'No se encontraron clientes.' : 'No hay clientes registrados.'}
                                     </td>
                                 </tr>
                             )}
