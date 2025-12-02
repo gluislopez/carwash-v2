@@ -414,7 +414,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'blue', fontWeight: 'bold' }}>v3.2 INLINE</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'green', fontWeight: 'bold' }}>v3.3 RAW DIV</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -697,15 +697,20 @@ const Dashboard = () => {
 
             {/* EDIT TRANSACTION MODAL */}
             {/* EDIT TRANSACTION MODAL - RESTORED FOR RED BOX TEST */}
+            {/* RAW DIV TEST (v3.3) */}
             {editingTransaction && (
-                <EditTransactionModal
-                    key={editingTransaction.id}
-                    isOpen={true}
-                    onClose={() => setEditingTransaction(null)}
-                    transaction={editingTransaction}
-                    onUpdate={handleUpdateTransaction}
-                    services={services}
-                />
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0, 255, 0, 0.8)', // GREEN BACKGROUND
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+                    color: 'black', fontSize: '2rem'
+                }}>
+                    <div>
+                        <h1>RAW DIV TEST</h1>
+                        <p>ID: {editingTransaction.id}</p>
+                        <button onClick={() => setEditingTransaction(null)} style={{ padding: '1rem', fontSize: '1.5rem' }}>CERRAR</button>
+                    </div>
+                </div>
             )}
 
             {/* CHART SECTION (ADMIN ONLY) */}
