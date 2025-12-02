@@ -29,6 +29,11 @@ const Dashboard = () => {
                     .eq('user_id', user.id)
                     .single();
 
+                if (error) {
+                    console.error("Error fetching employee:", error);
+                    setDebugInfo(error.message + " (Code: " + error.code + ")");
+                }
+
                 // AUTO-LINKING: Si no tiene usuario asignado, buscar por email
                 // Fetch transactions with assignments
                 // NOTE: This block seems to be intended for debugging purposes,
@@ -657,6 +662,7 @@ const Dashboard = () => {
                         <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
                         <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
                         <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
+                        <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
                     </div>
                     <div>
                         <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
