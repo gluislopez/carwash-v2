@@ -1,4 +1,3 @@
-```javascript
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 
@@ -104,4 +103,3 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
 };
 
 export default EditTransactionModal;
-```
