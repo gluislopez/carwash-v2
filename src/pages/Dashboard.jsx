@@ -678,8 +678,7 @@ const Dashboard = () => {
             )}
 
             {/* EDIT TRANSACTION MODAL */}
-            {/* EDIT TRANSACTION MODAL - DISABLED FOR DEBUGGING */}
-            {/* 
+            {/* EDIT TRANSACTION MODAL - RESTORED FOR RED BOX TEST */}
             {editingTransaction && (
                 <EditTransactionModal
                     key={editingTransaction.id}
@@ -690,7 +689,6 @@ const Dashboard = () => {
                     services={services}
                 />
             )}
-            */}
 
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (
@@ -752,10 +750,7 @@ const Dashboard = () => {
                                             <button
                                                 className="btn"
                                                 style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                                onClick={() => {
-                                                    alert("DEBUG: Clicked Edit for ID " + t.id);
-                                                    // setEditingTransaction(t); // DISABLED FOR DEBUG
-                                                }}
+                                                onClick={() => setEditingTransaction(t)}
                                                 title="Editar"
                                             >
                                                 <Edit2 size={18} />
