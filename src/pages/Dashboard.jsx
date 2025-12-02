@@ -169,14 +169,23 @@ const Dashboard = () => {
     // For the bar, we want to show the specific employee's progress. If Admin, maybe show global? Let's show personal for now.
     const dailyProductivityCount = myTransactions.length;
 
-    // 2. Total XP (Lifetime Cars): Need to fetch all-time transactions for this employee
-    // This is expensive to do on every render if we fetch all rows. Ideally we'd have a counter in 'employees' table.
-    // For now, let's fetch a count from Supabase directly in useEffect or use a separate query.
-    // optimization: We'll just fetch the count of assignments for this employee.
+    // 2. Total XP (Lifetime Cars)
     const [totalXp, setTotalXp] = useState(0);
+    const [dailyTarget, setDailyTarget] = useState(10); // Default 10
 
     useEffect(() => {
-        const fetchXp = async () => {
+        const fetchXpAndSettings = async () => {
+            // Fetch Settings
+            const { data: settingsData } = await supabase
+                .from('settings')
+                .select('value')
+                .eq('key', 'daily_target')
+                .single();
+
+            if (settingsData) {
+                setDailyTarget(parseInt(settingsData.value, 10) || 10);
+            }
+
             if (myEmployeeId) {
                 // Count assignments (Source of Truth for XP)
                 const { count, error } = await supabase
@@ -189,8 +198,22 @@ const Dashboard = () => {
                 }
             }
         };
-        fetchXp();
+        fetchXpAndSettings();
     }, [myEmployeeId, transactions]); // Re-fetch when transactions change
+
+    const handleEditTarget = async (newTarget) => {
+        if (userRole !== 'admin') return;
+
+        const { error } = await supabase
+            .from('settings')
+            .upsert({ key: 'daily_target', value: newTarget.toString() });
+
+        if (error) {
+            alert('Error al actualizar la meta: ' + error.message);
+        } else {
+            setDailyTarget(newTarget);
+        }
+    };
 
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
@@ -335,8 +358,10 @@ const Dashboard = () => {
             {/* GAMIFICATION BAR */}
             <ProductivityBar
                 dailyCount={dailyProductivityCount}
-                dailyTarget={10}
+                dailyTarget={dailyTarget}
                 totalXp={totalXp}
+                isEditable={userRole === 'admin'}
+                onEditTarget={handleEditTarget}
             />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>

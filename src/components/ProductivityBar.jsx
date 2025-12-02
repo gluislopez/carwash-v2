@@ -1,7 +1,7 @@
 import React from 'react';
-import { Trophy, Star, Zap, Crown, Medal } from 'lucide-react';
+import { Trophy, Star, Zap, Crown, Medal, Edit2 } from 'lucide-react';
 
-const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp }) => {
+const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = false, onEditTarget }) => {
     // Calculate Level
     const getLevelInfo = (xp) => {
         if (xp >= 1000) return { level: 5, name: 'Leyenda', icon: <Crown size={20} color="#fbbf24" />, color: '#fbbf24', next: null };
@@ -23,6 +23,15 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp }) => {
         xpProgress = 100; // Max level
     }
 
+    const handleEditClick = () => {
+        if (onEditTarget) {
+            const newTarget = prompt("Ingresa la nueva meta diaria:", dailyTarget);
+            if (newTarget && !isNaN(newTarget)) {
+                onEditTarget(parseInt(newTarget, 10));
+            }
+        }
+    };
+
     return (
         <div className="card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(to right, var(--bg-card), rgba(99, 102, 241, 0.05))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -41,9 +50,20 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp }) => {
                     </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: progressPercent >= 100 ? 'var(--success)' : 'var(--text-main)' }}>
-                        {dailyCount}/{dailyTarget}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: progressPercent >= 100 ? 'var(--success)' : 'var(--text-main)' }}>
+                            {dailyCount}/{dailyTarget}
+                        </p>
+                        {isEditable && (
+                            <button
+                                onClick={handleEditClick}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.25rem' }}
+                                title="Editar Meta"
+                            >
+                                <Edit2 size={16} />
+                            </button>
+                        )}
+                    </div>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Meta Diaria</p>
                 </div>
             </div>
