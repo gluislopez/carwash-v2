@@ -54,6 +54,7 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
             name: currentLevel.name,
             icon: iconMap[currentLevel.icon] || <Trophy size={20} color={currentLevel.color} />,
             color: currentLevel.color,
+            min_xp: currentLevel.min_xp,
             next: nextLevel ? nextLevel.min_xp : null,
             reward: nextLevel ? nextLevel.reward : null
         };
@@ -62,11 +63,12 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
     const levelInfo = getLevelInfo(totalXp);
     const progressPercent = Math.min((dailyCount / dailyTarget) * 100, 100);
 
-    // Calculate XP progress to next level
+    // Calculate XP progress to next level (Relative)
     let xpProgress = 0;
     if (levelInfo.next) {
-        // Simple linear progress for now, can be improved to be relative to level start
-        xpProgress = (totalXp / levelInfo.next) * 100;
+        const range = levelInfo.next - levelInfo.min_xp;
+        const currentProgress = totalXp - levelInfo.min_xp;
+        xpProgress = Math.min((currentProgress / range) * 100, 100);
     } else {
         xpProgress = 100; // Max level
     }
@@ -131,6 +133,23 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
             <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 <span>{progressPercent >= 100 ? '¡Meta cumplida! 🔥' : '¡Sigue así!'}</span>
                 {levelInfo.next && <span>Próximo Nivel: {levelInfo.next - totalXp} autos más</span>}
+            </div>
+
+            {/* Level Progress Bar */}
+            <div style={{ marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>
+                    <span>Progreso de Nivel</span>
+                    <span>{Math.round(xpProgress)}%</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--bg-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{
+                        width: `${xpProgress}%`,
+                        height: '100%',
+                        backgroundColor: levelInfo.color,
+                        borderRadius: '3px',
+                        transition: 'width 0.5s ease-out'
+                    }} />
+                </div>
             </div>
         </div>
     );

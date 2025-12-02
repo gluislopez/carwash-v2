@@ -71,10 +71,15 @@ const Customers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const customerData = {
+                ...formData,
+                email: formData.email.trim() === '' ? null : formData.email.trim()
+            };
+
             if (editingCustomer) {
-                await update(editingCustomer.id, formData);
+                await update(editingCustomer.id, customerData);
             } else {
-                await create(formData);
+                await create(customerData);
             }
             setIsModalOpen(false);
         } catch (error) {
@@ -233,7 +238,7 @@ const Customers = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="label">Email</label>
+                                    <label className="label">Email <span style={{ fontWeight: 'normal', color: 'var(--text-muted)', fontSize: '0.8rem' }}>(Opcional)</span></label>
                                     <input
                                         type="email"
                                         className="input"
