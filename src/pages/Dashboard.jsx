@@ -3,6 +3,7 @@ import { supabase } from '../supabase';
 import { Plus, Car, DollarSign, Users, Trash2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
+import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
@@ -662,6 +663,11 @@ const Dashboard = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* CHART SECTION (ADMIN ONLY) */}
+            {userRole === 'admin' && (
+                <ServiceAnalyticsChart transactions={transactions} />
             )}
 
             <div className="card">
