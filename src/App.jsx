@@ -10,6 +10,7 @@ import Employees from './pages/Employees';
 import Customers from './pages/Customers';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
+import GamificationSettings from './pages/GamificationSettings';
 
 // Componente para proteger rutas
 const RequireAuth = ({ children }) => {
