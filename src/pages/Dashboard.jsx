@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'indigo', fontWeight: 'bold' }}>v3.17 FIX MODAL & SQL {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'brown', fontWeight: 'bold' }}>v3.18 LAYOUT SWAP {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -700,11 +700,6 @@ const Dashboard = () => {
                 />
             )}
 
-            {/* CHART SECTION (ADMIN ONLY) */}
-            {userRole === 'admin' && (
-                <ServiceAnalyticsChart transactions={transactions} />
-            )}
-
             <div className="card">
                 <h3 className="label" style={{ marginBottom: '1rem' }}>Historial de Hoy</h3>
                 <div style={{ overflowX: 'auto' }}>
@@ -798,6 +793,13 @@ const Dashboard = () => {
                     </table>
                 </div>
             </div>
+
+            {/* CHART SECTION (ADMIN ONLY) */}
+            {userRole === 'admin' && (
+                <ServiceAnalyticsChart transactions={transactions} />
+            )}
+
+
 
             {/* DEBUG PANEL */}
             <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
