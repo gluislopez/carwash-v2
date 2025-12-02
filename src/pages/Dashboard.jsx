@@ -188,7 +188,7 @@ const Dashboard = () => {
     // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
     const totalCommissions = statsTransactions.reduce((sum, t) => {
         // Calcular el monto total de comisión + propina de la transacción
-        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0);
+        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
 
         // Determinar cuántos empleados participaron
         // Si hay assignments, usar su longitud. Si no, asumir 1 (el employee_id principal).
@@ -406,7 +406,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.15 FIX SUM {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'teal', fontWeight: 'bold' }}>v3.16 FIX COMMISSION CALC {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
