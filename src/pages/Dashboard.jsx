@@ -102,7 +102,21 @@ const Dashboard = () => {
     const totalIncome = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
 
     // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
-    const totalCommissions = statsTransactions.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0), 0);
+    const totalCommissions = statsTransactions.reduce((sum, t) => {
+        // Calcular el monto total de comisión + propina de la transacción
+        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0);
+
+        // Determinar cuántos empleados participaron
+        // Si hay assignments, usar su longitud. Si no, asumir 1 (el employee_id principal).
+        const employeeCount = (t.transaction_assignments && t.transaction_assignments.length > 0)
+            ? t.transaction_assignments.length
+            : 1;
+
+        // Dividir equitativamente
+        const splitCommission = txTotalCommission / employeeCount;
+
+        return sum + splitCommission;
+    }, 0);
 
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
