@@ -58,6 +58,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                                     ...formData,
                                     serviceId: newServiceId,
                                     price: service ? service.price : formData.price,
+                                    // Lógica condicional: Si es $35 y hay múltiples empleados (esto requiere saber los empleados asignados, 
+                                    // pero aquí solo editamos datos básicos. Asumiremos la comisión base del servicio por ahora, 
+                                    // o deberíamos pasar los assignments al modal).
+                                    // MEJOR: Usar la comisión base del servicio.
                                     commissionAmount: service ? service.commission : formData.commissionAmount
                                 });
                             }}
