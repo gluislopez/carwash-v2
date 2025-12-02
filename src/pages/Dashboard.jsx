@@ -465,6 +465,7 @@ const Dashboard = () => {
                                                 className="btn btn-primary"
                                                 onClick={() => setIsAddingCustomer(true)}
                                                 title="Nuevo Cliente"
+                                                style={{ flexShrink: 0, minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             >
                                                 <Plus size={20} />
                                             </button>
