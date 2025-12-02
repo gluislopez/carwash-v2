@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, FileText, Settings, Menu, X, LogOut, User, DollarSign } from 'lucide-react';
+import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
@@ -47,6 +47,7 @@ const Layout = ({ children }) => {
     // Only add Expenses if Admin
     if (userRole === 'admin') {
         navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
+        navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
     }
 
     return (

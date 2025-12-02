@@ -1,14 +1,57 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, Crown, Medal, Edit2 } from 'lucide-react';
+import { supabase } from '../supabase';
 
 const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = false, onEditTarget }) => {
+    const [levels, setLevels] = useState([]);
+
+    useEffect(() => {
+        const fetchLevels = async () => {
+            const { data, error } = await supabase
+                .from('gamification_levels')
+                .select('*')
+                .order('min_xp', { ascending: true });
+
+            if (data) setLevels(data);
+        };
+        fetchLevels();
+    }, []);
+
     // Calculate Level
     const getLevelInfo = (xp) => {
-        if (xp >= 1000) return { level: 5, name: 'Leyenda', icon: <Crown size={20} color="#fbbf24" />, color: '#fbbf24', next: null };
-        if (xp >= 500) return { level: 4, name: 'Maestro', icon: <Zap size={20} color="#a855f7" />, color: '#a855f7', next: 1000 };
-        if (xp >= 150) return { level: 3, name: 'Experto', icon: <Star size={20} color="#3b82f6" />, color: '#3b82f6', next: 500 };
-        if (xp >= 50) return { level: 2, name: 'Lavador', icon: <Medal size={20} color="#22c55e" />, color: '#22c55e', next: 150 };
-        return { level: 1, name: 'Novato', icon: <Trophy size={20} color="#94a3b8" />, color: '#94a3b8', next: 50 };
+        if (levels.length === 0) return { level: 1, name: 'Cargando...', icon: <Trophy size={20} color="#94a3b8" />, color: '#94a3b8', next: null };
+
+        // Find the highest level reached
+        let currentLevel = levels[0];
+        let nextLevel = null;
+        let levelIndex = 1;
+
+        for (let i = 0; i < levels.length; i++) {
+            if (xp >= levels[i].min_xp) {
+                currentLevel = levels[i];
+                levelIndex = i + 1;
+                nextLevel = levels[i + 1] || null;
+            } else {
+                break;
+            }
+        }
+
+        const iconMap = {
+            'Trophy': <Trophy size={20} color={currentLevel.color} />,
+            'Star': <Star size={20} color={currentLevel.color} />,
+            'Zap': <Zap size={20} color={currentLevel.color} />,
+            'Crown': <Crown size={20} color={currentLevel.color} />,
+            'Medal': <Medal size={20} color={currentLevel.color} />
+        };
+
+        return {
+            level: levelIndex,
+            name: currentLevel.name,
+            icon: iconMap[currentLevel.icon] || <Trophy size={20} color={currentLevel.color} />,
+            color: currentLevel.color,
+            next: nextLevel ? nextLevel.min_xp : null,
+            reward: nextLevel ? nextLevel.reward : null
+        };
     };
 
     const levelInfo = getLevelInfo(totalXp);
