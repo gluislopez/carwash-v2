@@ -61,11 +61,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdate, services
                         <label className="label">Servicio</label>
                         <select
                             className="input"
-                            value={formData.service_id}
+                            value={formData.service_id || ''}
                             onChange={(e) => setFormData({ ...formData, service_id: e.target.value })}
                             required
                         >
-                            {services.map(s => (
+                            <option value="" disabled>Seleccionar servicio</option>
+                            {(services || []).map(s => (
                                 <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
                             ))}
                         </select>
