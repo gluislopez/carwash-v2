@@ -97,6 +97,15 @@ body {
     flex-direction: column;
 }
 
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    /* Offset for fixed sidebar */
+    padding: 2rem;
+    width: calc(100% - 250px);
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
 .top-bar {
     height: 80px;
     display: flex;

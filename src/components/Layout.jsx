@@ -171,12 +171,7 @@ const Layout = ({ children }) => {
             </aside>
 
             {/* Main Content Wrapper */}
-            <main style={{
-                flex: 1,
-                marginLeft: '250px', // Offset for fixed sidebar
-                padding: '2rem',
-                width: 'calc(100% - 250px)'
-            }} className="main-content">
+            <main className="main-content">
                 {children}
             </main>
 
