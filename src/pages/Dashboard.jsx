@@ -387,13 +387,11 @@ const Dashboard = () => {
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
-                {/* SOLO MOSTRAR SI ES ADMIN */}
-                {userRole === 'admin' && (
-                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-                        <Plus size={20} />
-                        Registrar Servicio
-                    </button>
-                )}
+                {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
+                <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                    <Plus size={20} />
+                    Registrar Servicio
+                </button>
             </div>
 
             {/* GAMIFICATION BAR */}
