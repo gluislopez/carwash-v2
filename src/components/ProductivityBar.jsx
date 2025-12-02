@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Zap, Crown, Medal, Edit2 } from 'lucide-react';
+import { Trophy, Star, Zap, Crown, Medal, Pencil } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = false, onEditTarget }) => {
@@ -34,6 +34,11 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
             } else {
                 break;
             }
+        }
+
+        // Defensive check
+        if (!currentLevel) {
+            return { level: 1, name: 'Novato', icon: <Trophy size={20} color="#94a3b8" />, color: '#94a3b8', next: 50 };
         }
 
         const iconMap = {
@@ -103,7 +108,7 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.25rem' }}
                                 title="Editar Meta"
                             >
-                                <Edit2 size={16} />
+                                <Pencil size={16} />
                             </button>
                         )}
                     </div>
