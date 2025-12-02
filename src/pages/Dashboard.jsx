@@ -348,7 +348,7 @@ const Dashboard = () => {
             commission_amount: (basePrice === 35 && assignedEmployees.length > 1)
                 ? 12
                 : parseFloat(formData.commissionAmount),
-            tip_amount: tip,
+            tip: tip,
             payment_method: formData.paymentMethod,
             extras: formData.extras,
             total_price: totalPrice
@@ -411,7 +411,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'red', fontWeight: 'bold' }}>v3.24 FIX PAST & EDIT {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'cyan', fontWeight: 'bold' }}>v3.25 FIX EXTRAS & TIP {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -653,6 +653,27 @@ const Dashboard = () => {
                                 ))}
 
 
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Descripción (ej. Asientos)"
+                                        className="input"
+                                        style={{ flex: 2 }}
+                                        value={newExtra.description}
+                                        onChange={(e) => setNewExtra({ ...newExtra, description: e.target.value })}
+                                    />
+                                    <input
+                                        type="number"
+                                        placeholder="Precio"
+                                        className="input"
+                                        style={{ flex: 1 }}
+                                        value={newExtra.price}
+                                        onChange={(e) => setNewExtra({ ...newExtra, price: e.target.value })}
+                                    />
+                                    <button type="button" onClick={handleAddExtra} className="btn" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
+                                        <Plus size={18} />
+                                    </button>
+                                </div>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -689,21 +710,23 @@ const Dashboard = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div >
             )}
 
             {/* EDIT TRANSACTION MODAL */}
             {/* v3.11 FORM RESTORE */}
-            {editingTransactionId && (
-                <EditTransactionModal
-                    key={editingTransactionId}
-                    isOpen={!!editingTransactionId}
-                    onClose={() => setEditingTransactionId(null)}
-                    transaction={transactions.find(t => t.id === editingTransactionId)}
-                    services={services}
-                    onUpdate={handleUpdateTransaction}
-                />
-            )}
+            {
+                editingTransactionId && (
+                    <EditTransactionModal
+                        key={editingTransactionId}
+                        isOpen={!!editingTransactionId}
+                        onClose={() => setEditingTransactionId(null)}
+                        transaction={transactions.find(t => t.id === editingTransactionId)}
+                        services={services}
+                        onUpdate={handleUpdateTransaction}
+                    />
+                )
+            }
 
             <div className="card">
                 <h3 className="label" style={{ marginBottom: '1rem' }}>Historial de Hoy</h3>
@@ -810,9 +833,11 @@ const Dashboard = () => {
             </div>
 
             {/* CHART SECTION (ADMIN ONLY) */}
-            {userRole === 'admin' && (
-                <ServiceAnalyticsChart transactions={transactions} />
-            )}
+            {
+                userRole === 'admin' && (
+                    <ServiceAnalyticsChart transactions={transactions} />
+                )
+            }
 
 
 
@@ -839,7 +864,7 @@ const Dashboard = () => {
                     <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
                 </p>
             </div>
-        </div>
+        </div >
     );
 };
 
