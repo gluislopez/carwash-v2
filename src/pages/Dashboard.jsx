@@ -90,7 +90,7 @@ const Dashboard = () => {
     const { data: services } = useSupabase('services');
     const { data: employees } = useSupabase('employees');
     const { data: customers, refresh: refreshCustomers } = useSupabase('customers');
-    const { data: transactions, create: createTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `
+    const { data: transactions, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `
         *,
         transaction_assignments (
             employee_id
@@ -284,6 +284,17 @@ const Dashboard = () => {
         const newExtras = [...formData.extras];
         newExtras.splice(index, 1);
         setFormData({ ...formData, extras: newExtras });
+    };
+
+    const handleUpdateTransaction = async (id, updates) => {
+        try {
+            await updateTransaction(id, updates);
+            setEditingTransaction(null);
+            await refreshTransactions();
+        } catch (error) {
+            console.error("Update failed:", error);
+            alert("Error al actualizar: " + error.message);
+        }
     };
 
     const handleSubmit = async (e) => {
