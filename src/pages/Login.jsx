@@ -48,9 +48,24 @@ const Login = () => {
                 maxWidth: '400px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
             }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                    Iniciar Sesión
-                </h2>
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)', marginBottom: '0.5rem' }}>
+                        CarWash SaaS
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Sistema de Gestión de Lavado</p>
+                    <span style={{
+                        display: 'inline-block',
+                        marginTop: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: 'blue',
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                    }}>
+                        v2.6 - CONNECTED
+                    </span>
+                </div>
 
                 {error && (
                     <div style={{
