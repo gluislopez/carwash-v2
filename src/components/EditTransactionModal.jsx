@@ -7,7 +7,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
     const [formData, setFormData] = useState({
         serviceId: transaction.service_id || '',
         price: transaction.price || '',
-        paymentMethod: transaction.payment_method || 'cash'
+        paymentMethod: transaction.payment_method || 'cash',
+        tip: transaction.tip || 0
     });
 
     const handleSubmit = (e) => {
@@ -15,7 +16,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
         onUpdate(transaction.id, {
             service_id: formData.serviceId,
             price: parseFloat(formData.price),
-            payment_method: formData.paymentMethod
+            payment_method: formData.paymentMethod,
+            tip: parseFloat(formData.tip) || 0
         });
     };
 
@@ -64,14 +66,25 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                         </select>
                     </div>
 
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label className="label">Precio Total</label>
-                        <input
-                            type="number"
-                            className="input"
-                            value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                            <label className="label">Precio Total</label>
+                            <input
+                                type="number"
+                                className="input"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Propina</label>
+                            <input
+                                type="number"
+                                className="input"
+                                value={formData.tip}
+                                onChange={(e) => setFormData({ ...formData, tip: e.target.value })}
+                            />
+                        </div>
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
