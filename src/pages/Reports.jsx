@@ -153,20 +153,65 @@ const Reports = () => {
 
     // Export Handlers
     const handleCopyToEmail = () => {
-        let text = `REPORTE CARWASH\nPeriodo: ${dateRange}\n\n`;
-        text += `FECHA\t\tAUTOS\tINGRESO\tGASTOS\tNETO\n`;
-        text += `----------------------------------------------------\n`;
-
-        breakdownData.forEach(row => {
+        // Create HTML Table for Email
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2 style="color: #2563eb;">Reporte CarWash</h2>
+                <p><strong>Periodo:</strong> ${dateRange}</p>
+                <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 600px;">
+                    <thead style="background-color: #f3f4f6;">
+                        <tr>
+                            <th style="text-align: left;">Fecha</th>
+                            <th style="text-align: center;">Autos</th>
+                            <th style="text-align: right; color: #10b981;">Ingreso</th>
+                            <th style="text-align: right; color: #ef4444;">Gastos</th>
+                            <th style="text-align: right;">Neto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${breakdownData.map(row => {
             const net = row.income - row.expenses;
-            text += `${row.date}\t${row.count}\t$${row.income.toFixed(2)}\t$${row.expenses.toFixed(2)}\t$${net.toFixed(2)}\n`;
+            return `
+                                <tr>
+                                    <td>${row.date}</td>
+                                    <td style="text-align: center;">${row.count}</td>
+                                    <td style="text-align: right;">$${row.income.toFixed(2)}</td>
+                                    <td style="text-align: right;">$${row.expenses.toFixed(2)}</td>
+                                    <td style="text-align: right; font-weight: bold;">$${net.toFixed(2)}</td>
+                                </tr>
+                            `;
+        }).join('')}
+                    </tbody>
+                    <tfoot style="background-color: #f3f4f6; font-weight: bold;">
+                        <tr>
+                            <td>TOTALES</td>
+                            <td style="text-align: center;">${totalCount}</td>
+                            <td style="text-align: right; color: #10b981;">$${totalIncome.toFixed(2)}</td>
+                            <td style="text-align: right; color: #ef4444;">$${totalCommissions.toFixed(2)}</td>
+                            <td style="text-align: right;">$${(totalIncome - totalCommissions).toFixed(2)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+        // Copy HTML to clipboard
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${totalCount}\nNeto: $${(totalIncome - totalCommissions).toFixed(2)}`;
+        const textBlob = new Blob([plainText], { type: 'text/plain' });
+
+        const item = new ClipboardItem({
+            'text/html': blob,
+            'text/plain': textBlob
         });
 
-        text += `----------------------------------------------------\n`;
-        text += `TOTALES\t\t${totalCount}\t$${totalIncome.toFixed(2)}\t$${totalCommissions.toFixed(2)}\t$${(totalIncome - totalCommissions).toFixed(2)}`;
-
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Reporte copiado al portapapeles. ¡Listo para pegar en tu email!");
+        navigator.clipboard.write([item]).then(() => {
+            alert("Tabla copiada con formato. ¡Pégala en tu email!");
+        }).catch(err => {
+            console.error('Error al copiar:', err);
+            alert('Tu navegador no soporta copiado avanzado. Se copiará solo texto.');
+            // Fallback to text
+            navigator.clipboard.writeText(plainText);
         });
     };
 
