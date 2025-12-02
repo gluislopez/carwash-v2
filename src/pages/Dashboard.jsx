@@ -6,6 +6,7 @@ import ProductivityBar from '../components/ProductivityBar';
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
+    const [userEmail, setUserEmail] = useState(''); // Nuevo: Email para debug
     const [myEmployeeId, setMyEmployeeId] = useState(null); // Nuevo: ID del perfil de empleado
     const [userRole, setUserRole] = useState(null); // Estado para el rol
 
@@ -16,6 +17,7 @@ const Dashboard = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setMyUserId(user.id);
+                setUserEmail(user.email);
 
                 // DEBUG: Mostrar ID del usuario
                 let log = `User ID: ${user.id} \nEmail: ${user.email} \n`;
@@ -651,6 +653,7 @@ const Dashboard = () => {
                 <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
+                        <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
                         <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
                         <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
                         <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
