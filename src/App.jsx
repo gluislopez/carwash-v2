@@ -9,6 +9,7 @@ import Services from './pages/Services';
 import Employees from './pages/Employees';
 import Customers from './pages/Customers';
 import Reports from './pages/Reports';
+import Expenses from './pages/Expenses';
 
 // Componente para proteger rutas
 const RequireAuth = ({ children }) => {
@@ -90,6 +91,7 @@ function App() {
                                 <Route path="/employees" element={<Employees />} />
                                 <Route path="/customers" element={<Customers />} />
                                 <Route path="/reports" element={<Reports />} />
+                                <Route path="/expenses" element={<Expenses />} />
                                 <Route path="/settings" element={<div>Configuración (Próximamente)</div>} />
                             </Routes>
                         </Layout>

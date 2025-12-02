@@ -40,6 +40,8 @@ const Reports = () => {
         )
     `);
 
+    const { data: expenses } = useSupabase('expenses');
+
     // Helper to get customers/services names (fetching them separately would be better but for now we rely on IDs or need to fetch them)
     // Actually useSupabase returns data for the table passed. We need multiple hooks or a way to fetch others.
     // Let's use separate hooks for auxiliary data to map names.
@@ -102,7 +104,46 @@ const Reports = () => {
         });
     };
 
+    const getFilteredExpenses = () => {
+        if (!expenses) return [];
+
+        const today = new Date();
+        let start = new Date();
+        let end = new Date();
+
+        // Adjust dates based on range (Same logic as transactions)
+        if (dateRange === 'today') {
+        } else if (dateRange === 'week') {
+            const day = today.getDay();
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+            start.setDate(diff);
+            end.setDate(start.getDate() + 6);
+        } else if (dateRange === 'month') {
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+            end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        } else if (dateRange === 'custom') {
+            if (!startDate || !endDate) return [];
+            start = new Date(startDate);
+            end = new Date(endDate);
+        }
+
+        const startStr = getPRDateString(start);
+        const endStr = getPRDateString(end);
+
+        return expenses.filter(e => {
+            const eDateStr = getPRDateString(e.date);
+            const dateInRange = eDateStr >= startStr && eDateStr <= endStr;
+            if (!dateInRange) return false;
+
+            // Role Filter for Expenses
+            if (userRole === 'admin') return true; // Admin sees all expenses
+            // Employee sees only their lunches
+            return e.category === 'lunch' && e.employee_id === myEmployeeId;
+        });
+    };
+
     const filteredTransactions = getFilteredTransactions();
+    const filteredExpenses = getFilteredExpenses();
 
     // Stats Calculation
     const totalCount = filteredTransactions.length;
@@ -122,19 +163,41 @@ const Reports = () => {
         }
     }, 0);
 
+    // Calculate Lunches/Expenses
+    const totalLunches = filteredExpenses
+        .filter(e => e.category === 'lunch')
+        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+    // For Admin, also calculate Product Expenses
+    const totalProductExpenses = filteredExpenses
+        .filter(e => e.category === 'product')
+        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+    // Net Calculations
+    // Admin Net = Income - (Commissions + Lunches + Products)
+    // Employee Net = My Commissions - My Lunches
+    const netCommissions = totalCommissions - totalLunches;
+    const adminNet = totalIncome - totalCommissions - totalProductExpenses; // Note: Lunches are paid from commissions, so they don't reduce business income further? 
+    // Wait, if the business pays for lunch upfront and deducts it, then:
+    // Business Cash Flow: +Income - CommissionPaid.
+    // CommissionPaid = (GrossCommission - LunchCost).
+    // So Business Expense is actually GrossCommission. The fact that part of it was paid as lunch is irrelevant to the business bottom line, 
+    // UNLESS the business paid for the lunch from its own cash.
+    // Let's assume Business Paid Lunch.
+    // So Business Cash Out = CommissionPaid (Cash) + LunchPaid (Cash).
+    // Total Cost to Business = Gross Commission.
+    // So Admin Net = Income - Gross Commissions - Product Expenses.
+    // The lunch deduction is internal to the employee's payout.
+
     // Breakdown Logic
     const getBreakdownData = () => {
         const groups = {};
 
+        // 1. Add Transactions
         filteredTransactions.forEach(t => {
-            const dateKey = getPRDateString(t.date); // Group by Day
+            const dateKey = getPRDateString(t.date);
             if (!groups[dateKey]) {
-                groups[dateKey] = {
-                    date: dateKey,
-                    count: 0,
-                    income: 0,
-                    expenses: 0
-                };
+                groups[dateKey] = { date: dateKey, count: 0, income: 0, expenses: 0 };
             }
 
             const txIncome = parseFloat(t.total_price) || 0;
@@ -144,6 +207,21 @@ const Reports = () => {
             groups[dateKey].income += txIncome;
             groups[dateKey].expenses += txCommission;
         });
+
+        // 2. Add Expenses (Products) to breakdown?
+        // User asked for "Gastos" column. Usually this means Commissions + Business Expenses.
+        // Let's add Product Expenses to the "Gastos" column for that day.
+        if (userRole === 'admin') {
+            filteredExpenses.forEach(e => {
+                if (e.category === 'product') {
+                    const dateKey = getPRDateString(e.date);
+                    if (!groups[dateKey]) {
+                        groups[dateKey] = { date: dateKey, count: 0, income: 0, expenses: 0 };
+                    }
+                    groups[dateKey].expenses += (parseFloat(e.amount) || 0);
+                }
+            });
+        }
 
         // Convert to array and sort
         return Object.values(groups).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -332,11 +410,18 @@ const Reports = () => {
                 )}
 
                 <div className="card">
-                    <h3 className="label">{userRole === 'admin' ? 'Gastos (Comisiones)' : 'Mis Ganancias'}</h3>
+                    <h3 className="label">{userRole === 'admin' ? 'Gastos (Comisiones + Compras)' : 'Mi Neto (Menos Almuerzos)'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Users size={32} className="text-warning" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${totalCommissions.toFixed(2)}</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+                            ${userRole === 'admin' ? (totalCommissions + totalProductExpenses).toFixed(2) : netCommissions.toFixed(2)}
+                        </p>
                     </div>
+                    {userRole !== 'admin' && totalLunches > 0 && (
+                        <p style={{ fontSize: '0.9rem', color: 'var(--danger)', marginTop: '0.5rem' }}>
+                            -${totalLunches.toFixed(2)} en almuerzos
+                        </p>
+                    )}
                 </div>
 
                 {userRole === 'admin' && (
@@ -344,7 +429,7 @@ const Reports = () => {
                         <h3 className="label">Ganancia Neta</h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <DollarSign size={32} className="text-success" />
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${(totalIncome - totalCommissions).toFixed(2)}</p>
+                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${adminNet.toFixed(2)}</p>
                         </div>
                     </div>
                 )}

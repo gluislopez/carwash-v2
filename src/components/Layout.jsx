@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, FileText, Settings, Menu, X, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, FileText, Settings, Menu, X, LogOut, User, DollarSign } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
@@ -30,6 +30,7 @@ const Layout = ({ children }) => {
         { path: '/customers', label: 'Clientes', icon: <Users size={20} /> },
         { path: '/employees', label: 'Empleados', icon: <Users size={20} /> },
         { path: '/reports', label: 'Reportes', icon: <FileText size={20} /> },
+        { path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> },
         // { path: '/settings', label: 'Configuración', icon: <Settings size={20} /> },
     ];
 

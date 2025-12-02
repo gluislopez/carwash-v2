@@ -87,6 +87,8 @@ const Dashboard = () => {
         )
     `);
 
+    const { data: expenses } = useSupabase('expenses');
+
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Transaction Form State
@@ -116,6 +118,7 @@ const Dashboard = () => {
 
     // Filtro corregido: Compara fechas convertidas a PR, no strings crudos
     const todaysTransactions = transactions.filter(t => getPRDateString(t.date) === today);
+    const todaysExpenses = expenses.filter(e => getPRDateString(e.date) === today && e.category === 'lunch');
 
     // Para empleados: Filtrar SOLO sus transacciones para los contadores
     const myTransactions = todaysTransactions.filter(t => {
@@ -148,6 +151,17 @@ const Dashboard = () => {
 
         return sum + splitCommission;
     }, 0);
+
+    // Calcular Almuerzos (Deducciones)
+    const totalLunches = todaysExpenses.reduce((sum, e) => {
+        // Si es Admin, suma todos los almuerzos. Si es Empleado, solo los suyos.
+        if (userRole === 'admin' || e.employee_id === myEmployeeId) {
+            return sum + (parseFloat(e.amount) || 0);
+        }
+        return sum;
+    }, 0);
+
+    const netCommissions = totalCommissions - totalLunches;
 
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
@@ -308,8 +322,15 @@ const Dashboard = () => {
                 )}
 
                 <div className="card">
-                    <h3 className="label">{userRole === 'admin' ? 'Comisiones + Propinas' : 'Mis Comisiones'}</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${totalCommissions.toFixed(2)}</p>
+                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Netas' : 'Mi Neto (Menos Almuerzos)'}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</p>
+                        {totalLunches > 0 && (
+                            <span style={{ fontSize: '0.9rem', color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }}>
+                                -${totalLunches.toFixed(2)} en almuerzos
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 
