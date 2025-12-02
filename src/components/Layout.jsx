@@ -6,6 +6,7 @@ import { supabase } from '../supabase';
 const Layout = ({ children }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
+    const [userRole, setUserRole] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -14,6 +15,17 @@ const Layout = ({ children }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setUserEmail(user.email);
+
+                // Fetch role
+                const { data: employee } = await supabase
+                    .from('employees')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (employee) {
+                    setUserRole(employee.role);
+                }
             }
         };
         getUser();
@@ -30,9 +42,12 @@ const Layout = ({ children }) => {
         { path: '/customers', label: 'Clientes', icon: <Users size={20} /> },
         { path: '/employees', label: 'Empleados', icon: <Users size={20} /> },
         { path: '/reports', label: 'Reportes', icon: <FileText size={20} /> },
-        { path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> },
-        // { path: '/settings', label: 'Configuración', icon: <Settings size={20} /> },
     ];
+
+    // Only add Expenses if Admin
+    if (userRole === 'admin') {
+        navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
+    }
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}>
