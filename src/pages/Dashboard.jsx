@@ -405,7 +405,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'purple', fontWeight: 'bold' }}>v3.5 CLEAN BUILD</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'black', fontWeight: 'bold' }}>v3.6 RESET</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -687,22 +687,7 @@ const Dashboard = () => {
             )}
 
             {/* EDIT TRANSACTION MODAL */}
-            {/* EDIT TRANSACTION MODAL - RESTORED FOR RED BOX TEST */}
-            {/* RAW DIV TEST (v3.4 ID STATE) */}
-            {editingTransactionId && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(128, 0, 128, 0.8)', // PURPLE BACKGROUND
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
-                    color: 'white', fontSize: '2rem'
-                }}>
-                    <div>
-                        <h1>ID STATE TEST</h1>
-                        <p>ID: {editingTransactionId}</p>
-                        <button onClick={() => setEditingTransactionId(null)} style={{ padding: '1rem', fontSize: '1.5rem' }}>CERRAR</button>
-                    </div>
-                </div>
-            )}
+            {/* v3.6 RESET: NO MODAL RENDERED */}
 
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (
@@ -764,7 +749,7 @@ const Dashboard = () => {
                                             <button
                                                 className="btn"
                                                 style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                                onClick={() => setEditingTransactionId(t.id)}
+                                                onClick={() => alert("v3.6 RESET: ID " + t.id)}
                                                 title="Editar"
                                             >
                                                 <Edit2 size={18} />
