@@ -159,6 +159,43 @@ const Dashboard = () => {
                         Registrar Servicio
                     </button>
                 )}
+
+                {/* DEBUG: Botón de Rescate para Admin */}
+                {!userRole && (
+                    <button
+                        onClick={async () => {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) return;
+
+                            // Intentar vincular al primer empleado admin que no tenga user_id
+                            // O forzar la vinculación al empleado 'Gerardo' si existe
+                            const { error } = await supabase
+                                .from('employees')
+                                .update({ user_id: user.id })
+                                .eq('role', 'admin')
+                                .is('user_id', null); // Solo si está libre
+
+                            if (error) {
+                                alert("Error: " + error.message);
+                            } else {
+                                alert("¡Cuenta vinculada como Admin! Recargando...");
+                                window.location.reload();
+                            }
+                        }}
+                        style={{
+                            marginLeft: '1rem',
+                            padding: '0.5rem 1rem',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        ⚠️ Soy el Dueño (Activar Admin)
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
