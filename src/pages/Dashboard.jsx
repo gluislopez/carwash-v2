@@ -678,13 +678,17 @@ const Dashboard = () => {
             )}
 
             {/* EDIT TRANSACTION MODAL */}
-            <EditTransactionModal
-                isOpen={!!editingTransaction}
-                onClose={() => setEditingTransaction(null)}
-                transaction={editingTransaction}
-                onUpdate={handleUpdateTransaction}
-                services={services}
-            />
+            {/* EDIT TRANSACTION MODAL */}
+            {editingTransaction && (
+                <EditTransactionModal
+                    key={editingTransaction.id}
+                    isOpen={true}
+                    onClose={() => setEditingTransaction(null)}
+                    transaction={editingTransaction}
+                    onUpdate={handleUpdateTransaction}
+                    services={services}
+                />
+            )}
 
             {/* CHART SECTION (ADMIN ONLY) */}
             {userRole === 'admin' && (

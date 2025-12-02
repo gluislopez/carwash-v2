@@ -3,25 +3,17 @@ import { X, Save } from 'lucide-react';
 
 const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdate, services }) => {
     const [formData, setFormData] = useState({
-        service_id: '',
-        payment_method: '',
-        total_price: '',
-        commission_amount: '',
-        tip_amount: ''
+        service_id: transaction?.service_id || '',
+        payment_method: transaction?.payment_method || 'cash',
+        total_price: transaction?.total_price || '',
+        commission_amount: transaction?.commission_amount || '',
+        tip_amount: transaction?.tip_amount || ''
     });
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (transaction) {
-            setFormData({
-                service_id: transaction.service_id || '',
-                payment_method: transaction.payment_method || 'cash',
-                total_price: transaction.total_price || '',
-                commission_amount: transaction.commission_amount || '',
-                tip_amount: transaction.tip_amount || ''
-            });
-        }
-    }, [transaction]);
+    // Removed useEffect - relying on key prop to reset state
+
+    if (!transaction) return null;
 
     if (!isOpen || !transaction) return null;
 
