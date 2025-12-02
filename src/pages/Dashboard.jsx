@@ -447,13 +447,13 @@ const Dashboard = () => {
                                 <div style={{ marginBottom: '1rem' }}>
                                     <label className="label">Cliente</label>
                                     {!isAddingCustomer ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <select
                                                 className="input"
                                                 required
                                                 value={formData.customerId}
                                                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                                style={{ width: '100%' }}
+                                                style={{ flex: 1 }}
                                             >
                                                 <option value="">Seleccionar Cliente...</option>
                                                 {customers.map(c => (
@@ -466,15 +466,15 @@ const Dashboard = () => {
                                                 onClick={() => setIsAddingCustomer(true)}
                                                 title="Nuevo Cliente"
                                                 style={{
-                                                    width: '100%',
+                                                    flexShrink: 0,
+                                                    width: '48px',
+                                                    padding: 0,
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '0.5rem'
+                                                    justifyContent: 'center'
                                                 }}
                                             >
-                                                <Plus size={20} style={{ marginRight: '0.5rem' }} />
-                                                Crear Nuevo Cliente
+                                                <Plus size={20} />
                                             </button>
                                         </div>
                                     ) : (
