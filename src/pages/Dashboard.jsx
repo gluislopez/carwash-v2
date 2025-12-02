@@ -7,23 +7,36 @@ const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
     const [userRole, setUserRole] = useState(null); // Estado para el rol
 
+    const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
+
     useEffect(() => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setMyUserId(user.id);
 
+                // DEBUG: Mostrar ID del usuario
+                let log = `User ID: ${user.id}\nEmail: ${user.email}\n`;
+
                 // Consultar el rol del empleado
-                const { data: employee } = await supabase
+                const { data: employee, error } = await supabase
                     .from('employees')
-                    .select('role')
+                    .select('*') // Select ALL to see what we get
                     .eq('user_id', user.id)
                     .single();
 
-                if (employee) {
+                if (error) {
+                    log += `Error fetching employee: ${error.message}\nHint: ${error.hint || 'No hint'}`;
+                    console.error("Error fetching employee:", error);
+                } else if (employee) {
+                    log += `Employee Found: ${JSON.stringify(employee, null, 2)}`;
                     setUserRole(employee.role);
-                    console.log("Rol detectado:", employee.role);
+                } else {
+                    log += "No employee record found for this user_id.";
                 }
+                setDebugInfo(log);
+            } else {
+                setDebugInfo("No authenticated user found.");
             }
         };
         getUser();
@@ -150,6 +163,11 @@ const Dashboard = () => {
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
+
+                    {/* DEBUG PANEL */}
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#333', color: '#0f0', fontFamily: 'monospace', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
+                        {debugInfo}
+                    </div>
                 </div>
 
                 {/* SOLO MOSTRAR SI ES ADMIN */}
