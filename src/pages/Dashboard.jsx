@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, Trash2 } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const Dashboard = () => {
@@ -17,7 +17,7 @@ const Dashboard = () => {
                 setMyUserId(user.id);
 
                 // DEBUG: Mostrar ID del usuario
-                let log = `User ID: ${user.id}\nEmail: ${user.email}\n`;
+                let log = `User ID: ${user.id} \nEmail: ${user.email} \n`;
 
                 // Consultar el rol del empleado
                 let { data: employee, error } = await supabase
@@ -36,11 +36,11 @@ const Dashboard = () => {
                 const { data: transactionsData, error: transactionsError } = await supabase
                     .from('transactions')
                     .select(`
-                        *,
-                        transaction_assignments (
-                            employee_id
-                        )
-                    `)
+    *,
+    transaction_assignments(
+        employee_id
+    )
+        `)
                     .order('date', { ascending: false });
 
                 if (transactionsError) throw transactionsError;
@@ -517,19 +517,42 @@ const Dashboard = () => {
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
                                             padding: '0.25rem 0.75rem',
-                                            borderRadius: '1rem',
+                                            borderRadius: '9999px',
                                             fontSize: '0.875rem',
-                                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                            color: 'var(--primary)'
+                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                            color: '#10B981'
                                         }}>
                                             {getPaymentMethodLabel(t.payment_method)}
                                         </span>
                                     </td>
+                                    {/* BOTÓN DE BORRAR (SOLO ADMIN) */}
+                                    {userRole === 'admin' && (
+                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                            <button
+                                                className="btn"
+                                                style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}
+                                                onClick={async () => {
+                                                    if (window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.')) {
+                                                        try {
+                                                            const { error } = await supabase.from('transactions').delete().eq('id', t.id);
+                                                            if (error) throw error;
+                                                            // Recargar datos
+                                                            fetchData();
+                                                        } catch (err) {
+                                                            alert('Error al eliminar: ' + err.message);
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                             {statsTransactions.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    <td colSpan={userRole === 'admin' ? "7" : "6"} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                         No hay ventas registradas hoy
                                     </td>
                                 </tr>
