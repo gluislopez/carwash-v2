@@ -355,7 +355,7 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {/* GAMIFICATION BAR - TEMPORARILY DISABLED FOR DEBUGGING
+            {/* GAMIFICATION BAR */}
             <ProductivityBar
                 dailyCount={dailyProductivityCount}
                 dailyTarget={dailyTarget}
@@ -363,7 +363,6 @@ const Dashboard = () => {
                 isEditable={userRole === 'admin'}
                 onEditTarget={handleEditTarget}
             />
-            */}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card">
