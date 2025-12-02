@@ -20,15 +20,15 @@ const Services = () => {
         getUserRole();
     }, []);
 
-    const [formData, setFormData] = useState({ name: '', price: '', commission_rate: 0.4 });
+    const [formData, setFormData] = useState({ name: '', price: '', commission: '' });
 
     const openModal = (service = null) => {
         if (service) {
             setEditingService(service);
-            setFormData({ name: service.name, price: service.price, commission_rate: service.commission_rate || 0.4 });
+            setFormData({ name: service.name, price: service.price, commission: service.commission || '' });
         } else {
             setEditingService(null);
-            setFormData({ name: '', price: '', commission_rate: 0.4 });
+            setFormData({ name: '', price: '', commission: '' });
         }
         setIsModalOpen(true);
     };
@@ -62,7 +62,7 @@ const Services = () => {
                                 <tr key={service.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>{service.name}</td>
                                     <td style={{ padding: '1rem' }}>${service.price}</td>
-                                    <td style={{ padding: '1rem' }}>{(service.commission_rate * 100).toFixed(0)}%</td>
+                                    <td style={{ padding: '1rem' }}>${service.commission}</td>
                                     {userRole === 'admin' && (<td style={{ padding: '1rem', textAlign: 'right' }}><button onClick={() => openModal(service)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginRight: '1rem' }}><Edit size={18} /></button><button onClick={() => handleDelete(service.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}><Trash2 size={18} /></button></td>)}
                                 </tr>
                             ))}
@@ -80,7 +80,7 @@ const Services = () => {
                             <div style={{ marginBottom: '1rem' }}><label className="label">Nombre del Servicio</label><input type="text" className="input" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                                 <div><label className="label">Precio ($)</label><input type="number" className="input" required value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} /></div>
-                                <div><label className="label">Comisión (0.1 - 1.0)</label><input type="number" step="0.1" max="1" className="input" value={formData.commission_rate} onChange={(e) => setFormData({ ...formData, commission_rate: e.target.value })} /></div>
+                                <div><label className="label">Comisión Fija ($)</label><input type="number" step="0.01" className="input" required value={formData.commission} onChange={(e) => setFormData({ ...formData, commission: e.target.value })} /></div>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}><button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>Cancelar</button><button type="submit" className="btn btn-primary">{editingService ? 'Actualizar' : 'Guardar'}</button></div>
                         </form>

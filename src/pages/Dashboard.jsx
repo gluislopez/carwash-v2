@@ -171,7 +171,7 @@ const Dashboard = () => {
                 ...formData,
                 serviceId,
                 price: service.price,
-                commissionAmount: service.price * service.commission_rate
+                commissionAmount: service.commission || 0 // Use fixed commission
             });
         } else {
             setFormData({ ...formData, serviceId: '', price: '', commissionAmount: '' });
