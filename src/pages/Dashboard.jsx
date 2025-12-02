@@ -399,7 +399,7 @@ const Dashboard = () => {
                 position: 'fixed',
                 bottom: '10px',
                 right: '10px',
-                backgroundColor: 'red',
+                backgroundColor: 'blue',
                 color: 'white',
                 padding: '5px 10px',
                 borderRadius: '5px',
@@ -407,7 +407,7 @@ const Dashboard = () => {
                 fontSize: '12px',
                 fontWeight: 'bold'
             }}>
-                v2.5 - BUTTON FIX
+                v2.6 - RECONNECT TEST
             </div>
 
             {/* GAMIFICATION BAR */}
