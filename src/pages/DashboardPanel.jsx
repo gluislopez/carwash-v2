@@ -111,7 +111,8 @@ const Dashboard = () => {
     const [activeDetailModal, setActiveDetailModal] = useState(null); // 'cars', 'income', 'commissions'
     const [selectedTransaction, setSelectedTransaction] = useState(null); // For detailed view of a specific transaction
     const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
-    const [isSubmitting, setIsSubmitting] = useState(false); // Prevent double clicksDefine error state
+    const [error, setError] = useState(null); // FIX: Restore error state
+    const [isSubmitting, setIsSubmitting] = useState(false); // Prevent double clicks
 
     // Transaction Form State
     const [formData, setFormData] = useState({
@@ -501,8 +502,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.63 MASTER FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
+                            v4.64 HOTFIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
