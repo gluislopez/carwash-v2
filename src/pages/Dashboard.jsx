@@ -305,6 +305,7 @@ const Dashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        alert("DEBUG: Iniciando registro..."); // DEBUG EXPLICITO
 
         const basePrice = parseFloat(formData.price) || 0;
         // En flujo pendiente, extras y propina son 0 inicialmente
@@ -411,7 +412,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'cyan', fontWeight: 'bold' }}>v3.41 FORCE CACHE KILLER {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'yellow', fontWeight: 'bold' }}>v3.42 DEBUG CLICK {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
