@@ -113,6 +113,7 @@ const Dashboard = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeDetailModal, setActiveDetailModal] = useState(null); // 'cars', 'income', 'commissions'
+    const [selectedTransaction, setSelectedTransaction] = useState(null); // For detailed view of a specific transaction
     const [error, setError] = useState(null); // FIX: Define error state
 
     // Transaction Form State
@@ -437,7 +438,7 @@ const Dashboard = () => {
         <div>
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#EC4899', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #EC4899' }}>v4.09 CONFIRM EXTRAS {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#8B5CF6', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #8B5CF6' }}>v4.10 DETAIL VIEW {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
@@ -894,7 +895,18 @@ const Dashboard = () => {
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {statsTransactions.filter(t => t.status !== 'pending').map(t => (
-                    <div key={t.id} className="card" style={{ position: 'relative' }}>
+                    <div
+                        key={t.id}
+                        className="card"
+                        style={{
+                            borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s'
+                        }}
+                        onClick={() => setSelectedTransaction(t)}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                             <div>
                                 <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
@@ -946,11 +958,14 @@ const Dashboard = () => {
                         </div>
 
                         {userRole === 'admin' && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
                                 <button
                                     className="btn"
                                     style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
-                                    onClick={() => setEditingTransactionId(t.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTransactionId(t.id);
+                                    }}
                                     title="Editar"
                                 >
                                     <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
@@ -958,7 +973,8 @@ const Dashboard = () => {
                                 <button
                                     className="btn"
                                     style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
                                             handleDeleteTransactionV2(t.id);
                                         }
@@ -977,6 +993,98 @@ const Dashboard = () => {
                     </div>
                 )}
             </div>
+
+            {/* TRANSACTION DETAIL MODAL */}
+            {selectedTransaction && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+                }} onClick={() => setSelectedTransaction(null)}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        padding: '2rem',
+                        borderRadius: '0.5rem',
+                        width: '90%',
+                        maxWidth: '500px',
+                        maxHeight: '80vh',
+                        overflowY: 'auto'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ margin: 0 }}>🧾 Detalle de Venta</h2>
+                            <button onClick={() => setSelectedTransaction(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                            <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: 0 }}>{selectedTransaction.customers?.name || 'Cliente Casual'}</h3>
+                            <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0' }}>{selectedTransaction.customers?.vehicle_plate || 'Sin Placa'}</p>
+                            <span style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '9999px',
+                                fontSize: '0.9rem'
+                            }}>
+                                {new Date(selectedTransaction.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+
+                        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                                <span>{getServiceName(selectedTransaction.service_id)}</span>
+                                <span>${(parseFloat(selectedTransaction.price) - (selectedTransaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}</span>
+                            </div>
+
+                            {/* EXTRAS LIST */}
+                            {selectedTransaction.extras && selectedTransaction.extras.length > 0 && (
+                                <div style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color)' }}>
+                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Extras:</p>
+                                    {selectedTransaction.extras.map((extra, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                            <span>+ {extra.description}</span>
+                                            <span>${extra.price.toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+
+                            {selectedTransaction.tip > 0 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
+                                    <span>Propina</span>
+                                    <span>+ ${parseFloat(selectedTransaction.tip).toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                                <span>Total Pagado</span>
+                                <span>${(parseFloat(selectedTransaction.price) + (parseFloat(selectedTransaction.tip) || 0)).toFixed(2)}</span>
+                            </div>
+                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                Método: {getPaymentMethodLabel(selectedTransaction.payment_method)}
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Realizado por:</h4>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0
+                                    ? selectedTransaction.transaction_assignments.map(a => (
+                                        <span key={a.employee_id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
+                                            {getEmployeeName(a.employee_id)}
+                                        </span>
+                                    ))
+                                    : <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>{getEmployeeName(selectedTransaction.employee_id)}</span>
+                                }
+                            </div>
+                        </div>
+
+                        <button onClick={() => setSelectedTransaction(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            )}
 
 
             {/* CHART SECTION (ADMIN ONLY) */}
