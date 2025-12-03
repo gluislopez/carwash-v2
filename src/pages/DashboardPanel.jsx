@@ -503,8 +503,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
-                            v4.53 UI CLEANUP {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.54 UI CLEANUP 2 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -1306,71 +1306,7 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* SECCIÓN DE SERVICIOS ACTIVOS (PENDIENTES) */}
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#F59E0B' }}>⏳ Servicios en Proceso</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                {statsTransactions.filter(t => t.status === 'pending').length === 0 ? (
-                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
-                        No hay servicios activos en este momento.
-                    </div>
 
-                ) : (
-                    statsTransactions
-                        .filter(t => t.status === 'pending')
-                        .sort((a, b) => {
-                            const dateA = new Date(a.date);
-                            const dateB = new Date(b.date);
-                            if (dateB - dateA !== 0) return dateB - dateA;
-                            return new Date(b.created_at) - new Date(a.created_at);
-                        })
-                        .map(t => (
-                            <div key={t.id} className="card" style={{ position: 'relative', borderLeft: '4px solid #F59E0B' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                    <div>
-                                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</span>
-                                    </div>
-                                    <span style={{
-                                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                        color: '#F59E0B',
-                                        padding: '0.25rem 0.5rem',
-                                        borderRadius: '4px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <ShoppingBag size={16} className="text-primary" />
-                                        <span style={{ fontWeight: 'bold' }}>{getServiceName(t.service_id)}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                        <User size={16} />
-                                        <span>
-                                            {t.transaction_assignments && t.transaction_assignments.length > 0
-                                                ? t.transaction_assignments.map(a => {
-                                                    const emp = employees.find(e => e.id === a.employee_id);
-                                                    return emp ? emp.name : 'Unknown';
-                                                }).join(', ')
-                                                : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => setEditingTransactionId(t.id)}
-                                    className="btn btn-primary"
-                                    style={{ width: '100%', justifyContent: 'center' }}
-                                >
-                                    Completar y Cobrar
-                                </button>
-                            </div>
-                        ))
-                )}
-            </div>
 
             {/* SECCIÓN DE HISTORIAL (PAGADOS) */}
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
