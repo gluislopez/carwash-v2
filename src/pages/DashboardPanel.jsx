@@ -438,7 +438,7 @@ const Dashboard = () => {
         <div>
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#8B5CF6', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #8B5CF6' }}>v4.10 DETAIL VIEW {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#10B981', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #10B981' }}>v4.11 EMPLOYEES NET {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
@@ -493,10 +493,10 @@ const Dashboard = () => {
 
                 <div
                     className="card"
-                    onClick={() => userRole === 'admin' && setActiveDetailModal('commissions')}
-                    style={{ cursor: userRole === 'admin' ? 'pointer' : 'default', transition: 'transform 0.2s' }}
-                    onMouseEnter={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1.02)')}
-                    onMouseLeave={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1)')}
+                    onClick={() => setActiveDetailModal('commissions')}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
                     <h3 className="label">{userRole === 'admin' ? 'Comisiones Netas (Ver Desglose)' : 'Mi Neto (Menos Almuerzos)'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -577,44 +577,87 @@ const Dashboard = () => {
 
                         {activeDetailModal === 'commissions' && (
                             <div>
-                                <ul style={{ listStyle: 'none', padding: 0 }}>
-                                    {employees.map(emp => {
-                                        // Calculate commission for this employee
-                                        const empCommission = statsTransactions.reduce((sum, t) => {
-                                            const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
-                                            const isPrimary = t.employee_id === emp.id;
+                                {userRole === 'admin' ? (
+                                    // VISTA DE ADMIN: LISTA DE EMPLEADOS
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {employees.map(emp => {
+                                            // Calculate commission for this employee
+                                            const empCommission = statsTransactions.reduce((sum, t) => {
+                                                const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                                const isPrimary = t.employee_id === emp.id;
 
-                                            if (isAssigned || isPrimary) {
+                                                if (isAssigned || isPrimary) {
+                                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                    const count = (t.transaction_assignments?.length) || 1;
+                                                    return sum + (txTotalCommission / count);
+                                                }
+                                                return sum;
+                                            }, 0);
+
+                                            // Calculate lunches
+                                            const empLunches = todaysExpenses
+                                                .filter(e => e.employee_id === emp.id)
+                                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                            const empNet = empCommission - empLunches;
+
+                                            if (empCommission === 0 && empLunches === 0) return null;
+
+                                            return (
+                                                <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                                        <span>{emp.name}</span>
+                                                        <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                        <span>Comisión: ${empCommission.toFixed(2)}</span>
+                                                        <span>Almuerzos: -${empLunches.toFixed(2)}</span>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                ) : (
+                                    // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
+                                    <div>
+                                        <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Mis Trabajos de Hoy</h4>
+                                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                                            {statsTransactions.map(t => {
+                                                // Calcular mi parte de esta transacción
                                                 const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
                                                 const count = (t.transaction_assignments?.length) || 1;
-                                                return sum + (txTotalCommission / count);
-                                            }
-                                            return sum;
-                                        }, 0);
+                                                const myShare = txTotalCommission / count;
 
-                                        // Calculate lunches
-                                        const empLunches = todaysExpenses
-                                            .filter(e => e.employee_id === emp.id)
-                                            .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+                                                return (
+                                                    <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</div>
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
+                                                            {count > 1 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Compartido entre {count})</div>}
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
 
-                                        const empNet = empCommission - empLunches;
-
-                                        if (empCommission === 0 && empLunches === 0) return null;
-
-                                        return (
-                                            <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                                                    <span>{emp.name}</span>
-                                                    <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
+                                        {totalLunches > 0 && (
+                                            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', fontWeight: 'bold' }}>
+                                                    <span>Descuento Almuerzos</span>
+                                                    <span>-${totalLunches.toFixed(2)}</span>
                                                 </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                    <span>Comisión: ${empCommission.toFixed(2)}</span>
-                                                    <span>Almuerzos: -${empLunches.toFixed(2)}</span>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
+                                            </div>
+                                        )}
+
+                                        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '2px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
+                                            <span>Total Neto</span>
+                                            <span style={{ color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
