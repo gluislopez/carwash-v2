@@ -443,8 +443,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
-                            v4.22 BUILD FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
+                            v4.23 ICONS TEXT FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -787,10 +787,11 @@ const Dashboard = () => {
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         backgroundColor: showCustomerSearch ? 'var(--primary)' : 'var(--bg-secondary)',
-                                                        color: 'white'
+                                                        color: 'white',
+                                                        fontSize: '1.5rem'
                                                     }}
                                                 >
-                                                    <Search size={20} style={{ color: showCustomerSearch ? 'white' : 'var(--text-primary)' }} />
+                                                    🔍
                                                 </button>
 
                                                 {/* ADD CUSTOMER BUTTON */}
@@ -805,10 +806,12 @@ const Dashboard = () => {
                                                         padding: 0,
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        justifyContent: 'center'
+                                                        justifyContent: 'center',
+                                                        fontSize: '2rem',
+                                                        lineHeight: '1'
                                                     }}
                                                 >
-                                                    <Plus size={24} style={{ color: 'white' }} strokeWidth={3} />
+                                                    +
                                                 </button>
                                             </div>
                                         </div>
