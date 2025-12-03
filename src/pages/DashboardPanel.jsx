@@ -275,13 +275,13 @@ const Dashboard = () => {
     const statsTransactions = userRole === 'admin' ? filteredTransactions : myTransactions;
 
     const totalIncome = filteredTransactions
-        .filter(t => t.status === 'completed')
+        .filter(t => t.status === 'completed' || t.status === 'paid')
         .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0);
 
     // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
     const totalCommissions = statsTransactions.reduce((sum, t) => {
-        // SOLO contar comisiones si el servicio está COMPLETADO
-        if (t.status !== 'completed') return sum;
+        // SOLO contar comisiones si el servicio está COMPLETADO o PAGADO
+        if (t.status !== 'completed' && t.status !== 'paid') return sum;
 
         // Calcular el monto total de comisión + propina de la transacción
         const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
@@ -303,6 +303,168 @@ const Dashboard = () => {
             return sum + splitCommission;
         }
     }, 0);
+
+    // ... (lines 291-561 unchanged)
+
+    <div
+        className="card"
+        onClick={() => userRole === 'admin' && setActiveDetailModal('cars')}
+        style={{ cursor: userRole === 'admin' ? 'pointer' : 'default', transition: 'transform 0.2s' }}
+        onMouseEnter={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1.02)')}
+        onMouseLeave={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1)')}
+    >
+        <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy (Ver Detalles)' : 'Mis Autos Lavados'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <Car size={32} className="text-primary" />
+            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length}
+            </p>
+        </div>
+    </div>
+
+    // ... (lines 566-787)
+
+    {/* CONTENT BASED ON TYPE */ }
+    {
+        activeDetailModal === 'cars' && (
+            <div>
+                {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length === 0 ? <p>No hay autos lavados hoy.</p> : (
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                        {[...statsTransactions]
+                            .filter(t => t.status === 'completed' || t.status === 'paid')
+                            .sort((a, b) => {
+                                const dateA = new Date(a.date);
+                                const dateB = new Date(b.date);
+                                if (dateB - dateA !== 0) return dateB - dateA;
+                                return new Date(b.created_at) - new Date(a.created_at);
+                            })
+                            .map(t => (
+                                <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold' }}>
+                                            {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                            <span style={{ margin: '0 0.5rem' }}>-</span>
+                                            {t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})
+                                        </div>
+                                        {t.finished_at && (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                Esperó: {Math.round((new Date(t.finished_at) - new Date(t.created_at)) / 60000)} min
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                </li>
+                            ))}
+                    </ul>
+                )}
+            </div>
+        )
+    }
+
+    // ... (lines 819-870)
+
+    {
+        activeDetailModal === 'income' && (
+            <div>
+                <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span>Efectivo:</span>
+                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span>Tarjeta:</span>
+                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Ath Móvil:</span>
+                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0).toFixed(2)}</span>
+                    </div>
+                    <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
+                        <span>Total:</span>
+                        <span>${totalIncome.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    {
+        activeDetailModal === 'commissions' && (
+            <div>
+                {userRole === 'admin' ? (
+                    // VISTA DE ADMIN: LISTA DE EMPLEADOS
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                        {employees.map(emp => {
+                            // Calculate commission for this employee
+                            const empCommission = statsTransactions.reduce((sum, t) => {
+                                // SOLO contar si está completado o pagado
+                                if (t.status !== 'completed' && t.status !== 'paid') return sum;
+
+                                const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                const isPrimary = t.employee_id === emp.id;
+
+                                if (isAssigned || isPrimary) {
+                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                    const count = (t.transaction_assignments?.length) || 1;
+                                    return sum + (txTotalCommission / count);
+                                }
+                                return sum;
+                            }, 0);
+
+                            // Calculate lunches
+                            const empLunches = filteredExpenses
+                                .filter(e => e.employee_id === emp.id)
+                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                            const empNet = empCommission - empLunches;
+
+                            if (empCommission === 0 && empLunches === 0) return null;
+
+                            return (
+                                <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                        <span>{emp.name}</span>
+                                        <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        <span>Comisión: ${empCommission.toFixed(2)}</span>
+                                        <span>Almuerzos: -${empLunches.toFixed(2)}</span>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                ) : (
+                    // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
+                    <div>
+                        <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Mis Trabajos de Hoy</h4>
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {statsTransactions
+                                .filter(t => t.status === 'completed' || t.status === 'paid') // SOLO completados
+                                .map(t => (
+                                    <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 'bold' }}>
+                                                {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                <span style={{ margin: '0 0.5rem' }}>-</span>
+                                                {t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})
+                                            </div>
+                                            {t.finished_at && (
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                    Esperó: {Math.round((new Date(t.finished_at) - new Date(t.created_at)) / 60000)} min
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                    </li>
+                                ))}
+                        </ul>
+                    </div>
+                )}
+            </div>
+        )
+    }
 
     // Calcular Almuerzos (Deducciones)
     const totalLunches = filteredExpenses.reduce((sum, e) => {
@@ -575,7 +737,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                            {statsTransactions.filter(t => t.status === 'completed').length}
+                            {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length}
                         </p>
                     </div>
                 </div>
@@ -775,9 +937,10 @@ const Dashboard = () => {
                         {/* CONTENT BASED ON TYPE */}
                         {activeDetailModal === 'cars' && (
                             <div>
-                                {statsTransactions.length === 0 ? <p>No hay autos hoy.</p> : (
+                                {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length === 0 ? <p>No hay autos lavados hoy.</p> : (
                                     <ul style={{ listStyle: 'none', padding: 0 }}>
                                         {[...statsTransactions]
+                                            .filter(t => t.status === 'completed' || t.status === 'paid')
                                             .sort((a, b) => {
                                                 const dateA = new Date(a.date);
                                                 const dateB = new Date(b.date);
