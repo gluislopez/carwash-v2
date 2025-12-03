@@ -443,8 +443,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366F1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366F1' }}>
-                            v4.20 SEARCH FEATURE {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
+                            v4.21 SEARCH + ICONS {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -792,7 +792,7 @@ const Dashboard = () => {
                                                             color: 'white'
                                                         }}
                                                     >
-                                                        <Search size={20} />
+                                                        <Search size={20} style={{ color: showCustomerSearch ? 'white' : 'var(--text-primary)' }} />
                                                     </button>
 
                                                     {/* ADD CUSTOMER BUTTON */}
@@ -810,7 +810,7 @@ const Dashboard = () => {
                                                             justifyContent: 'center'
                                                         }}
                                                     >
-                                                        <Plus size={24} color="white" strokeWidth={3} />
+                                                        <Plus size={24} style={{ color: 'white' }} strokeWidth={3} />
                                                     </button>
                                                 </div>
                                             </div>
