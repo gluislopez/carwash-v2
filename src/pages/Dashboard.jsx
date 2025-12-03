@@ -412,7 +412,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.43 MANUAL SUBMIT {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: 'green', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.51 BACK TO BASICS {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -668,56 +668,67 @@ const Dashboard = () => {
                 )
             }
 
+            {/* ERROR ALERT */}
+            {error && (
+                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', border: '1px solid #EF4444' }}>
+                    <strong>Error:</strong> {error}
+                    <button onClick={() => setError(null)} style={{ float: 'right', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}>✕</button>
+                </div>
+            )}
+
             {/* SECCIÓN DE SERVICIOS ACTIVOS (PENDIENTES) */}
-            <div style={{ marginBottom: '3rem' }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#F59E0B' }}>🚗 Servicios en Proceso</h2>
-                <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Hora</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Cliente</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Servicio</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Empleado</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-muted)' }}>Acción</th>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#F59E0B' }}>⏳ Servicios en Proceso</h2>
+            <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflowX: 'auto', marginBottom: '3rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                            <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Hora</th>
+                            <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Cliente</th>
+                            <th style={{ padding: '1rem' }}>Servicio</th>
+                            <th style={{ padding: '1rem' }}>Empleado</th>
+                            <th style={{ padding: '1rem' }}>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {statsTransactions.filter(t => t.status === 'pending').length === 0 ? (
+                            <tr>
+                                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No hay servicios activos en este momento.
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {statsTransactions.filter(t => t.status === 'pending').length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        No hay servicios en proceso.
+                        ) : (
+                            statsTransactions.filter(t => t.status === 'pending').map(t => (
+                                <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                    <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {getServiceName(t.service_id)}
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {t.transaction_assignments && t.transaction_assignments.length > 0
+                                            ? t.transaction_assignments.map(a => {
+                                                const emp = employees.find(e => e.id === a.employee_id);
+                                                return emp ? emp.name : 'Unknown';
+                                            }).join(', ')
+                                            : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <button
+                                            onClick={() => setEditingTransactionId(t.id)}
+                                            className="btn btn-primary"
+                                            style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem' }}
+                                        >
+                                            Completar y Cobrar
+                                        </button>
                                     </td>
                                 </tr>
-                            ) : (
-                                statsTransactions.filter(t => t.status === 'pending').map(t => (
-                                    <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</td>
-                                        <td style={{ padding: '1rem' }}>{getServiceName(t.service_id)}</td>
-                                        <td style={{ padding: '1rem' }}>
-                                            {t.transaction_assignments && t.transaction_assignments.length > 0
-                                                ? t.transaction_assignments.map(a => {
-                                                    const emp = employees.find(e => e.id === a.employee_id);
-                                                    return emp ? emp.name : 'Unknown';
-                                                }).join(', ')
-                                                : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <button
-                                                onClick={() => setEditingTransactionId(t.id)}
-                                                className="btn btn-primary"
-                                                style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem' }}
-                                            >
-                                                Completar y Cobrar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                            ))
+                        )}
+                    </tbody>
+                </table>
             </div>
 
             {/* SECCIÓN DE HISTORIAL (PAGADOS) */}
@@ -741,9 +752,6 @@ const Dashboard = () => {
                         {statsTransactions.filter(t => t.status !== 'pending').map(t => (
                             <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                 <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
-                                <td style={{ padding: '1rem' }}>
-                                    <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                </td>
                                 <td style={{ padding: '1rem' }}>
                                     <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
                                 </td>
@@ -796,18 +804,14 @@ const Dashboard = () => {
                                             onClick={() => setEditingTransactionId(t.id)}
                                             title="Editar"
                                         >
-                                            <Edit2 size={18} />
+                                            ✏️
                                         </button>
                                         <button
                                             className="btn"
-                                            style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}
-                                            onClick={async () => {
-                                                if (window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.')) {
-                                                    try {
-                                                        await removeTransaction(t.id);
-                                                    } catch (err) {
-                                                        alert('Error al eliminar: ' + err.message);
-                                                    }
+                                            style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                            onClick={() => {
+                                                if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                                    handleDeleteTransaction(t.id);
                                                 }
                                             }}
                                             title="Eliminar"
@@ -851,14 +855,13 @@ const Dashboard = () => {
                         <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
                     </div>
                     <div>
-                        <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
-                        <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
-                        <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
-                        <p><strong>Fecha Hoy (App):</strong> {today}</p>
-                        <p><strong>Ej. Fecha Venta:</strong> {transactions[0] ? getPRDateString(transactions[0].date) : 'N/A'}</p>
+                        <p><strong>Sucursal:</strong> {branchId || 'Cargando...'}</p>
+                        <p><strong>Transacciones Hoy:</strong> {statsTransactions.length}</p>
+                        <p><strong>Total Ventas:</strong> ${statsTotalSales.toFixed(2)}</p>
+                        <p><strong>Total Comisiones:</strong> ${statsTotalCommissions.toFixed(2)}</p>
                     </div>
                 </div>
-                <p style={{ marginTop: '0.5rem' }}>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
                     <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
                 </p>
             </div>
