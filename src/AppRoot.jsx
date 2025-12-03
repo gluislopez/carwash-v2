@@ -140,7 +140,7 @@ const AppRoot = () => {
                                     <Route path="/customers" element={<Customers />} />
                                     <Route path="/reports" element={<Reports />} />
                                     <Route path="/expenses" element={<Expenses />} />
-                                    <Route path="/gamification" element={<GamificationSettings />} />
+                                    <Route path="/gamification-settings" element={<GamificationSettings />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                             </Layout>
