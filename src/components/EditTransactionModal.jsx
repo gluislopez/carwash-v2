@@ -157,14 +157,25 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                         <div>
-                            <label className="label">Precio Total (Auto)</label>
+                            <label className="label">Precio Total</label>
                             <input
                                 type="number"
                                 className="input"
                                 value={formData.price}
                                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="label">Comisión (Fija)</label>
+                            <input
+                                type="number"
+                                className="input"
+                                style={{ backgroundColor: 'var(--bg-secondary)', opacity: 0.7 }}
+                                value={formData.commissionAmount}
+                                readOnly
+                                title="La comisión no cambia con los extras"
                             />
                         </div>
                         <div>
