@@ -4,8 +4,8 @@ import App from './AppRoot.jsx'
 import './css/global.css' // Import global styles
 import { BrowserRouter } from 'react-router-dom'
 
-console.log('🚀 APP RELOADED v3.82 RESTORED ' + new Date().toISOString());
-alert('SYSTEM CHECK: JS IS RUNNING (v3.82)');
+console.log('🚀 APP RELOADED v3.83 RECONNECT ' + new Date().toISOString());
+alert('SYSTEM CHECK: PIPELINE RESTORED (v3.83)');
 
 ReactDOM.createRoot(document.getElementById('app')).render(
     <React.StrictMode>
