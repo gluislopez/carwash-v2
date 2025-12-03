@@ -77,7 +77,7 @@ const RequireAuth = ({ children }) => {
     return children;
 };
 
-const App = () => {
+const AppRoot = () => {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
@@ -106,4 +106,4 @@ const App = () => {
     );
 };
 
-export default App;
+export default AppRoot;
