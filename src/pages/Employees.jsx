@@ -127,7 +127,16 @@ const Employees = () => {
             // Check if transaction belongs to employee
             const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
             const isPrimary = t.employee_id === selectedEmployee.id; // Legacy support
-            return (isAssigned || isPrimary) && tDate >= filterDate;
+
+            if (!(isAssigned || isPrimary)) return false;
+
+            if (performanceFilter === 'today') {
+                // String comparison for Today to avoid timezone headaches
+                const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+                return t.date === todayStr;
+            }
+
+            return tDate >= filterDate;
         });
 
         const filteredExps = expenses.filter(e => {
@@ -190,10 +199,21 @@ const Employees = () => {
                     <div
                         key={employee.id}
                         className="card"
-                        style={{ position: 'relative', cursor: 'pointer', transition: 'transform 0.2s' }}
-                        onClick={() => setSelectedEmployee(employee)}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        style={{
+                            position: 'relative',
+                            cursor: userRole === 'admin' ? 'pointer' : 'default',
+                            transition: 'transform 0.2s',
+                            opacity: userRole === 'admin' ? 1 : 0.9
+                        }}
+                        onClick={() => {
+                            if (userRole === 'admin') setSelectedEmployee(employee);
+                        }}
+                        onMouseEnter={(e) => {
+                            if (userRole === 'admin') e.currentTarget.style.transform = 'scale(1.02)';
+                        }}
+                        onMouseLeave={(e) => {
+                            if (userRole === 'admin') e.currentTarget.style.transform = 'scale(1)';
+                        }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{
