@@ -752,7 +752,6 @@ const Dashboard = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>
                                 {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
-                                {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
                                 {activeDetailModal === 'waiting_list' && '⏳ Cola de Espera'}
                                 {activeDetailModal === 'in_progress_list' && '🚿 Autos en Proceso'}
                                 {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
