@@ -459,8 +459,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
-                            v4.31 COMMISSIONS MODAL FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
+                            v4.32 INCOME MODAL FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -656,15 +656,15 @@ const Dashboard = () => {
                                 <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                         <span>Efectivo:</span>
-                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                         <span>Tarjeta:</span>
-                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>Ath Móvil:</span>
-                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
                                     </div>
                                     <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
