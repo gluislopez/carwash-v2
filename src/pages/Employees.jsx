@@ -37,7 +37,7 @@ const Employees = () => {
                     transaction_assignments (employee_id),
                     customers (name, vehicle_plate)
                 `)
-                .eq('status', 'completed')
+                // .eq('status', 'completed') // Removed to debug status issues
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -337,13 +337,16 @@ const Employees = () => {
                                         Filter: {performanceFilter}<br />
                                         Total Fetched: {transactions.length}<br />
                                         Fetch Error: {fetchError || 'None'}<br />
+                                        <strong>Status Counts:</strong><br />
+                                        {Object.entries(transactions.reduce((acc, t) => ({ ...acc, [t.status]: (acc[t.status] || 0) + 1 }), {})).map(([k, v]) => (
+                                            <span key={k}>{k}: {v} | </span>
+                                        ))}<br />
                                         Employee ID: {selectedEmployee.id}<br />
                                         Sample Tx (Last 3):
                                         {transactions.slice(0, 3).map(t => (
                                             <div key={t.id} style={{ marginTop: '0.5rem', borderTop: '1px solid #444', paddingTop: '0.2rem' }}>
                                                 ID: {t.id.slice(0, 8)}...<br />
                                                 Date: {t.date} / {t.created_at}<br />
-                                                Status: {t.status}<br />
                                                 Assigned: {JSON.stringify(t.transaction_assignments)}<br />
                                                 Primary: {t.employee_id}
                                             </div>
@@ -361,7 +364,7 @@ const Employees = () => {
                                                 </div>
                                                 {/* Debug Line */}
                                                 <div style={{ fontSize: '0.7rem', color: '#555' }}>
-                                                    Comm: ${t.commission_amount} | Tip: ${t.tip}
+                                                    Comm: ${t.commission_amount} | Tip: ${t.tip} | Status: {t.status}
                                                 </div>
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
