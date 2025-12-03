@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, ShoppingBag, User, Search } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, ShoppingBag, User, Search, Clock } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -452,8 +452,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#059669', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #059669' }}>
-                            v4.27 COMPLETED ONLY {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
+                            v4.28 CAR COUNTS {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -528,7 +528,24 @@ const Dashboard = () => {
                     <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy (Ver Detalles)' : 'Mis Autos Lavados'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{statsTransactions.length}</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                            {statsTransactions.filter(t => t.status === 'completed').length}
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    className="card"
+                    style={{ transition: 'transform 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    <h3 className="label">Autos en Proceso</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <Clock size={32} style={{ color: 'var(--warning)' }} />
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+                            {statsTransactions.filter(t => t.status === 'pending').length}
+                        </p>
                     </div>
                 </div>
 
