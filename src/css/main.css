@@ -38,8 +38,7 @@
 
 body {
     font-family: 'Outfit', sans-serif;
-    background-color: #581c87 !important;
-    /* PURPLE DEBUG */
+    background-color: var(--bg-dark);
     color: var(--text-main);
     min-height: 100vh;
     overflow-x: hidden;
