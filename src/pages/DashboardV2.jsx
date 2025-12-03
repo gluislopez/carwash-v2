@@ -412,7 +412,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: '#10B981', fontWeight: 'bold' }}>v3.46 RECONNECT SUCCESS {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: '#8B5CF6', fontWeight: 'bold' }}>v3.47 DEPENDENCY RESET {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
