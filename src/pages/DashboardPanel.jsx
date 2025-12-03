@@ -105,7 +105,7 @@ const Dashboard = () => {
     const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
     const customers = customersData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate), transaction_assignments(employee_id)`, { orderBy: { column: 'created_at', ascending: false } });
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
     const { data: expensesData } = useSupabase('expenses');
@@ -441,8 +441,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
-                            v4.14 SORT FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
+                            v4.15 SORT BY DATE {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -585,7 +585,7 @@ const Dashboard = () => {
                             <div>
                                 {statsTransactions.length === 0 ? <p>No hay autos hoy.</p> : (
                                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                                        {statsTransactions.map(t => (
+                                        {[...statsTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => (
                                             <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
                                                 <span>{t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})</span>
                                                 <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
