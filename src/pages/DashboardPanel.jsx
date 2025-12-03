@@ -459,8 +459,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.33 PENDING LIST {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
+                            v4.34 PENDING LIST FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -646,6 +646,33 @@ const Dashboard = () => {
                                                         )}
                                                     </div>
                                                     <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                </li>
+                                            ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+
+                        {activeDetailModal === 'pending' && (
+                            <div>
+                                {statsTransactions.filter(t => t.status === 'pending').length === 0 ? <p>No hay autos en proceso.</p> : (
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {statsTransactions
+                                            .filter(t => t.status === 'pending')
+                                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                            .map(t => (
+                                                <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 'bold' }}>
+                                                            {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                            <span style={{ margin: '0 0.5rem' }}>-</span>
+                                                            {t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})
+                                                        </div>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                            {employees.find(e => e.id === t.employee_id)?.name || 'Asignado'}
+                                                        </div>
+                                                    </div>
+                                                    <span style={{ color: 'var(--warning)' }}>{getServiceName(t.service_id)}</span>
                                                 </li>
                                             ))}
                                     </ul>
