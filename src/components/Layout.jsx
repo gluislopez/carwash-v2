@@ -44,7 +44,7 @@ const Layout = ({ children }) => {
         { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
         { path: '/services', label: 'Servicios', icon: <ShoppingBag size={20} /> },
         { path: '/customers', label: 'Clientes', icon: <Users size={20} /> },
-        { path: '/employees', label: 'Empleados', icon: <Users size={20} /> },
+
 
         { path: '/commissions', label: 'Comisiones', icon: <DollarSign size={20} /> },
         { path: '/reports', label: 'Reportes', icon: <FileText size={20} /> },
@@ -52,6 +52,7 @@ const Layout = ({ children }) => {
 
     // Only add Expenses if Admin
     if (userRole === 'admin') {
+        navItems.push({ path: '/employees', label: 'Empleados', icon: <Users size={20} /> });
         navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
         navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
     }
