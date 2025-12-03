@@ -441,8 +441,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
-                            v4.16 VISIBLE TIME {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.17 BUILD FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -941,66 +941,66 @@ const Dashboard = () => {
                     <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
                         No hay servicios activos en este momento.
                     </div>
-                    </div>
-            ) : (
-            statsTransactions
+
+                ) : (
+                    statsTransactions
                         .filter(t => t.status === 'pending')
                         .sort((a, b) => {
                             const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            if (dateB - dateA !== 0) return dateB - dateA;
-            return new Date(b.created_at) - new Date(a.created_at);
+                            const dateB = new Date(b.date);
+                            if (dateB - dateA !== 0) return dateB - dateA;
+                            return new Date(b.created_at) - new Date(a.created_at);
                         })
                         .map(t => (
-            <div key={t.id} className="card" style={{ position: 'relative', borderLeft: '4px solid #F59E0B' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                    <div>
-                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</span>
-                    </div>
-                    <span style={{
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        color: '#F59E0B',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.8rem',
-                        fontWeight: 'bold'
-                    }}>
-                        {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                </div>
+                            <div key={t.id} className="card" style={{ position: 'relative', borderLeft: '4px solid #F59E0B' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                    <div>
+                                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</span>
+                                    </div>
+                                    <span style={{
+                                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                        color: '#F59E0B',
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '4px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <ShoppingBag size={16} className="text-primary" />
-                        <span style={{ fontWeight: 'bold' }}>{getServiceName(t.service_id)}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        <User size={16} />
-                        <span>
-                            {t.transaction_assignments && t.transaction_assignments.length > 0
-                                ? t.transaction_assignments.map(a => {
-                                    const emp = employees.find(e => e.id === a.employee_id);
-                                    return emp ? emp.name : 'Unknown';
-                                }).join(', ')
-                                : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
-                        </span>
-                    </div>
-                </div>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <ShoppingBag size={16} className="text-primary" />
+                                        <span style={{ fontWeight: 'bold' }}>{getServiceName(t.service_id)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                        <User size={16} />
+                                        <span>
+                                            {t.transaction_assignments && t.transaction_assignments.length > 0
+                                                ? t.transaction_assignments.map(a => {
+                                                    const emp = employees.find(e => e.id === a.employee_id);
+                                                    return emp ? emp.name : 'Unknown';
+                                                }).join(', ')
+                                                : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
+                                        </span>
+                                    </div>
+                                </div>
 
-                <button
-                    onClick={() => setEditingTransactionId(t.id)}
-                    className="btn btn-primary"
-                    style={{ width: '100%', justifyContent: 'center' }}
-                >
-                    Completar y Cobrar
-                </button>
-            </div>
-            ))
+                                <button
+                                    onClick={() => setEditingTransactionId(t.id)}
+                                    className="btn btn-primary"
+                                    style={{ width: '100%', justifyContent: 'center' }}
+                                >
+                                    Completar y Cobrar
+                                </button>
+                            </div>
+                        ))
                 )}
-        </div>
+            </div>
 
-            {/* SECCIÓN DE HISTORIAL (PAGADOS) */ }
+            {/* SECCIÓN DE HISTORIAL (PAGADOS) */}
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {statsTransactions
@@ -1111,132 +1111,132 @@ const Dashboard = () => {
                 )}
             </div>
 
-    {/* TRANSACTION DETAIL MODAL */ }
-    {
-        selectedTransaction && (
-            <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.8)',
-                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
-            }} onClick={() => setSelectedTransaction(null)}>
-                <div style={{
-                    backgroundColor: 'var(--bg-card)',
-                    padding: '2rem',
-                    borderRadius: '0.5rem',
-                    width: '90%',
-                    maxWidth: '500px',
-                    maxHeight: '80vh',
-                    overflowY: 'auto'
-                }} onClick={e => e.stopPropagation()}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h2 style={{ margin: 0 }}>🧾 Detalle de Venta</h2>
-                        <button onClick={() => setSelectedTransaction(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
-                    </div>
+            {/* TRANSACTION DETAIL MODAL */}
+            {
+                selectedTransaction && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+                    }} onClick={() => setSelectedTransaction(null)}>
+                        <div style={{
+                            backgroundColor: 'var(--bg-card)',
+                            padding: '2rem',
+                            borderRadius: '0.5rem',
+                            width: '90%',
+                            maxWidth: '500px',
+                            maxHeight: '80vh',
+                            overflowY: 'auto'
+                        }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ margin: 0 }}>🧾 Detalle de Venta</h2>
+                                <button onClick={() => setSelectedTransaction(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
+                            </div>
 
-                    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-                        <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: 0 }}>{selectedTransaction.customers?.name || 'Cliente Casual'}</h3>
-                        <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0' }}>{selectedTransaction.customers?.vehicle_plate || 'Sin Placa'}</p>
-                        <span style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.9rem'
-                        }}>
-                            {new Date(selectedTransaction.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                    </div>
+                            <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                                <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: 0 }}>{selectedTransaction.customers?.name || 'Cliente Casual'}</h3>
+                                <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0' }}>{selectedTransaction.customers?.vehicle_plate || 'Sin Placa'}</p>
+                                <span style={{
+                                    backgroundColor: 'var(--bg-secondary)',
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '9999px',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    {new Date(selectedTransaction.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
 
-                    <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                            <span>{getServiceName(selectedTransaction.service_id)}</span>
-                            <span>${(parseFloat(selectedTransaction.price) - (selectedTransaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}</span>
-                        </div>
+                            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                                    <span>{getServiceName(selectedTransaction.service_id)}</span>
+                                    <span>${(parseFloat(selectedTransaction.price) - (selectedTransaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}</span>
+                                </div>
 
-                        {/* EXTRAS LIST */}
-                        {selectedTransaction.extras && selectedTransaction.extras.length > 0 && (
-                            <div style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color)' }}>
-                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Extras:</p>
-                                {selectedTransaction.extras.map((extra, idx) => (
-                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                                        <span>+ {extra.description}</span>
-                                        <span>${extra.price.toFixed(2)}</span>
+                                {/* EXTRAS LIST */}
+                                {selectedTransaction.extras && selectedTransaction.extras.length > 0 && (
+                                    <div style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color)' }}>
+                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Extras:</p>
+                                        {selectedTransaction.extras.map((extra, idx) => (
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                                <span>+ {extra.description}</span>
+                                                <span>${extra.price.toFixed(2)}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
+
+                                <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+
+                                {selectedTransaction.tip > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
+                                        <span>Propina</span>
+                                        <span>+ ${parseFloat(selectedTransaction.tip).toFixed(2)}</span>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                                    <span>Total Pagado</span>
+                                    <span>${(parseFloat(selectedTransaction.price) + (parseFloat(selectedTransaction.tip) || 0)).toFixed(2)}</span>
+                                </div>
+                                <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                    Método: {getPaymentMethodLabel(selectedTransaction.payment_method)}
+                                </div>
                             </div>
-                        )}
 
-                        <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-
-                        {selectedTransaction.tip > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
-                                <span>Propina</span>
-                                <span>+ ${parseFloat(selectedTransaction.tip).toFixed(2)}</span>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Realizado por:</h4>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0
+                                        ? selectedTransaction.transaction_assignments.map(a => (
+                                            <span key={a.employee_id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
+                                                {getEmployeeName(a.employee_id)}
+                                            </span>
+                                        ))
+                                        : <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>{getEmployeeName(selectedTransaction.employee_id)}</span>
+                                    }
+                                </div>
                             </div>
-                        )}
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
-                            <span>Total Pagado</span>
-                            <span>${(parseFloat(selectedTransaction.price) + (parseFloat(selectedTransaction.tip) || 0)).toFixed(2)}</span>
-                        </div>
-                        <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                            Método: {getPaymentMethodLabel(selectedTransaction.payment_method)}
+                            <button onClick={() => setSelectedTransaction(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                                Cerrar
+                            </button>
                         </div>
                     </div>
+                )
+            }
 
-                    <div style={{ marginBottom: '1rem' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Realizado por:</h4>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                            {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0
-                                ? selectedTransaction.transaction_assignments.map(a => (
-                                    <span key={a.employee_id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
-                                        {getEmployeeName(a.employee_id)}
-                                    </span>
-                                ))
-                                : <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>{getEmployeeName(selectedTransaction.employee_id)}</span>
-                            }
-                        </div>
+
+            {/* CHART SECTION (ADMIN ONLY) */}
+            {
+                userRole === 'admin' && (
+                    <ServiceAnalyticsChart transactions={transactions} />
+                )
+            }
+
+
+
+            {/* DEBUG PANEL */}
+            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                        <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
+                        <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
+                        <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
+                        <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
+                        <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
                     </div>
-
-                    <button onClick={() => setSelectedTransaction(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-                        Cerrar
-                    </button>
+                    <div>
+                        {/* <p><strong>Sucursal:</strong> {branchId || 'Cargando...'}</p> REMOVED CAUSE CRASH */}
+                        <p><strong>Transacciones Hoy:</strong> {statsTransactions.length}</p>
+                        <p><strong>Total Ventas:</strong> ${totalIncome.toFixed(2)}</p>
+                        <p><strong>Total Comisiones:</strong> ${totalCommissions.toFixed(2)}</p>
+                    </div>
                 </div>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
+                    <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
+                </p>
             </div>
-        )
-    }
-
-
-    {/* CHART SECTION (ADMIN ONLY) */ }
-    {
-        userRole === 'admin' && (
-            <ServiceAnalyticsChart transactions={transactions} />
-        )
-    }
-
-
-
-    {/* DEBUG PANEL */ }
-    <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-        <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-                <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
-                <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
-                <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
-                <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
-                <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
-            </div>
-            <div>
-                {/* <p><strong>Sucursal:</strong> {branchId || 'Cargando...'}</p> REMOVED CAUSE CRASH */}
-                <p><strong>Transacciones Hoy:</strong> {statsTransactions.length}</p>
-                <p><strong>Total Ventas:</strong> ${totalIncome.toFixed(2)}</p>
-                <p><strong>Total Comisiones:</strong> ${totalCommissions.toFixed(2)}</p>
-            </div>
-        </div>
-        <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
-            <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
-        </p>
-    </div>
         </div >
     );
 };
