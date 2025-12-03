@@ -96,17 +96,25 @@ const Dashboard = () => {
         getUser();
     }, []);
 
-    const { data: services } = useSupabase('services');
-    const { data: employees } = useSupabase('employees');
-    const { data: customers, refresh: refreshCustomers } = useSupabase('customers');
-    const { data: transactions, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `
+    const { data: servicesData } = useSupabase('services');
+    const services = servicesData || [];
+
+    const { data: employeesData } = useSupabase('employees');
+    const employees = employeesData || [];
+
+    const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
+    const customers = customersData || [];
+
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `
         *,
         transaction_assignments (
             employee_id
         )
     `);
+    const transactions = transactionsData || [];
 
-    const { data: expenses } = useSupabase('expenses');
+    const { data: expensesData } = useSupabase('expenses');
+    const expenses = expensesData || [];
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -412,8 +420,11 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#F59E0B', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.76 ALIVE CHECK {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#059669', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.77 DATA SAFETY {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
+                    <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
+                        DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
+                    </div>
                 </div>
 
                 {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
