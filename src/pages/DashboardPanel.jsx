@@ -459,8 +459,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.32 INCOME MODAL FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.33 PENDING LIST {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -543,7 +543,8 @@ const Dashboard = () => {
 
                 <div
                     className="card"
-                    style={{ transition: 'transform 0.2s' }}
+                    onClick={() => setActiveDetailModal('pending')}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
@@ -611,6 +612,7 @@ const Dashboard = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>
                                 {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
+                                {activeDetailModal === 'pending' && '⏳ Autos en Proceso'}
                                 {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
                                 {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
                             </h2>
