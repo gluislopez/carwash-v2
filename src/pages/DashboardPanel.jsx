@@ -503,8 +503,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
-                            v4.52 DEBUG DATA {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
+                            v4.53 UI CLEANUP {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -585,21 +585,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div
-                    className="card"
-                    onClick={() => setActiveDetailModal('pending')}
-                    style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                    <h3 className="label">Autos en Proceso</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Clock size={32} style={{ color: 'var(--warning)' }} />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
-                            {statsTransactions.filter(t => t.status === 'pending').length}
-                        </p>
-                    </div>
-                </div>
+
 
                 {/* SOLO ADMIN VE INGRESOS TOTALES */}
                 {userRole === 'admin' && (
