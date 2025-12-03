@@ -412,7 +412,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: 'red', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.52 VISUAL CHECK {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: 'blue', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.53 ROUTER CHECK {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
