@@ -164,7 +164,7 @@ const Reports = () => {
     const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
-        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0);
+        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
         const employeeCount = (t.transaction_assignments && t.transaction_assignments.length > 0)
             ? t.transaction_assignments.length
             : 1;
@@ -215,7 +215,7 @@ const Reports = () => {
             }
 
             const txIncome = parseFloat(t.total_price) || 0;
-            const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0);
+            const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
 
             groups[dateKey].count += 1;
             groups[dateKey].income += txIncome;
@@ -492,7 +492,7 @@ const Reports = () => {
                                 <th style={{ padding: '1rem' }}>Servicio</th>
                                 <th style={{ padding: '1rem' }}>Empleados</th>
                                 <th style={{ padding: '1rem' }}>Método</th>
-                                <th style={{ padding: '1rem' }}>Total</th>
+                                <th style={{ padding: '1rem' }}>{userRole === 'admin' ? 'Total Venta' : 'Mi Comisión'}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -527,7 +527,17 @@ const Reports = () => {
                                             {getPaymentMethodLabel(t.payment_method)}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price.toFixed(2)}</td>
+                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                                        {userRole === 'admin' ? (
+                                            `$${t.total_price.toFixed(2)}`
+                                        ) : (
+                                            (() => {
+                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                const count = (t.transaction_assignments?.length) || 1;
+                                                return `$${(txTotalCommission / count).toFixed(2)}`;
+                                            })()
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                             {filteredTransactions.length === 0 && (
