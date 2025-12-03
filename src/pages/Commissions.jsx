@@ -112,11 +112,8 @@ const Commissions = () => {
             if (performanceFilter === 'all') return true;
 
             // Use string comparison
-            let tDateStr = t.date;
-            // Fallback if date is missing (shouldn't happen for completed txs but good safety)
-            if (!tDateStr && t.created_at) {
-                tDateStr = getPRDateString(t.created_at);
-            }
+            // Ensure we compare YYYY-MM-DD only
+            const tDateStr = getPRDateString(t.date || t.created_at);
 
             return tDateStr >= startStr && tDateStr <= endStr;
         });
@@ -125,16 +122,7 @@ const Commissions = () => {
             if (e.employee_id !== selectedEmployee.id) return false;
             if (performanceFilter === 'all') return true;
 
-            let eDateStr = e.date; // Expenses usually have 'date' column YYYY-MM-DD
-            if (!eDateStr && e.created_at) {
-                eDateStr = getPRDateString(e.created_at);
-            }
-
-            // If e.date is ISO, getPRDateString handles it. If it's YYYY-MM-DD, it might shift if passed to new Date().
-            // Assuming e.date is YYYY-MM-DD string from DB.
-            // Safe check: if it looks like YYYY-MM-DD, use it.
-            if (e.date && e.date.length === 10) eDateStr = e.date;
-            else eDateStr = getPRDateString(e.date || e.created_at);
+            const eDateStr = getPRDateString(e.date || e.created_at);
 
             return eDateStr >= startStr && eDateStr <= endStr;
         });
