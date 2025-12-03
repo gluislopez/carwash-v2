@@ -410,7 +410,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'blue', fontWeight: 'bold' }}>v3.33 ACTIVE SECTION {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'cyan', fontWeight: 'bold' }}>v3.34 FORCE DEPLOY {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -826,40 +826,40 @@ const Dashboard = () => {
                     </tbody>
                 </table>
             </div>
-        </div >
-
-    {/* CHART SECTION (ADMIN ONLY) */ }
-    {
-        userRole === 'admin' && (
-            <ServiceAnalyticsChart transactions={transactions} />
-        )
-    }
 
 
+            {/* CHART SECTION (ADMIN ONLY) */}
+            {
+                userRole === 'admin' && (
+                    <ServiceAnalyticsChart transactions={transactions} />
+                )
+            }
 
-    {/* DEBUG PANEL */ }
-    <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-        <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-                <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
-                <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
-                <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
-                <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
-                <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
+
+
+            {/* DEBUG PANEL */}
+            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                        <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
+                        <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
+                        <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
+                        <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
+                        <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
+                    </div>
+                    <div>
+                        <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
+                        <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
+                        <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
+                        <p><strong>Fecha Hoy (App):</strong> {today}</p>
+                        <p><strong>Ej. Fecha Venta:</strong> {transactions[0] ? getPRDateString(transactions[0].date) : 'N/A'}</p>
+                    </div>
+                </div>
+                <p style={{ marginTop: '0.5rem' }}>
+                    <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
+                </p>
             </div>
-            <div>
-                <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
-                <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
-                <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
-                <p><strong>Fecha Hoy (App):</strong> {today}</p>
-                <p><strong>Ej. Fecha Venta:</strong> {transactions[0] ? getPRDateString(transactions[0].date) : 'N/A'}</p>
-            </div>
-        </div>
-        <p style={{ marginTop: '0.5rem' }}>
-            <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
-        </p>
-    </div>
         </div >
     );
 };
