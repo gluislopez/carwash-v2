@@ -89,6 +89,16 @@ const Employees = () => {
     const getFilteredData = () => {
         if (!selectedEmployee) return { filteredTxs: [], filteredExps: [] };
 
+        if (performanceFilter === 'all') {
+            const filteredTxs = transactions.filter(t => {
+                const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
+                const isPrimary = t.employee_id === selectedEmployee.id;
+                return (isAssigned || isPrimary);
+            });
+            const filteredExps = expenses.filter(e => e.employee_id === selectedEmployee.id);
+            return { filteredTxs, filteredExps };
+        }
+
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -248,7 +258,7 @@ const Employees = () => {
 
                         {/* Filters */}
                         <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
-                            {['today', 'week', 'month'].map(filter => (
+                            {['today', 'week', 'month', 'all'].map(filter => (
                                 <button
                                     key={filter}
                                     onClick={() => setPerformanceFilter(filter)}
@@ -265,6 +275,7 @@ const Employees = () => {
                                     {filter === 'today' && 'Hoy'}
                                     {filter === 'week' && 'Esta Semana'}
                                     {filter === 'month' && 'Este Mes'}
+                                    {filter === 'all' && 'Todo'}
                                 </button>
                             ))}
                         </div>
