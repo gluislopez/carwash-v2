@@ -105,7 +105,7 @@ const Dashboard = () => {
     const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
     const customers = customersData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate), transaction_assignments(employee_id)`);
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate), transaction_assignments(employee_id)`, { orderBy: { column: 'created_at', ascending: false } });
     const transactions = transactionsData || [];
 
     const { data: expensesData } = useSupabase('expenses');

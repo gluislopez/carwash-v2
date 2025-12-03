@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 
-const useSupabase = (tableName, selectQuery = '*') => {
+const useSupabase = (tableName, selectQuery = '*', options = {}) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -9,7 +9,13 @@ const useSupabase = (tableName, selectQuery = '*') => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase.from(tableName).select(selectQuery);
+            let query = supabase.from(tableName).select(selectQuery);
+
+            if (options.orderBy) {
+                query = query.order(options.orderBy.column, { ascending: options.orderBy.ascending });
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
             setData(data);
         } catch (err) {
