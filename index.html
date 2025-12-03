@@ -17,6 +17,12 @@
             /* FORCE DARK BLUE */
         }
     </style>
+    <script>
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert('🚨 GLOBAL ERROR:\n' + msg + '\nLine: ' + lineNo);
+            return false;
+        };
+    </script>
 </head>
 
 <body>
