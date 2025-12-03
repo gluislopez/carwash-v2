@@ -60,6 +60,15 @@ const Reports = () => {
         return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
     };
 
+    const getPaymentMethodLabel = (method) => {
+        switch (method) {
+            case 'cash': return 'Efectivo';
+            case 'card': return 'Tarjeta';
+            case 'transfer': return 'Ath Móvil';
+            default: return 'Otro';
+        }
+    };
+
     // Filter Logic
     const getFilteredTransactions = () => {
         if (!allTransactions) return [];
@@ -482,6 +491,7 @@ const Reports = () => {
                                 <th style={{ padding: '1rem' }}>Cliente</th>
                                 <th style={{ padding: '1rem' }}>Servicio</th>
                                 <th style={{ padding: '1rem' }}>Empleados</th>
+                                <th style={{ padding: '1rem' }}>Método</th>
                                 <th style={{ padding: '1rem' }}>Total</th>
                             </tr>
                         </thead>
@@ -504,6 +514,18 @@ const Reports = () => {
                                             ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
                                             : getEmployeeName(t.employee_id)
                                         }
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        <span style={{
+                                            fontSize: '0.75rem',
+                                            padding: '0.1rem 0.4rem',
+                                            borderRadius: '4px',
+                                            backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                            color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
+                                            border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`
+                                        }}>
+                                            {getPaymentMethodLabel(t.payment_method)}
+                                        </span>
                                     </td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price.toFixed(2)}</td>
                                 </tr>
