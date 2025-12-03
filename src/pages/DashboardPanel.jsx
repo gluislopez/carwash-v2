@@ -443,8 +443,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.24 COMMISSIONS FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
+                            v4.25 COMMISSIONS FIX 2 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -545,10 +545,12 @@ const Dashboard = () => {
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Netas (Ver Desglose)' : 'Mi Neto (Menos Almuerzos)'}</h3>
+                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Totales (Ver Desglose)' : 'Mi Neto (Menos Almuerzos)'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</p>
-                        {totalLunches > 0 && (
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+                            ${userRole === 'admin' ? totalCommissions.toFixed(2) : netCommissions.toFixed(2)}
+                        </p>
+                        {totalLunches > 0 && userRole !== 'admin' && (
                             <span style={{ fontSize: '0.9rem', color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }}>
                                 -${totalLunches.toFixed(2)} en almuerzos
                             </span>
