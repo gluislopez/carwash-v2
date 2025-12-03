@@ -441,7 +441,7 @@ const Dashboard = () => {
         <div>
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#7C3AED', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.93 MOBILE UI {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#F59E0B', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.94 FIX GAMIFICATION {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}

@@ -107,10 +107,21 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
                         {isEditable && (
                             <button
                                 onClick={handleEditClick}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.25rem' }}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '50%',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-main)',
+                                    padding: '0.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginLeft: '0.5rem'
+                                }}
                                 title="Editar Meta"
                             >
-                                <Pencil size={16} />
+                                <Pencil size={18} />
                             </button>
                         )}
                     </div>
