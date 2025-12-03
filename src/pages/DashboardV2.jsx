@@ -870,4 +870,3 @@ const Dashboard = () => {
 };
 
 export default DashboardV2;
-```
