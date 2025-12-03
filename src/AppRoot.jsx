@@ -57,13 +57,13 @@ const RequireAuth = ({ children }) => {
     }, []);
 
     if (loading) {
-        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a', color: 'white' }}>Cargando... (Esperando a Supabase)</div>;
+        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: 'yellow', color: 'black', fontSize: '2rem', fontWeight: 'bold' }}>🟡 CARGANDO...</div>;
     }
 
     if (error) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a', color: 'red', padding: '20px', textAlign: 'center' }}>
-                <h2>Error de Conexión</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: 'orange', color: 'white', padding: '20px', textAlign: 'center' }}>
+                <h2>🟠 Error de Conexión</h2>
                 <p>{error}</p>
                 <button onClick={() => window.location.reload()} style={{ marginTop: '20px', padding: '10px 20px' }}>Reintentar</button>
             </div>

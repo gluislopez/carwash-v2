@@ -5,6 +5,7 @@ import './css/global.css' // Import global styles
 import { BrowserRouter } from 'react-router-dom'
 
 console.log('🚀 APP RELOADED v3.50 NO CONFIG ' + new Date().toISOString());
+alert('SYSTEM CHECK: JS IS RUNNING (v3.76)');
 
 ReactDOM.createRoot(document.getElementById('app')).render(
     <React.StrictMode>
