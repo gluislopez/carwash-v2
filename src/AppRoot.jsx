@@ -4,7 +4,7 @@ import { supabase } from './supabase'; // Asegúrate de que la ruta sea correcta
 
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/DashboardPanel';
 import Services from './pages/Services';
 import Employees from './pages/Employees';
 import Customers from './pages/Customers';
