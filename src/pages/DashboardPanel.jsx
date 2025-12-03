@@ -112,6 +112,11 @@ const Dashboard = () => {
     const expenses = expensesData || [];
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // HELPER FUNCTIONS (Moved to top to avoid ReferenceError)
+    const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
+    const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
+    const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Desconocido';
     const [activeDetailModal, setActiveDetailModal] = useState(null); // 'cars', 'income', 'commissions'
     const [selectedTransaction, setSelectedTransaction] = useState(null); // For detailed view of a specific transaction
     const [error, setError] = useState(null); // FIX: Define error state
@@ -304,7 +309,7 @@ const Dashboard = () => {
         }
     }, 0);
 
-    // ... (lines 291-561 unchanged)
+
 
 
 
@@ -482,10 +487,6 @@ const Dashboard = () => {
         }
     };
 
-    const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
-    const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
-    const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Desconocido';
-
     const getPaymentMethodLabel = (method) => {
         switch (method) {
             case 'cash': return 'Efectivo';
@@ -503,7 +504,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
-                            v4.47 UI FIXES {new Date().toLocaleTimeString()}
+                            v4.48 REFACTOR {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
