@@ -10,7 +10,6 @@ import EditTransactionModal from '../components/EditTransactionModal';
 
 const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
-    const [userEmail, setUserEmail] = useState(''); // Nuevo: Email para debug
     const [myEmployeeId, setMyEmployeeId] = useState(null); // Nuevo: ID del perfil de empleado
 
     const [dateFilter, setDateFilter] = useState('today');
@@ -20,17 +19,11 @@ const Dashboard = () => {
     const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
     const [userRole, setUserRole] = useState(null); // Estado para el rol
 
-    const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
-
     useEffect(() => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setMyUserId(user.id);
-                setUserEmail(user.email);
-
-                // DEBUG: Mostrar ID del usuario
-                let log = `User ID: ${user.id} \nEmail: ${user.email} \n`;
 
                 // Consultar el rol del empleado
                 let { data: employee, error } = await supabase
@@ -41,7 +34,6 @@ const Dashboard = () => {
 
                 if (error) {
                     console.error("Error fetching employee:", error);
-                    setDebugInfo(error.message + " (Code: " + error.code + ")");
                 }
 
                 // AUTO-LINKING: Si no tiene usuario asignado, buscar por email
@@ -502,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.56 CLEANUP {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
+                            v4.57 STRICT FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
