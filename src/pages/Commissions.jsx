@@ -8,6 +8,13 @@ const Commissions = () => {
     const [userRole, setUserRole] = useState(null);
     const [myEmployeeId, setMyEmployeeId] = useState(null);
 
+    // Helper for PR Date
+    const getPRDateString = (dateInput) => {
+        if (!dateInput) return '';
+        const date = new Date(dateInput);
+        return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+    };
+
     // State for Stats View
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [performanceFilter, setPerformanceFilter] = useState('today'); // 'today', 'week', 'month', 'all'
@@ -69,6 +76,31 @@ const Commissions = () => {
     const getFilteredData = () => {
         if (!selectedEmployee) return { filteredTxs: [], filteredExps: [] };
 
+        // Determine Date Range Strings (YYYY-MM-DD)
+        const now = new Date();
+        let startStr = '';
+        let endStr = '';
+
+        if (performanceFilter === 'today') {
+            startStr = getPRDateString(now);
+            endStr = startStr;
+        } else if (performanceFilter === 'week') {
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+            const start = new Date(now);
+            start.setDate(diff);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+
+            startStr = getPRDateString(start);
+            endStr = getPRDateString(end);
+        } else if (performanceFilter === 'month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            startStr = getPRDateString(start);
+            endStr = getPRDateString(end);
+        }
+
         const filteredTxs = transactions.filter(t => {
             // Check assignment
             const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
@@ -79,57 +111,32 @@ const Commissions = () => {
             // Date Filter
             if (performanceFilter === 'all') return true;
 
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-            // Fix Timezone for Today
-            if (performanceFilter === 'today') {
-                const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-                return t.date === todayStr;
+            // Use string comparison
+            let tDateStr = t.date;
+            // Fallback if date is missing (shouldn't happen for completed txs but good safety)
+            if (!tDateStr && t.created_at) {
+                tDateStr = getPRDateString(t.created_at);
             }
 
-            // Standard Date Object Comparison for Week/Month
-            const tDate = t.date ? new Date(t.date + 'T00:00:00') : new Date(t.created_at);
-            let filterDate = startOfDay;
-
-            if (performanceFilter === 'week') {
-                const startOfWeek = new Date(now);
-                startOfWeek.setDate(now.getDate() - now.getDay());
-                startOfWeek.setHours(0, 0, 0, 0);
-                filterDate = startOfWeek;
-            } else if (performanceFilter === 'month') {
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                filterDate = startOfMonth;
-            }
-
-            return tDate >= filterDate;
+            return tDateStr >= startStr && tDateStr <= endStr;
         });
 
         const filteredExps = expenses.filter(e => {
             if (e.employee_id !== selectedEmployee.id) return false;
             if (performanceFilter === 'all') return true;
 
-            // Date logic for expenses (assuming ISO string)
-            const eDate = new Date(e.date);
-            const now = new Date();
-            let filterDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-            if (performanceFilter === 'today') {
-                const todayStr = new Date().toLocaleDateString('en-CA');
-                return e.date === todayStr;
+            let eDateStr = e.date; // Expenses usually have 'date' column YYYY-MM-DD
+            if (!eDateStr && e.created_at) {
+                eDateStr = getPRDateString(e.created_at);
             }
 
-            if (performanceFilter === 'week') {
-                const startOfWeek = new Date(now);
-                startOfWeek.setDate(now.getDate() - now.getDay());
-                startOfWeek.setHours(0, 0, 0, 0);
-                filterDate = startOfWeek;
-            } else if (performanceFilter === 'month') {
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                filterDate = startOfMonth;
-            }
+            // If e.date is ISO, getPRDateString handles it. If it's YYYY-MM-DD, it might shift if passed to new Date().
+            // Assuming e.date is YYYY-MM-DD string from DB.
+            // Safe check: if it looks like YYYY-MM-DD, use it.
+            if (e.date && e.date.length === 10) eDateStr = e.date;
+            else eDateStr = getPRDateString(e.date || e.created_at);
 
-            return eDate >= filterDate;
+            return eDateStr >= startStr && eDateStr <= endStr;
         });
 
         return { filteredTxs, filteredExps };
