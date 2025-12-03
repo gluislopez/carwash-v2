@@ -100,59 +100,50 @@ const GamificationSettings = () => {
                 </button>
             </div>
 
-            <div className="card">
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '1rem' }}>Icono</th>
-                                <th style={{ padding: '1rem' }}>Nivel</th>
-                                <th style={{ padding: '1rem' }}>XP Mínima</th>
-                                <th style={{ padding: '1rem' }}>Color</th>
-                                <th style={{ padding: '1rem' }}>Premio</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedLevels.map(level => (
-                                <tr key={level.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ color: level.color }}>
-                                            {getIconComponent(level.icon)}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{level.name}</td>
-                                    <td style={{ padding: '1rem' }}>{level.min_xp} XP</td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <div style={{ width: '20px', height: '20px', borderRadius: '4px', backgroundColor: level.color }}></div>
-                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{level.color}</span>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {level.reward ? (
-                                            <span style={{ backgroundColor: 'rgba(251, 191, 36, 0.1)', color: '#d97706', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.9rem' }}>
-                                                {level.reward}
-                                            </span>
-                                        ) : (
-                                            <span style={{ color: 'var(--text-muted)' }}>-</span>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                            <button className="btn" onClick={() => handleEdit(level)} style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}>
-                                                <Check size={18} />
-                                            </button>
-                                            <button className="btn" onClick={() => handleDelete(level.id)} style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}>
-                                                <Trash size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {sortedLevels.map(level => (
+                    <div key={level.id} className="card" style={{ position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                            <div style={{
+                                width: '50px', height: '50px', borderRadius: '50%',
+                                backgroundColor: `rgba(${level.color === '#fbbf24' ? '251, 191, 36' : '148, 163, 184'}, 0.1)`,
+                                border: `2px solid ${level.color}`,
+                                color: level.color,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                {getIconComponent(level.icon)}
+                            </div>
+                            <div>
+                                <h3 style={{ fontWeight: 'bold', color: level.color }}>{level.name}</h3>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                                    {level.min_xp} XP Mínima
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: level.color }}></div>
+                                <span>Color: {level.color}</span>
+                            </div>
+                            {level.reward && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d97706' }}>
+                                    <Star size={16} />
+                                    <span>Premio: {level.reward}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                            <button onClick={() => handleEdit(level)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
+                                <Check size={18} />
+                            </button>
+                            <button onClick={() => handleDelete(level.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
+                                <Trash size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {isModalOpen && (
