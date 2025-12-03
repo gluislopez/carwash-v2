@@ -4,7 +4,7 @@ import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 
 const Customers = () => {
-    const { data: customers, create, remove, update } = useSupabase('customers');
+    const { data: customers, create, remove, update } = useSupabase('customers', '*', { orderBy: { column: 'name', ascending: true } });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
