@@ -167,11 +167,66 @@
     .modal-card .input {
         font-size: 1rem !important;
     }
+
+    /* Dashboard Header */
+    .dashboard-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+    }
+
+    /* Floating Action Button (FAB) for Mobile */
+    .mobile-fab {
+        position: fixed !important;
+        bottom: 2rem !important;
+        right: 2rem !important;
+        width: 60px !important;
+        height: 60px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        z-index: 1000 !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .mobile-fab .desktop-text {
+        display: none !important;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Modal Full Screen */
+    .modal-overlay {
+        align-items: flex-end !important;
+        /* Sheet style */
+    }
+
+    .modal-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 85vh !important;
+        max-height: 85vh !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        border-top-left-radius: 20px !important;
+        border-top-right-radius: 20px !important;
+        margin: 0 !important;
+    }
 }
 
 /* Desktop Styles */
 @media (min-width: 769px) {
     .mobile-menu-btn {
         display: none !important;
+    }
+
+    .mobile-fab {
+        /* Normal button on desktop */
     }
 }

@@ -439,9 +439,9 @@ const Dashboard = () => {
     console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#7C3AED', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.92 FINAL FIX {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#7C3AED', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.93 MOBILE UI {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
@@ -449,9 +449,9 @@ const Dashboard = () => {
                 </div>
 
                 {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
-                <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                <button className="btn btn-primary mobile-fab" onClick={() => setIsModalOpen(true)}>
                     <Plus size={20} />
-                    Registrar Servicio
+                    <span className="desktop-text">Registrar Servicio</span>
                 </button>
             </div>
 
@@ -464,7 +464,7 @@ const Dashboard = () => {
                 onEditTarget={handleEditTarget}
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card">
                     <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy' : 'Mis Autos Lavados'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -496,7 +496,7 @@ const Dashboard = () => {
             </div>
 
             {isModalOpen && (
-                <div style={{
+                <div className="modal-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
                     overflowY: 'auto'
