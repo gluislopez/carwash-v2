@@ -437,18 +437,25 @@ const Dashboard = () => {
     console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
         <div>
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#6366F1', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #6366F1' }}>v4.12 HISTORY VIEW {new Date().toLocaleTimeString()}</span></h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones: {effectiveDate}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366F1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366F1' }}>
+                            v4.13 MOBILE FIX
+                        </span>
+                    </div>
+                    <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
 
                     {/* DATE FILTER CONTROLS */}
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1rem', alignItems: 'center' }}>
                         <button
                             className="btn"
                             style={{
                                 backgroundColor: dateFilter === 'today' ? 'var(--primary)' : 'var(--bg-secondary)',
-                                color: 'white'
+                                color: 'white',
+                                flex: '1 1 auto',
+                                justifyContent: 'center'
                             }}
                             onClick={() => setDateFilter('today')}
                         >
@@ -458,7 +465,9 @@ const Dashboard = () => {
                             className="btn"
                             style={{
                                 backgroundColor: dateFilter === 'custom' ? 'var(--primary)' : 'var(--bg-secondary)',
-                                color: 'white'
+                                color: 'white',
+                                flex: '1 1 auto',
+                                justifyContent: 'center'
                             }}
                             onClick={() => setDateFilter('custom')}
                         >
@@ -469,7 +478,7 @@ const Dashboard = () => {
                             <input
                                 type="date"
                                 className="input"
-                                style={{ padding: '0.4rem', width: 'auto' }}
+                                style={{ padding: '0.4rem', width: '100%', maxWidth: '200px' }}
                                 value={customDate}
                                 onChange={(e) => setCustomDate(e.target.value)}
                             />
