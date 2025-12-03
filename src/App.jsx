@@ -79,22 +79,30 @@ const RequireAuth = ({ children }) => {
 
 const App = () => {
     return (
-        <div style={{
-            height: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'black',
-            color: 'red',
-            fontSize: '3rem',
-            fontWeight: 'bold',
-            textAlign: 'center'
-        }}>
-            ⚠️ MAINTENANCE MODE v3.64 ⚠️
-            <br />
-            <span style={{ fontSize: '1rem', color: 'white' }}>If you see this, deployment is working.</span>
-        </div>
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/test-deployment" element={<TestDeployment />} />
+
+            <Route
+                path="*"
+                element={
+                    <RequireAuth>
+                        <Layout>
+                            <Routes>
+                                <Route path="/" element={<Dashboard />} />
+                                <Route path="/services" element={<Services />} />
+                                <Route path="/employees" element={<Employees />} />
+                                <Route path="/customers" element={<Customers />} />
+                                <Route path="/reports" element={<Reports />} />
+                                <Route path="/expenses" element={<Expenses />} />
+                                <Route path="/gamification" element={<GamificationSettings />} />
+                                <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                        </Layout>
+                    </RequireAuth>
+                }
+            />
+        </Routes>
     );
 };
 
