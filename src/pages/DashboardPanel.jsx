@@ -141,6 +141,75 @@ const Dashboard = () => {
         email: '' // Optional
     });
 
+    // ASSIGNMENT MODAL STATE (Missing in previous deploy)
+    const [assigningTransactionId, setAssigningTransactionId] = useState(null);
+    const [selectedEmployeesForAssignment, setSelectedEmployeesForAssignment] = useState([]);
+
+    const handleStartService = (txId) => {
+        setAssigningTransactionId(txId);
+        setSelectedEmployeesForAssignment([]); // Reset selection
+    };
+
+    const handleConfirmAssignment = async () => {
+        if (selectedEmployeesForAssignment.length === 0) {
+            alert("Selecciona al menos un empleado.");
+            return;
+        }
+
+        const tx = transactions.find(t => t.id === assigningTransactionId);
+        if (!tx) return;
+
+        try {
+            // 1. Create Assignments
+            const assignments = selectedEmployeesForAssignment.map(empId => ({
+                transaction_id: tx.id,
+                employee_id: empId
+            }));
+
+            const { error: assignError } = await supabase
+                .from('transaction_assignments')
+                .insert(assignments);
+
+            if (assignError) throw assignError;
+
+            // 2. Calculate Commission
+            // Logic: If $35 service & >1 employee => $12 total commission. Else standard.
+            // We need to know the service commission.
+            const service = services.find(s => s.id === tx.service_id);
+            const baseCommission = service?.commission || 0;
+
+            let finalCommission = baseCommission;
+            if (tx.price === 35 && selectedEmployeesForAssignment.length > 1) {
+                finalCommission = 12;
+            }
+
+            // 3. Update Transaction Status & Commission
+            await updateTransaction(tx.id, {
+                status: 'in_progress',
+                commission_amount: finalCommission,
+                employee_id: selectedEmployeesForAssignment[0] // Legacy primary
+            });
+
+            setAssigningTransactionId(null);
+            await refreshTransactions();
+            alert("¡Servicio comenzado!");
+
+        } catch (error) {
+            console.error("Error starting service:", error);
+            alert("Error al comenzar: " + error.message);
+        }
+    };
+
+    const handlePayment = async (tx) => {
+        if (!confirm(`¿Cobrar $${tx.total_price} y finalizar?`)) return;
+
+        await updateTransaction(tx.id, {
+            status: 'completed',
+            finished_at: new Date().toISOString()
+        });
+        await refreshTransactions();
+    };
+
     const { create: createCustomer } = useSupabase('customers');
 
     const handleCreateCustomer = async () => {
@@ -413,8 +482,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.44 FORCE UPDATE {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
+                            v4.45 HOTFIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
