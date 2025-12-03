@@ -412,7 +412,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'yellow', fontWeight: 'bold' }}>v3.42 DEBUG CLICK {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'orange', fontWeight: 'bold' }}>v3.43 MANUAL SUBMIT {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
@@ -644,7 +644,7 @@ const Dashboard = () => {
                                 <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn btn-primary">
+                                <button type="button" className="btn btn-primary" onClick={handleSubmit}>
                                     Registrar Venta
                                 </button>
                             </div>
