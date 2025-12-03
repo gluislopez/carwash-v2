@@ -110,7 +110,8 @@ const Dashboard = () => {
     const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Desconocido';
     const [activeDetailModal, setActiveDetailModal] = useState(null); // 'cars', 'income', 'commissions'
     const [selectedTransaction, setSelectedTransaction] = useState(null); // For detailed view of a specific transaction
-    const [error, setError] = useState(null); // FIX: Define error state
+    const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
+    const [isSubmitting, setIsSubmitting] = useState(false); // Prevent double clicksDefine error state
 
     // Transaction Form State
     const [formData, setFormData] = useState({
@@ -457,6 +458,7 @@ const Dashboard = () => {
         };
 
         try {
+            setIsSubmitting(true); // Disable button
             await createTransaction(newTransaction);
 
             setIsModalOpen(false);
@@ -469,12 +471,17 @@ const Dashboard = () => {
                 commissionAmount: '',
                 serviceTime: new Date().toTimeString().slice(0, 5)
             });
+            // await refreshTransactions(); // Remove explicit refresh if createTransaction updates state, or keep it but ensure no race condition.
+            // Actually, useSupabase updates state. refreshTransactions fetches again.
+            // To be safe against duplication, let's rely on refreshTransactions but clear the form first.
             await refreshTransactions();
             alert("¡Turno registrado! Añadido a Cola de Espera.");
 
         } catch (error) {
             console.error("Error creating transaction:", error);
             alert("ERROR AL REGISTRAR: " + (error.message || JSON.stringify(error)));
+        } finally {
+            setIsSubmitting(false); // Re-enable button
         }
     };
 
@@ -494,8 +501,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
-                            v4.62 CONFIG FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.63 MASTER FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -1218,8 +1225,14 @@ const Dashboard = () => {
                                 <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
                                     Cancelar
                                 </button>
-                                <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-                                    Registrar Venta
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    style={{ opacity: isSubmitting ? 0.7 : 1 }}
+                                >
+                                    {isSubmitting ? 'Registrando...' : 'Registrar Venta'}
                                 </button>
                             </div>
                         </form>
@@ -1256,7 +1269,7 @@ const Dashboard = () => {
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {statsTransactions
-                    .filter(t => t.status !== 'pending')
+                    .filter(t => t.status === 'completed' || t.status === 'paid')
                     .sort((a, b) => {
                         const dateA = new Date(a.date);
                         const dateB = new Date(b.date);
