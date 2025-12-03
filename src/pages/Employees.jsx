@@ -29,7 +29,7 @@ const Employees = () => {
         };
 
         const fetchData = async () => {
-            // Fetch completed transactions with assignments
+            // Fetch completed/paid transactions with assignments
             const { data: txs, error } = await supabase
                 .from('transactions')
                 .select(`
@@ -37,12 +37,11 @@ const Employees = () => {
                     transaction_assignments (employee_id),
                     customers (name, vehicle_plate)
                 `)
-                // .eq('status', 'completed') // Removed to debug status issues
+                .in('status', ['completed', 'paid'])
                 .order('created_at', { ascending: false });
 
             if (error) {
                 console.error('Error fetching transactions:', error);
-                setFetchError(error.message);
             }
             if (txs) setTransactions(txs);
 
@@ -319,41 +318,8 @@ const Employees = () => {
 
                         {/* Transaction List */}
                         <div style={{ padding: '0 1.5rem 1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                                <h4 style={{ margin: 0 }}>Historial ({stats.txs.length})</h4>
-                                <button
-                                    onClick={() => console.log('All Transactions:', transactions)}
-                                    style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', background: '#333', border: 'none', borderRadius: '4px', color: '#888' }}
-                                >
-                                    Log Debug
-                                </button>
-                            </div>
-
-                            {stats.txs.length === 0 ? (
-                                <div>
-                                    <p style={{ color: 'var(--text-muted)' }}>No hay actividad en este periodo.</p>
-                                    <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', fontSize: '0.8rem', fontFamily: 'monospace' }}>
-                                        <strong>Debug Info:</strong><br />
-                                        Filter: {performanceFilter}<br />
-                                        Total Fetched: {transactions.length}<br />
-                                        Fetch Error: {fetchError || 'None'}<br />
-                                        <strong>Status Counts:</strong><br />
-                                        {Object.entries(transactions.reduce((acc, t) => ({ ...acc, [t.status]: (acc[t.status] || 0) + 1 }), {})).map(([k, v]) => (
-                                            <span key={k}>{k}: {v} | </span>
-                                        ))}<br />
-                                        Employee ID: {selectedEmployee.id}<br />
-                                        Sample Tx (Last 3):
-                                        {transactions.slice(0, 3).map(t => (
-                                            <div key={t.id} style={{ marginTop: '0.5rem', borderTop: '1px solid #444', paddingTop: '0.2rem' }}>
-                                                ID: {t.id.slice(0, 8)}...<br />
-                                                Date: {t.date} / {t.created_at}<br />
-                                                Assigned: {JSON.stringify(t.transaction_assignments)}<br />
-                                                Primary: {t.employee_id}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
+                            <h4 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Historial ({stats.txs.length})</h4>
+                            {stats.txs.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No hay actividad en este periodo.</p> : (
                                 <ul style={{ listStyle: 'none', padding: 0 }}>
                                     {stats.txs.map(t => (
                                         <li key={t.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
