@@ -116,7 +116,10 @@ const Employees = () => {
         else if (performanceFilter === 'month') filterDate = startOfMonth;
 
         const filteredTxs = transactions.filter(t => {
-            const tDate = new Date(t.date || t.created_at);
+            // Fix Timezone Issue: Parse YYYY-MM-DD as Local Time by appending T00:00:00
+            // If using created_at (ISO UTC), it works fine.
+            const tDate = t.date ? new Date(t.date + 'T00:00:00') : new Date(t.created_at);
+
             // Check if transaction belongs to employee
             const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
             const isPrimary = t.employee_id === selectedEmployee.id; // Legacy support
