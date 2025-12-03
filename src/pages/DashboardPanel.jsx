@@ -494,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
-                            v4.57 STRICT FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.58 UI FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -1199,54 +1199,7 @@ const Dashboard = () => {
                                 </select>
                             </div>
 
-                            {/* SELECTOR DE EMPLEADO (SOLO ADMIN) - AHORA MULTIPLE */}
-                            {userRole === 'admin' && (
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Realizado por (Selección Múltiple)</label>
-                                    <div style={{
-                                        maxHeight: '150px',
-                                        overflowY: 'auto',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: 'var(--radius-md)',
-                                        padding: '0.5rem',
-                                        backgroundColor: 'var(--bg-card)'
-                                    }}>
-                                        <div style={{ marginBottom: '0.5rem' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.selectedEmployees.includes(myEmployeeId)}
-                                                    onChange={(e) => {
-                                                        const newSelection = e.target.checked
-                                                            ? [...formData.selectedEmployees, myEmployeeId]
-                                                            : formData.selectedEmployees.filter(id => id !== myEmployeeId);
-                                                        setFormData({ ...formData, selectedEmployees: newSelection });
-                                                    }}
-                                                />
-                                                <span>Yo (Admin)</span>
-                                            </label>
-                                        </div>
-                                        {employees.filter(e => e.role !== 'admin').map(emp => (
-                                            <div key={emp.id} style={{ marginBottom: '0.5rem' }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={formData.selectedEmployees.includes(emp.id)}
-                                                        onChange={(e) => {
-                                                            const newSelection = e.target.checked
-                                                                ? [...formData.selectedEmployees, emp.id]
-                                                                : formData.selectedEmployees.filter(id => id !== emp.id);
-                                                            setFormData({ ...formData, selectedEmployees: newSelection });
-                                                        }}
-                                                    />
-                                                    <span>{emp.name}</span>
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <small style={{ color: 'var(--text-muted)' }}>Selecciona todos los que participaron.</small>
-                                </div>
-                            )}
+
 
                             <div style={{ marginBottom: '1rem' }}>
                                 <label className="label">Hora del Servicio</label>
