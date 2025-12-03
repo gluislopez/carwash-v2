@@ -241,8 +241,12 @@ const Dashboard = () => {
     // DATE FILTER LOGIC
     const effectiveDate = dateFilter === 'today' ? getPRDateString(new Date()) : customDate;
 
-    // Filter transactions by the effective date
-    const filteredTransactions = transactions.filter(t => getPRDateString(t.date) === effectiveDate);
+    // Filter transactions by the effective date OR if they are active (waiting/in_progress)
+    const filteredTransactions = transactions.filter(t => {
+        const isToday = getPRDateString(t.date) === effectiveDate;
+        const isActive = t.status === 'waiting' || t.status === 'in_progress';
+        return isToday || isActive;
+    });
     const filteredExpenses = expenses.filter(e => getPRDateString(e.date) === effectiveDate && e.category === 'lunch');
 
     // Para empleados: Filtrar SOLO sus transacciones para los contadores
@@ -260,7 +264,7 @@ const Dashboard = () => {
 
     const totalIncome = filteredTransactions
         .filter(t => t.status === 'completed')
-        .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0);
 
     // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
     const totalCommissions = statsTransactions.reduce((sum, t) => {
@@ -482,8 +486,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
-                            v4.46 EDIT IN PROGRESS {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.47 UI FIXES {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -591,7 +595,7 @@ const Dashboard = () => {
                     >
                         <h3 className="label">Ingresos Totales Hoy (Ver Detalles)</h3>
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
-                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>(Incluye extras y propinas)</p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>(Sin propinas)</p>
                     </div>
                 )}
 
@@ -619,51 +623,23 @@ const Dashboard = () => {
             {/* MULTI-STAGE FLOW SECTIONS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
 
-                {/* COLA DE ESPERA (Lista visible directa) */}
-                <div className="card">
-                    <h3 className="label" style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                        ⏳ Cola de Espera ({statsTransactions.filter(t => t.status === 'waiting').length})
-                    </h3>
-                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                        {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? (
-                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
-                        ) : (
-                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                                {statsTransactions.filter(t => t.status === 'waiting').map(t => (
-                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div>
-                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
-                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
-                                                <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
-                                                    {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                <button
-                                                    className="btn btn-primary"
-                                                    onClick={() => handleStartService(t.id)}
-                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                                                >
-                                                    Comenzar
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditingTransactionId(t.id)}
-                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
-                                                >
-                                                    Editar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
+                {/* COLA DE ESPERA (Summary Card) */}
+                <div
+                    className="card"
+                    onClick={() => setActiveDetailModal('waiting_list')}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    <h3 className="label" style={{ color: 'var(--text-primary)' }}>⏳ Cola de Espera</h3>
+                    <Clock size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
+                    <p style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+                        {statsTransactions.filter(t => t.status === 'waiting').length}
+                    </p>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Click para asignar empleados</p>
                 </div>
 
-                {/* EN PROCESO (Summary Card -> Click to Open Modal) */}
+                {/* EN PROCESO (Summary Card) */}
                 <div
                     className="card"
                     onClick={() => setActiveDetailModal('in_progress_list')}
@@ -671,7 +647,7 @@ const Dashboard = () => {
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <h3 className="label" style={{ color: 'var(--warning)' }}>Autos En Proceso</h3>
+                    <h3 className="label" style={{ color: 'var(--warning)' }}>🚿 Autos En Proceso</h3>
                     <Clock size={48} style={{ color: 'var(--warning)', marginBottom: '1rem' }} />
                     <p style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--warning)', margin: 0 }}>
                         {statsTransactions.filter(t => t.status === 'in_progress').length}
@@ -776,6 +752,8 @@ const Dashboard = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>
                                 {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
+                                {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
+                                {activeDetailModal === 'waiting_list' && '⏳ Cola de Espera'}
                                 {activeDetailModal === 'in_progress_list' && '🚿 Autos en Proceso'}
                                 {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
                                 {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
@@ -810,6 +788,87 @@ const Dashboard = () => {
                                                         )}
                                                     </div>
                                                     <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                </li>
+                                            ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+
+                        {activeDetailModal === 'waiting_list' && (
+                            <div>
+                                {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? (
+                                    <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
+                                ) : (
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {statsTransactions.filter(t => t.status === 'waiting').map(t => (
+                                            <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                        <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
+                                                        <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
+                                                            {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => handleStartService(t.id)}
+                                                            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                        >
+                                                            Comenzar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingTransactionId(t.id)}
+                                                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+
+                        {activeDetailModal === 'waiting_list' && (
+                            <div>
+                                {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? <p>No hay autos en espera.</p> : (
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {statsTransactions
+                                            .filter(t => t.status === 'waiting')
+                                            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) // Oldest first
+                                            .map(t => (
+                                                <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                            <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
+                                                            <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                onClick={() => handleStartService(t.id)}
+                                                                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                            >
+                                                                Comenzar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingTransactionId(t.id)}
+                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                                                            >
+                                                                Editar
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </li>
                                             ))}
                                     </ul>
@@ -869,15 +928,15 @@ const Dashboard = () => {
                                 <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                         <span>Efectivo:</span>
-                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0).toFixed(2)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                         <span>Tarjeta:</span>
-                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0).toFixed(2)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>Ath Móvil:</span>
-                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.status === 'completed' && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0) - (parseFloat(t.tip) || 0), 0).toFixed(2)}</span>
                                     </div>
                                     <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
