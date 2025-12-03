@@ -54,23 +54,49 @@ const Services = () => {
                 {userRole === 'admin' && (<button className="btn btn-primary" onClick={() => openModal()}><Plus size={20} /> Nuevo Servicio</button>)}
             </div>
 
-            <div className="card">
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead><tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}><th style={{ padding: '1rem' }}>Nombre</th><th style={{ padding: '1rem' }}>Precio</th><th style={{ padding: '1rem' }}>Comisión</th>{userRole === 'admin' && <th style={{ padding: '1rem', textAlign: 'right' }}>Acciones</th>}</tr></thead>
-                        <tbody>
-                            {services.map((service) => (
-                                <tr key={service.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{service.name}</td>
-                                    <td style={{ padding: '1rem' }}>${service.price}</td>
-                                    <td style={{ padding: '1rem' }}>${service.commission}</td>
-                                    {userRole === 'admin' && (<td style={{ padding: '1rem', textAlign: 'right' }}><button onClick={() => openModal(service)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginRight: '1rem' }}><Edit size={18} /></button><button onClick={() => handleDelete(service.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}><Trash2 size={18} /></button></td>)}
-                                </tr>
-                            ))}
-                            {services.length === 0 && (<tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No hay servicios registrados.</td></tr>)}
-                        </tbody>
-                    </table>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {services.map((service) => (
+                    <div key={service.id} className="card" style={{ position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                            <div style={{
+                                width: '50px', height: '50px', borderRadius: '50%',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <Tag size={24} />
+                            </div>
+                            <div>
+                                <h3 style={{ fontWeight: 'bold' }}>{service.name}</h3>
+                                <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                                    ${service.price}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>Comisión:</span>
+                                <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>${service.commission}</span>
+                            </div>
+                        </div>
+
+                        {userRole === 'admin' && (
+                            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => openModal(service)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
+                                    <Edit size={18} />
+                                </button>
+                                <button onClick={() => handleDelete(service.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {services.length === 0 && (
+                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No hay servicios registrados.
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (

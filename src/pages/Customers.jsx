@@ -141,71 +141,71 @@ const Customers = () => {
                 </div>
             </div>
 
-            <div className="card">
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '1rem' }}>Nombre</th>
-                                <th style={{ padding: '1rem' }}>Visitas</th>
-                                <th style={{ padding: '1rem' }}>Contacto</th>
-                                <th style={{ padding: '1rem' }}>Vehículo</th>
-                                {userRole === 'admin' && <th style={{ padding: '1rem', textAlign: 'right' }}>Acciones</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredCustomers.map((customer) => (
-                                <tr key={customer.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{customer.name}</td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <span style={{
-                                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                            color: 'var(--primary)',
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '1rem',
-                                            fontWeight: 'bold',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            {visitCounts[customer.id] || 0}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.9rem' }}>
-                                            {customer.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> {customer.phone}</span>}
-                                            {customer.email && <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}><Mail size={14} /> {customer.email}</span>}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <Car size={16} className="text-primary" />
-                                            <span>{customer.vehicle_model}</span>
-                                            <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>{customer.vehicle_plate}</span>
-                                        </div>
-                                    </td>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {filteredCustomers.map((customer) => (
+                    <div key={customer.id} className="card" style={{ position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                            <div style={{
+                                width: '50px', height: '50px', borderRadius: '50%',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                                    {customer.name.charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                            <div>
+                                <h3 style={{ fontWeight: 'bold' }}>{customer.name}</h3>
+                                <span style={{
+                                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                    color: 'var(--primary)',
+                                    padding: '0.1rem 0.5rem',
+                                    borderRadius: '1rem',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.8rem'
+                                }}>
+                                    {visitCounts[customer.id] || 0} Visitas
+                                </span>
+                            </div>
+                        </div>
 
-                                    {/* SOLO ADMIN PUEDE EDITAR/BORRAR */}
-                                    {userRole === 'admin' && (
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <button onClick={() => openModal(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginRight: '1rem' }}>
-                                                <Edit size={18} />
-                                            </button>
-                                            <button onClick={() => handleDelete(customer.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                            {filteredCustomers.length === 0 && (
-                                <tr>
-                                    <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        {searchTerm ? 'No se encontraron clientes.' : 'No hay clientes registrados.'}
-                                    </td>
-                                </tr>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Car size={16} className="text-primary" />
+                                <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{customer.vehicle_model}</span>
+                                <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                    {customer.vehicle_plate}
+                                </span>
+                            </div>
+                            {customer.phone && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Phone size={16} /> {customer.phone}
+                                </div>
                             )}
-                        </tbody>
-                    </table>
-                </div>
+                            {customer.email && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Mail size={16} /> {customer.email}
+                                </div>
+                            )}
+                        </div>
+
+                        {userRole === 'admin' && (
+                            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => openModal(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
+                                    <Edit size={18} />
+                                </button>
+                                <button onClick={() => handleDelete(customer.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {filteredCustomers.length === 0 && (
+                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        {searchTerm ? 'No se encontraron clientes.' : 'No hay clientes registrados.'}
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (
