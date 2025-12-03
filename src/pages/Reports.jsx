@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Calendar, DollarSign, Car, Users, Filter } from 'lucide-react';
+import { Calendar, DollarSign, Car, Users, Filter, X } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const Reports = () => {
@@ -9,6 +9,7 @@ const Reports = () => {
     const [endDate, setEndDate] = useState('');
     const [myUserId, setMyUserId] = useState(null);
     const [myEmployeeId, setMyEmployeeId] = useState(null);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [userRole, setUserRole] = useState(null);
 
     // Fetch user info
@@ -504,7 +505,29 @@ const Reports = () => {
                                             {new Date(t.date).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
                                         </small>
                                     </td>
-                                    <td style={{ padding: '1rem' }}>{getCustomerName(t.customer_id)}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {userRole === 'admin' ? (
+                                            <button
+                                                onClick={() => {
+                                                    const cust = customersList.find(c => c.id === t.customer_id);
+                                                    if (cust) setSelectedCustomer(cust);
+                                                }}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--primary)',
+                                                    textDecoration: 'underline',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 'bold',
+                                                    fontSize: 'inherit'
+                                                }}
+                                            >
+                                                {getCustomerName(t.customer_id)}
+                                            </button>
+                                        ) : (
+                                            getCustomerName(t.customer_id)
+                                        )}
+                                    </td>
                                     <td style={{ padding: '1rem' }}>
                                         {getServiceName(t.service_id)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
