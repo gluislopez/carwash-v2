@@ -459,8 +459,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
-                            v4.30 INCOME FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
+                            v4.31 COMMISSIONS MODAL FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -683,6 +683,9 @@ const Dashboard = () => {
                                         {employees.map(emp => {
                                             // Calculate commission for this employee
                                             const empCommission = statsTransactions.reduce((sum, t) => {
+                                                // SOLO contar si está completado
+                                                if (t.status !== 'completed') return sum;
+
                                                 const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
                                                 const isPrimary = t.employee_id === emp.id;
 
@@ -722,25 +725,27 @@ const Dashboard = () => {
                                     <div>
                                         <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Mis Trabajos de Hoy</h4>
                                         <ul style={{ listStyle: 'none', padding: 0 }}>
-                                            {statsTransactions.map(t => {
-                                                // Calcular mi parte de esta transacción
-                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
-                                                const count = (t.transaction_assignments?.length) || 1;
-                                                const myShare = txTotalCommission / count;
+                                            {statsTransactions
+                                                .filter(t => t.status === 'completed') // SOLO completados
+                                                .map(t => {
+                                                    // Calcular mi parte de esta transacción
+                                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                    const count = (t.transaction_assignments?.length) || 1;
+                                                    const myShare = txTotalCommission / count;
 
-                                                return (
-                                                    <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div>
-                                                            <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</div>
-                                                        </div>
-                                                        <div style={{ textAlign: 'right' }}>
-                                                            <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
-                                                            {count > 1 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Compartido entre {count})</div>}
-                                                        </div>
-                                                    </li>
-                                                );
-                                            })}
+                                                    return (
+                                                        <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <div>
+                                                                <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</div>
+                                                            </div>
+                                                            <div style={{ textAlign: 'right' }}>
+                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
+                                                                {count > 1 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Compartido entre {count})</div>}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
                                         </ul>
 
                                         {totalLunches > 0 && (
