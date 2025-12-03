@@ -312,6 +312,11 @@ const Dashboard = () => {
 
     const handleUpdateTransaction = async (id, updates) => {
         try {
+            // Si se está completando, guardar la hora de finalización
+            if (updates.status === 'completed') {
+                updates.finished_at = new Date().toISOString();
+            }
+
             await updateTransaction(id, updates);
             setEditingTransactionId(null);
             await refreshTransactions();
@@ -452,8 +457,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.28 CAR COUNTS {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.29 WAIT TIME {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -625,10 +630,16 @@ const Dashboard = () => {
                                             .map(t => (
                                                 <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div>
-                                                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>
+                                                        <div style={{ fontWeight: 'bold' }}>
                                                             {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                        <span>{t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})</span>
+                                                            <span style={{ margin: '0 0.5rem' }}>-</span>
+                                                            {t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})
+                                                        </div>
+                                                        {t.finished_at && (
+                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                Esperó: {Math.round((new Date(t.finished_at) - new Date(t.created_at)) / 60000)} min
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
                                                 </li>
