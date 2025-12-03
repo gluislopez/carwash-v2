@@ -4,7 +4,7 @@ import App from './App.jsx'
 import './css/main.css' // Import global styles
 import { BrowserRouter } from 'react-router-dom'
 
-console.log('🚀 APP RELOADED v3.37 EMERGENCY FIX ' + new Date().toISOString());
+console.log('🚀 APP RELOADED v3.50 NO CONFIG ' + new Date().toISOString());
 
 ReactDOM.createRoot(document.getElementById('app')).render(
     <React.StrictMode>
