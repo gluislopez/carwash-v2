@@ -350,75 +350,29 @@ const Dashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        alert("DEBUG: Iniciando registro..."); // DEBUG EXPLICITO
 
         const basePrice = parseFloat(formData.price) || 0;
-        // En flujo pendiente, extras y propina son 0 inicialmente
-        const extrasTotal = 0;
-        const tip = 0;
-        const totalPrice = basePrice;
-
         const transactionDate = new Date();
         const [hours, minutes] = formData.serviceTime.split(':');
         transactionDate.setHours(hours, minutes, 0, 0);
 
-        // Lógica Multi-Empleado
-        // Si es Admin, usa los seleccionados. Si es Empleado, se asigna a sí mismo.
-        let assignedEmployees = [];
-        if (userRole === 'admin') {
-            assignedEmployees = formData.selectedEmployees;
-            // Si no seleccionó a nadie, forzar al admin actual (fallback)
-            if (assignedEmployees.length === 0) assignedEmployees = [myEmployeeId];
-        } else {
-            assignedEmployees = [myEmployeeId];
-        }
-
-        const primaryEmployeeId = assignedEmployees[0]; // Para compatibilidad con columna vieja
-
-        if (!primaryEmployeeId) {
-            alert("Error: No se ha podido identificar al empleado. Por favor recarga la página.");
-            return;
-        }
-
+        // NEW FLOW: Register -> Waiting (No Employee Assigned Yet)
         const newTransaction = {
             date: transactionDate.toISOString(),
             customer_id: formData.customerId,
             service_id: formData.serviceId,
-            employee_id: primaryEmployeeId, // ID principal (legacy)
+            employee_id: null, // No assigned yet
             price: basePrice,
-            // Lógica condicional para servicio de $35:
-            // Si es $35 y hay más de 1 empleado, la comisión total es $12.
-            // Si es $35 y es 1 empleado, la comisión es la normal ($10).
-            commission_amount: ((basePrice === 35 && assignedEmployees.length > 1)
-                ? 12
-                : parseFloat(formData.commissionAmount)) || 0,
-            tip: 0, // Inicialmente 0
-            payment_method: 'cash', // Placeholder válido (evitar error de constraint)
-            extras: [], // Inicialmente sin extras
-            total_price: basePrice, // Solo el precio base
-            status: 'pending' // NUEVO ESTADO
+            commission_amount: 0, // Calculated at assignment/completion
+            tip: 0,
+            payment_method: 'cash',
+            extras: [],
+            total_price: basePrice,
+            status: 'waiting' // Initial Status
         };
 
         try {
-            // 1. Crear la transacción base
-            const [createdTx] = await createTransaction(newTransaction);
-
-            if (createdTx) {
-                // 2. Crear las asignaciones en la tabla intermedia
-                const assignments = assignedEmployees.map(empId => ({
-                    transaction_id: createdTx.id,
-                    employee_id: empId
-                }));
-
-                const { error: assignError } = await supabase
-                    .from('transaction_assignments')
-                    .insert(assignments);
-
-                if (assignError) console.error("Error asignando empleados:", assignError);
-
-                // REFRESH CRÍTICO: Recargar para traer las asignaciones recién creadas
-                await refreshTransactions();
-            }
+            await createTransaction(newTransaction);
 
             setIsModalOpen(false);
             setFormData({
@@ -431,7 +385,7 @@ const Dashboard = () => {
                 serviceTime: new Date().toTimeString().slice(0, 5)
             });
             await refreshTransactions();
-            alert("¡Servicio registrado correctamente!");
+            alert("¡Turno registrado! Añadido a Cola de Espera.");
 
         } catch (error) {
             console.error("Error creating transaction:", error);
@@ -459,8 +413,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
-                            v4.42 COMMISSIONS FIX {new Date().toLocaleTimeString()} (Retry)
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
+                            v4.43 WAITING FLOW {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -592,6 +546,152 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* MULTI-STAGE FLOW SECTIONS */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+
+                {/* COLA DE ESPERA */}
+                <div className="card">
+                    <h3 className="label" style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        ⏳ Cola de Espera ({statsTransactions.filter(t => t.status === 'waiting').length})
+                    </h3>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? (
+                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
+                        ) : (
+                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                {statsTransactions.filter(t => t.status === 'waiting').map(t => (
+                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
+                                                <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
+                                                    {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={() => handleStartService(t.id)}
+                                                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                            >
+                                                Comenzar
+                                            </button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+
+                {/* EN PROCESO */}
+                <div className="card">
+                    <h3 className="label" style={{ color: 'var(--warning)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        🚿 En Proceso ({statsTransactions.filter(t => t.status === 'in_progress').length})
+                    </h3>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        {statsTransactions.filter(t => t.status === 'in_progress').length === 0 ? (
+                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos lavándose.</p>
+                        ) : (
+                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                {statsTransactions.filter(t => t.status === 'in_progress').map(t => (
+                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
+                                                <div style={{ color: 'var(--warning)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+
+                                                {/* Assigned Employees */}
+                                                <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                                    {t.transaction_assignments?.map(a => (
+                                                        <span key={a.employee_id} style={{ fontSize: '0.75rem', backgroundColor: '#333', padding: '2px 6px', borderRadius: '4px' }}>
+                                                            {getEmployeeName(a.employee_id)}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn"
+                                                onClick={() => handlePayment(t)}
+                                                style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                            >
+                                                Pagar
+                                            </button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ASSIGNMENT MODAL */}
+            {assigningTransactionId && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+                }} onClick={() => setAssigningTransactionId(null)}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        padding: '2rem',
+                        borderRadius: '0.5rem',
+                        width: '90%',
+                        maxWidth: '400px'
+                    }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ marginTop: 0 }}>Asignar Empleado(s)</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>¿Quién lavará este auto?</p>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem' }}>
+                            {employees.map(emp => (
+                                <button
+                                    key={emp.id}
+                                    onClick={() => {
+                                        const current = selectedEmployeesForAssignment;
+                                        const isSelected = current.includes(emp.id);
+                                        if (isSelected) {
+                                            setSelectedEmployeesForAssignment(current.filter(id => id !== emp.id));
+                                        } else {
+                                            setSelectedEmployeesForAssignment([...current, emp.id]);
+                                        }
+                                    }}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '20px',
+                                        border: '1px solid var(--primary)',
+                                        backgroundColor: selectedEmployeesForAssignment.includes(emp.id) ? 'var(--primary)' : 'transparent',
+                                        color: selectedEmployeesForAssignment.includes(emp.id) ? 'white' : 'var(--text-primary)',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {emp.name}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                className="btn"
+                                style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                onClick={() => setAssigningTransactionId(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                style={{ flex: 1 }}
+                                onClick={handleConfirmAssignment}
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* DETAIL MODAL */}
             {activeDetailModal && (
