@@ -13,6 +13,7 @@ const Employees = () => {
     const [performanceFilter, setPerformanceFilter] = useState('today'); // 'today', 'week', 'month'
     const [transactions, setTransactions] = useState([]);
     const [expenses, setExpenses] = useState([]);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         const getUserRole = async () => {
@@ -29,7 +30,7 @@ const Employees = () => {
 
         const fetchData = async () => {
             // Fetch completed transactions with assignments
-            const { data: txs } = await supabase
+            const { data: txs, error } = await supabase
                 .from('transactions')
                 .select(`
                     *,
@@ -39,6 +40,10 @@ const Employees = () => {
                 .eq('status', 'completed')
                 .order('created_at', { ascending: false });
 
+            if (error) {
+                console.error('Error fetching transactions:', error);
+                setFetchError(error.message);
+            }
             if (txs) setTransactions(txs);
 
             // Fetch expenses
@@ -331,6 +336,7 @@ const Employees = () => {
                                         <strong>Debug Info:</strong><br />
                                         Filter: {performanceFilter}<br />
                                         Total Fetched: {transactions.length}<br />
+                                        Fetch Error: {fetchError || 'None'}<br />
                                         Employee ID: {selectedEmployee.id}<br />
                                         Sample Tx (Last 3):
                                         {transactions.slice(0, 3).map(t => (
