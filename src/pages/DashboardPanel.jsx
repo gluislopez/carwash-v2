@@ -96,7 +96,7 @@ const Dashboard = () => {
     const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
     const customers = customersData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
     const { data: expensesData } = useSupabase('expenses');
@@ -494,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.81 CUSTOMER INFO {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
+                            v4.82 VEHICLE MODEL {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -773,7 +773,10 @@ const Dashboard = () => {
                                                         <div style={{ fontWeight: 'bold' }}>
                                                             {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
                                                             <span style={{ margin: '0 0.5rem' }}>-</span>
-                                                            {t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})
+                                                            {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                            <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem' }}>
+                                                                ({t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
+                                                            </span>
                                                         </div>
                                                         {t.finished_at && (
                                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
