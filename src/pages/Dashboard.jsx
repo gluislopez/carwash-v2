@@ -738,133 +738,128 @@ const Dashboard = () => {
                     <tbody>
                         {statsTransactions.filter(t => t.status !== 'pending').map(t => (
                             <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
-                                    <td style={{ padding: '1rem' }}>
-                                            fontWeight: 'bold',
-                                            backgroundColor: t.status === 'pending' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                            color: t.status === 'pending' ? '#F59E0B' : '#10B981'
-                                        }}>
-                                            {t.status === 'pending' ? 'PENDIENTE' : 'PAGADO'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {getServiceName(t.service_id)}
-                                        {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {t.transaction_assignments && t.transaction_assignments.length > 0
-                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                            : getEmployeeName(t.employee_id) // Fallback
-                                        }
-                                    </td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                                        ${parseFloat(t.price || 0).toFixed(2)}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <span style={{
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '9999px',
-                                            fontSize: '0.875rem',
-                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                            color: '#10B981'
-                                        }}>
-                                            {getPaymentMethodLabel(t.payment_method)}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem', color: 'var(--success)' }}>
-                                        ${parseFloat(t.commission_amount || 0).toFixed(2)}
-                                        {t.transaction_assignments?.length > 1 && (
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                                (÷ {t.transaction_assignments.length})
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1rem', color: 'var(--warning)' }}>
-                                        ${parseFloat(t.tip || 0).toFixed(2)}
-                                        {t.transaction_assignments?.length > 1 && (
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                                (÷ {t.transaction_assignments.length})
-                                            </span>
-                                        )}
-                                    </td>
-                                    {/* BOTÓN DE BORRAR (SOLO ADMIN) */ }
-                                    { userRole === 'admin' && (
-                                <td style={{ padding: '1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                    <button
-                                        className="btn"
-                                        style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                        onClick={() => setEditingTransactionId(t.id)}
-                                        title="Editar"
-                                    >
-                                        <Edit2 size={18} />
-                                    </button>
-                                    <button
-                                        className="btn"
-                                        style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}
-                                        onClick={async () => {
-                                            if (window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.')) {
-                                                try {
-                                                    await removeTransaction(t.id);
-                                                } catch (err) {
-                                                    alert('Error al eliminar: ' + err.message);
-                                                }
-                                            }
-                                        }}
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                                <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
+                                <td style={{ padding: '1rem' }}>
+                                    <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
                                 </td>
-                            )}
-                    </tr>
-                            ))}
-                    {statsTransactions.length === 0 && (
-                        <tr>
-                            <td colSpan={userRole === 'admin' ? "9" : "8"} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                No hay ventas registradas hoy
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
-            </div >
+                                <td style={{ padding: '1rem' }}>
+                                    <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                </td>
+                                <td style={{ padding: '1rem' }}>
+                                    {getServiceName(t.service_id)}
+                                    {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
+                                </td>
+                                <td style={{ padding: '1rem' }}>
+                                    {t.transaction_assignments && t.transaction_assignments.length > 0
+                                        ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                        : getEmployeeName(t.employee_id) // Fallback
+                                    }
+                                </td>
+                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                                    ${parseFloat(t.price || 0).toFixed(2)}
+                                </td>
+                                <td style={{ padding: '1rem' }}>
+                                    <span style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.875rem',
+                                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                        color: '#10B981'
+                                    }}>
+                                        {getPaymentMethodLabel(t.payment_method)}
+                                    </span>
+                                </td>
+                                <td style={{ padding: '1rem', color: 'var(--success)' }}>
+                                    ${parseFloat(t.commission_amount || 0).toFixed(2)}
+                                    {t.transaction_assignments?.length > 1 && (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                                            (÷ {t.transaction_assignments.length})
+                                        </span>
+                                    )}
+                                </td>
+                                <td style={{ padding: '1rem', color: 'var(--warning)' }}>
+                                    ${parseFloat(t.tip || 0).toFixed(2)}
+                                    {t.transaction_assignments?.length > 1 && (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                                            (÷ {t.transaction_assignments.length})
+                                        </span>
+                                    )}
+                                </td>
+                                {/* BOTÓN DE BORRAR (SOLO ADMIN) */}
+                                {userRole === 'admin' && (
+                                    <td style={{ padding: '1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                        <button
+                                            className="btn"
+                                            style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
+                                            onClick={() => setEditingTransactionId(t.id)}
+                                            title="Editar"
+                                        >
+                                            <Edit2 size={18} />
+                                        </button>
+                                        <button
+                                            className="btn"
+                                            style={{ padding: '0.5rem', color: 'var(--danger)', backgroundColor: 'transparent' }}
+                                            onClick={async () => {
+                                                if (window.confirm('¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.')) {
+                                                    try {
+                                                        await removeTransaction(t.id);
+                                                    } catch (err) {
+                                                        alert('Error al eliminar: ' + err.message);
+                                                    }
+                                                }
+                                            }}
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
+                        {statsTransactions.length === 0 && (
+                            <tr>
+                                <td colSpan={userRole === 'admin' ? "9" : "8"} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    No hay ventas registradas hoy
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div >
 
     {/* CHART SECTION (ADMIN ONLY) */ }
-{
-    userRole === 'admin' && (
-        <ServiceAnalyticsChart transactions={transactions} />
-    )
-}
+    {
+        userRole === 'admin' && (
+            <ServiceAnalyticsChart transactions={transactions} />
+        )
+    }
 
 
 
-{/* DEBUG PANEL */ }
-<div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-    <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-        <div>
-            <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
-            <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
-            <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
-            <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
-            <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
+    {/* DEBUG PANEL */ }
+    <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+        <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+                <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
+                <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
+                <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
+                <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
+                <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
+            </div>
+            <div>
+                <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
+                <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
+                <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
+                <p><strong>Fecha Hoy (App):</strong> {today}</p>
+                <p><strong>Ej. Fecha Venta:</strong> {transactions[0] ? getPRDateString(transactions[0].date) : 'N/A'}</p>
+            </div>
         </div>
-        <div>
-            <p><strong>Total Ventas (Raw):</strong> {transactions.length}</p>
-            <p><strong>Ventas Hoy (Filtro Fecha):</strong> {todaysTransactions.length}</p>
-            <p><strong>Mis Ventas (Filtro ID):</strong> {myTransactions.length}</p>
-            <p><strong>Fecha Hoy (App):</strong> {today}</p>
-            <p><strong>Ej. Fecha Venta:</strong> {transactions[0] ? getPRDateString(transactions[0].date) : 'N/A'}</p>
-        </div>
+        <p style={{ marginTop: '0.5rem' }}>
+            <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
+        </p>
     </div>
-    <p style={{ marginTop: '0.5rem' }}>
-        <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
-    </p>
-</div>
         </div >
     );
 };
