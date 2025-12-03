@@ -441,8 +441,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
-                            v4.15 SORT BY DATE {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
+                            v4.16 VISIBLE TIME {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -585,12 +585,24 @@ const Dashboard = () => {
                             <div>
                                 {statsTransactions.length === 0 ? <p>No hay autos hoy.</p> : (
                                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                                        {[...statsTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => (
-                                            <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
-                                                <span>{t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})</span>
-                                                <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
-                                            </li>
-                                        ))}
+                                        {[...statsTransactions]
+                                            .sort((a, b) => {
+                                                const dateA = new Date(a.date);
+                                                const dateB = new Date(b.date);
+                                                if (dateB - dateA !== 0) return dateB - dateA;
+                                                return new Date(b.created_at) - new Date(a.created_at);
+                                            })
+                                            .map(t => (
+                                                <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                        <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>
+                                                            {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        <span>{t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})</span>
+                                                    </div>
+                                                    <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                </li>
+                                            ))}
                                     </ul>
                                 )}
                             </div>
@@ -929,152 +941,169 @@ const Dashboard = () => {
                     <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
                         No hay servicios activos en este momento.
                     </div>
-                ) : (
-                    statsTransactions.filter(t => t.status === 'pending').map(t => (
-                        <div key={t.id} className="card" style={{ position: 'relative', borderLeft: '4px solid #F59E0B' }}>
+                    </div>
+            ) : (
+            statsTransactions
+                        .filter(t => t.status === 'pending')
+                        .sort((a, b) => {
+                            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (dateB - dateA !== 0) return dateB - dateA;
+            return new Date(b.created_at) - new Date(a.created_at);
+                        })
+                        .map(t => (
+            <div key={t.id} className="card" style={{ position: 'relative', borderLeft: '4px solid #F59E0B' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</span>
+                    </div>
+                    <span style={{
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        color: '#F59E0B',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold'
+                    }}>
+                        {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <ShoppingBag size={16} className="text-primary" />
+                        <span style={{ fontWeight: 'bold' }}>{getServiceName(t.service_id)}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        <User size={16} />
+                        <span>
+                            {t.transaction_assignments && t.transaction_assignments.length > 0
+                                ? t.transaction_assignments.map(a => {
+                                    const emp = employees.find(e => e.id === a.employee_id);
+                                    return emp ? emp.name : 'Unknown';
+                                }).join(', ')
+                                : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
+                        </span>
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => setEditingTransactionId(t.id)}
+                    className="btn btn-primary"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                >
+                    Completar y Cobrar
+                </button>
+            </div>
+            ))
+                )}
+        </div>
+
+            {/* SECCIÓN DE HISTORIAL (PAGADOS) */ }
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {statsTransactions
+                    .filter(t => t.status !== 'pending')
+                    .sort((a, b) => {
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        if (dateB - dateA !== 0) return dateB - dateA;
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    })
+                    .map(t => (
+                        <div
+                            key={t.id}
+                            className="card"
+                            style={{
+                                borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
+                            }}
+                            onClick={() => setSelectedTransaction(t)}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <div>
                                     <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                        <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span>•</span>
+                                        <span style={{
+                                            padding: '0.1rem 0.5rem',
+                                            borderRadius: '9999px',
+                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                            color: '#10B981'
+                                        }}>
+                                            {getPaymentMethodLabel(t.payment_method)}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span style={{
-                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                                    color: '#F59E0B',
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '4px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold'
-                                }}>
-                                    {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
-
-                            <div style={{ marginBottom: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                    <ShoppingBag size={16} className="text-primary" />
-                                    <span style={{ fontWeight: 'bold' }}>{getServiceName(t.service_id)}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                    <User size={16} />
-                                    <span>
-                                        {t.transaction_assignments && t.transaction_assignments.length > 0
-                                            ? t.transaction_assignments.map(a => {
-                                                const emp = employees.find(e => e.id === a.employee_id);
-                                                return emp ? emp.name : 'Unknown';
-                                            }).join(', ')
-                                            : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
-                                    </span>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                        ${parseFloat(t.price || 0).toFixed(2)}
+                                    </div>
+                                    {t.tip > 0 && (
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
+                                            + ${parseFloat(t.tip).toFixed(2)} propina
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => setEditingTransactionId(t.id)}
-                                className="btn btn-primary"
-                                style={{ width: '100%', justifyContent: 'center' }}
-                            >
-                                Completar y Cobrar
-                            </button>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* SECCIÓN DE HISTORIAL (PAGADOS) */}
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                {statsTransactions.filter(t => t.status !== 'pending').map(t => (
-                    <div
-                        key={t.id}
-                        className="card"
-                        style={{
-                            borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
-                            cursor: 'pointer',
-                            transition: 'transform 0.2s'
-                        }}
-                        onClick={() => setSelectedTransaction(t)}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                            <div>
-                                <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                    <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span>•</span>
-                                    <span style={{
-                                        padding: '0.1rem 0.5rem',
-                                        borderRadius: '9999px',
-                                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                        color: '#10B981'
-                                    }}>
-                                        {getPaymentMethodLabel(t.payment_method)}
-                                    </span>
+                            <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
+                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
                                 </div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                                    ${parseFloat(t.price || 0).toFixed(2)}
-                                </div>
-                                {t.tip > 0 && (
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
-                                        + ${parseFloat(t.tip).toFixed(2)} propina
+                                {t.extras && t.extras.length > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
+                                        <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
                                     </div>
                                 )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
+                                    <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
+                                        {t.transaction_assignments && t.transaction_assignments.length > 0
+                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                            : getEmployeeName(t.employee_id)
+                                        }
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
-                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
-                            </div>
-                            {t.extras && t.extras.length > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
-                                    <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
+                            {userRole === 'admin' && (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        className="btn"
+                                        style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingTransactionId(t.id);
+                                        }}
+                                        title="Editar"
+                                    >
+                                        <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
+                                    </button>
+                                    <button
+                                        className="btn"
+                                        style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                                handleDeleteTransactionV2(t.id);
+                                            }
+                                        }}
+                                        title="Eliminar"
+                                    >
+                                        <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
+                                    </button>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
-                                <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
-                                    {t.transaction_assignments && t.transaction_assignments.length > 0
-                                        ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                        : getEmployeeName(t.employee_id)
-                                    }
-                                </span>
-                            </div>
                         </div>
-
-                        {userRole === 'admin' && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
-                                <button
-                                    className="btn"
-                                    style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingTransactionId(t.id);
-                                    }}
-                                    title="Editar"
-                                >
-                                    <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
-                                </button>
-                                <button
-                                    className="btn"
-                                    style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
-                                            handleDeleteTransactionV2(t.id);
-                                        }
-                                    }}
-                                    title="Eliminar"
-                                >
-                                    <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    ))}
                 {statsTransactions.length === 0 && (
                     <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
                         No hay ventas registradas hoy
@@ -1082,130 +1111,132 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {/* TRANSACTION DETAIL MODAL */}
-            {selectedTransaction && (
+    {/* TRANSACTION DETAIL MODAL */ }
+    {
+        selectedTransaction && (
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+            }} onClick={() => setSelectedTransaction(null)}>
                 <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
-                }} onClick={() => setSelectedTransaction(null)}>
-                    <div style={{
-                        backgroundColor: 'var(--bg-card)',
-                        padding: '2rem',
-                        borderRadius: '0.5rem',
-                        width: '90%',
-                        maxWidth: '500px',
-                        maxHeight: '80vh',
-                        overflowY: 'auto'
-                    }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ margin: 0 }}>🧾 Detalle de Venta</h2>
-                            <button onClick={() => setSelectedTransaction(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
-                        </div>
-
-                        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-                            <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: 0 }}>{selectedTransaction.customers?.name || 'Cliente Casual'}</h3>
-                            <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0' }}>{selectedTransaction.customers?.vehicle_plate || 'Sin Placa'}</p>
-                            <span style={{
-                                backgroundColor: 'var(--bg-secondary)',
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '9999px',
-                                fontSize: '0.9rem'
-                            }}>
-                                {new Date(selectedTransaction.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                        </div>
-
-                        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                                <span>{getServiceName(selectedTransaction.service_id)}</span>
-                                <span>${(parseFloat(selectedTransaction.price) - (selectedTransaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}</span>
-                            </div>
-
-                            {/* EXTRAS LIST */}
-                            {selectedTransaction.extras && selectedTransaction.extras.length > 0 && (
-                                <div style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color)' }}>
-                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Extras:</p>
-                                    {selectedTransaction.extras.map((extra, idx) => (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                                            <span>+ {extra.description}</span>
-                                            <span>${extra.price.toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-
-                            {selectedTransaction.tip > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
-                                    <span>Propina</span>
-                                    <span>+ ${parseFloat(selectedTransaction.tip).toFixed(2)}</span>
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
-                                <span>Total Pagado</span>
-                                <span>${(parseFloat(selectedTransaction.price) + (parseFloat(selectedTransaction.tip) || 0)).toFixed(2)}</span>
-                            </div>
-                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                Método: {getPaymentMethodLabel(selectedTransaction.payment_method)}
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                            <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Realizado por:</h4>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0
-                                    ? selectedTransaction.transaction_assignments.map(a => (
-                                        <span key={a.employee_id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
-                                            {getEmployeeName(a.employee_id)}
-                                        </span>
-                                    ))
-                                    : <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>{getEmployeeName(selectedTransaction.employee_id)}</span>
-                                }
-                            </div>
-                        </div>
-
-                        <button onClick={() => setSelectedTransaction(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-                            Cerrar
-                        </button>
+                    backgroundColor: 'var(--bg-card)',
+                    padding: '2rem',
+                    borderRadius: '0.5rem',
+                    width: '90%',
+                    maxWidth: '500px',
+                    maxHeight: '80vh',
+                    overflowY: 'auto'
+                }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h2 style={{ margin: 0 }}>🧾 Detalle de Venta</h2>
+                        <button onClick={() => setSelectedTransaction(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
                     </div>
+
+                    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                        <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: 0 }}>{selectedTransaction.customers?.name || 'Cliente Casual'}</h3>
+                        <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0' }}>{selectedTransaction.customers?.vehicle_plate || 'Sin Placa'}</p>
+                        <span style={{
+                            backgroundColor: 'var(--bg-secondary)',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.9rem'
+                        }}>
+                            {new Date(selectedTransaction.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    </div>
+
+                    <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                            <span>{getServiceName(selectedTransaction.service_id)}</span>
+                            <span>${(parseFloat(selectedTransaction.price) - (selectedTransaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}</span>
+                        </div>
+
+                        {/* EXTRAS LIST */}
+                        {selectedTransaction.extras && selectedTransaction.extras.length > 0 && (
+                            <div style={{ marginTop: '0.5rem', paddingLeft: '1rem', borderLeft: '2px solid var(--border-color)' }}>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Extras:</p>
+                                {selectedTransaction.extras.map((extra, idx) => (
+                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                        <span>+ {extra.description}</span>
+                                        <span>${extra.price.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+
+                        {selectedTransaction.tip > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)', marginBottom: '0.5rem' }}>
+                                <span>Propina</span>
+                                <span>+ ${parseFloat(selectedTransaction.tip).toFixed(2)}</span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                            <span>Total Pagado</span>
+                            <span>${(parseFloat(selectedTransaction.price) + (parseFloat(selectedTransaction.tip) || 0)).toFixed(2)}</span>
+                        </div>
+                        <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                            Método: {getPaymentMethodLabel(selectedTransaction.payment_method)}
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Realizado por:</h4>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0
+                                ? selectedTransaction.transaction_assignments.map(a => (
+                                    <span key={a.employee_id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>
+                                        {getEmployeeName(a.employee_id)}
+                                    </span>
+                                ))
+                                : <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', fontSize: '0.9rem' }}>{getEmployeeName(selectedTransaction.employee_id)}</span>
+                            }
+                        </div>
+                    </div>
+
+                    <button onClick={() => setSelectedTransaction(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                        Cerrar
+                    </button>
                 </div>
-            )}
-
-
-            {/* CHART SECTION (ADMIN ONLY) */}
-            {
-                userRole === 'admin' && (
-                    <ServiceAnalyticsChart transactions={transactions} />
-                )
-            }
-
-
-
-            {/* DEBUG PANEL */}
-            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-                <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                        <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
-                        <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
-                        <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
-                        <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
-                        <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
-                    </div>
-                    <div>
-                        {/* <p><strong>Sucursal:</strong> {branchId || 'Cargando...'}</p> REMOVED CAUSE CRASH */}
-                        <p><strong>Transacciones Hoy:</strong> {statsTransactions.length}</p>
-                        <p><strong>Total Ventas:</strong> ${totalIncome.toFixed(2)}</p>
-                        <p><strong>Total Comisiones:</strong> ${totalCommissions.toFixed(2)}</p>
-                    </div>
-                </div>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
-                    <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
-                </p>
             </div>
+        )
+    }
+
+
+    {/* CHART SECTION (ADMIN ONLY) */ }
+    {
+        userRole === 'admin' && (
+            <ServiceAnalyticsChart transactions={transactions} />
+        )
+    }
+
+
+
+    {/* DEBUG PANEL */ }
+    <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+        <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+                <p><strong>Email (Auth):</strong> {userEmail || 'Cargando...'}</p>
+                <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
+                <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
+                <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
+                <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
+            </div>
+            <div>
+                {/* <p><strong>Sucursal:</strong> {branchId || 'Cargando...'}</p> REMOVED CAUSE CRASH */}
+                <p><strong>Transacciones Hoy:</strong> {statsTransactions.length}</p>
+                <p><strong>Total Ventas:</strong> ${totalIncome.toFixed(2)}</p>
+                <p><strong>Total Comisiones:</strong> ${totalCommissions.toFixed(2)}</p>
+            </div>
+        </div>
+        <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
+            <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
+        </p>
+    </div>
         </div >
     );
 };
