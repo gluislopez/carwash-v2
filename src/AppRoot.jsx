@@ -11,6 +11,8 @@ import Customers from './pages/Customers';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
 import GamificationSettings from './pages/GamificationSettings';
+import GamificationSettings from './pages/GamificationSettings';
+import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
 
 // Componente para proteger rutas
@@ -140,6 +142,8 @@ const AppRoot = () => {
                                     <Route path="/customers" element={<Customers />} />
                                     <Route path="/reports" element={<Reports />} />
                                     <Route path="/expenses" element={<Expenses />} />
+                                    <Route path="/expenses" element={<Expenses />} />
+                                    <Route path="/commissions" element={<Commissions />} />
                                     <Route path="/gamification-settings" element={<GamificationSettings />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
