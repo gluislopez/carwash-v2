@@ -77,32 +77,67 @@ const RequireAuth = ({ children }) => {
     return children;
 };
 
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null, errorInfo: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        this.setState({ error, errorInfo });
+        console.error("Uncaught error:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ padding: '2rem', color: 'red', backgroundColor: 'white', height: '100vh' }}>
+                    <h1>Algo salió mal.</h1>
+                    <details style={{ whiteSpace: 'pre-wrap' }}>
+                        {this.state.error && this.state.error.toString()}
+                        <br />
+                        {this.state.errorInfo && this.state.errorInfo.componentStack}
+                    </details>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
 const AppRoot = () => {
     return (
-        <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/test-deployment" element={<TestDeployment />} />
+        <ErrorBoundary>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/test-deployment" element={<TestDeployment />} />
 
-            <Route
-                path="*"
-                element={
-                    <RequireAuth>
-                        <Layout>
-                            <Routes>
-                                <Route path="/" element={<Dashboard />} />
-                                <Route path="/services" element={<Services />} />
-                                <Route path="/employees" element={<Employees />} />
-                                <Route path="/customers" element={<Customers />} />
-                                <Route path="/reports" element={<Reports />} />
-                                <Route path="/expenses" element={<Expenses />} />
-                                <Route path="/gamification" element={<GamificationSettings />} />
-                                <Route path="*" element={<Navigate to="/" replace />} />
-                            </Routes>
-                        </Layout>
-                    </RequireAuth>
-                }
-            />
-        </Routes>
+                <Route
+                    path="*"
+                    element={
+                        <RequireAuth>
+                            <Layout>
+                                <Routes>
+                                    <Route path="/" element={<Dashboard />} />
+                                    <Route path="/services" element={<Services />} />
+                                    <Route path="/employees" element={<Employees />} />
+                                    <Route path="/customers" element={<Customers />} />
+                                    <Route path="/reports" element={<Reports />} />
+                                    <Route path="/expenses" element={<Expenses />} />
+                                    <Route path="/gamification" element={<GamificationSettings />} />
+                                    <Route path="*" element={<Navigate to="/" replace />} />
+                                </Routes>
+                            </Layout>
+                        </RequireAuth>
+                    }
+                />
+            </Routes>
+        </ErrorBoundary>
     );
 };
 
