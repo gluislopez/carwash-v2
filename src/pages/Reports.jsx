@@ -574,76 +574,76 @@ const Reports = () => {
                     </table>
                 </div>
             </div>
-        </div>
 
-            {/* CUSTOMER DETAILS MODAL */ }
-    {
-        selectedCustomer && (
-            <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 3000,
-                display: 'flex', justifyContent: 'center', alignItems: 'center'
-            }}>
-                <div className="card" style={{ width: '90%', maxWidth: '400px', position: 'relative' }}>
-                    <button
-                        onClick={() => setSelectedCustomer(null)}
-                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                    >
-                        <X size={24} />
-                    </button>
 
-                    <h2 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                        Detalles del Cliente
-                    </h2>
+            {/* CUSTOMER DETAILS MODAL */}
+            {
+                selectedCustomer && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 3000,
+                        display: 'flex', justifyContent: 'center', alignItems: 'center'
+                    }}>
+                        <div className="card" style={{ width: '90%', maxWidth: '400px', position: 'relative' }}>
+                            <button
+                                onClick={() => setSelectedCustomer(null)}
+                                style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                            >
+                                <X size={24} />
+                            </button>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div>
-                            <label className="label">Nombre</label>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{selectedCustomer.name}</div>
-                        </div>
+                            <h2 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                                Detalles del Cliente
+                            </h2>
 
-                        <div>
-                            <label className="label">Teléfono</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '1.1rem' }}>{selectedCustomer.phone || 'No registrado'}</span>
-                                {selectedCustomer.phone && (
-                                    <a href={`tel:${selectedCustomer.phone}`} style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
-                                        (Llamar)
-                                    </a>
-                                )}
-                            </div>
-                        </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div>
+                                    <label className="label">Nombre</label>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{selectedCustomer.name}</div>
+                                </div>
 
-                        <div>
-                            <label className="label">Email</label>
-                            <div>{selectedCustomer.email || 'No registrado'}</div>
-                        </div>
+                                <div>
+                                    <label className="label">Teléfono</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontSize: '1.1rem' }}>{selectedCustomer.phone || 'No registrado'}</span>
+                                        {selectedCustomer.phone && (
+                                            <a href={`tel:${selectedCustomer.phone}`} style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>
+                                                (Llamar)
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label className="label">Modelo</label>
-                                <div>{selectedCustomer.vehicle_model || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label className="label">Placa</label>
-                                <div style={{ fontFamily: 'monospace', backgroundColor: 'var(--bg-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'inline-block' }}>
-                                    {selectedCustomer.vehicle_plate || 'N/A'}
+                                <div>
+                                    <label className="label">Email</label>
+                                    <div>{selectedCustomer.email || 'No registrado'}</div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label className="label">Modelo</label>
+                                        <div>{selectedCustomer.vehicle_model || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <label className="label">Placa</label>
+                                        <div style={{ fontFamily: 'monospace', backgroundColor: 'var(--bg-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'inline-block' }}>
+                                            {selectedCustomer.vehicle_plate || 'N/A'}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => setSelectedCustomer(null)}
+                                className="btn btn-primary"
+                                style={{ width: '100%', marginTop: '2rem' }}
+                            >
+                                Cerrar
+                            </button>
                         </div>
                     </div>
-
-                    <button
-                        onClick={() => setSelectedCustomer(null)}
-                        className="btn btn-primary"
-                        style={{ width: '100%', marginTop: '2rem' }}
-                    >
-                        Cerrar
-                    </button>
-                </div>
-            </div>
-        )
-    }
+                )
+            }
         </div >
     );
 };
