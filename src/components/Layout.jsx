@@ -61,7 +61,7 @@ const Layout = ({ children }) => {
                 className="mobile-menu-btn"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 style={{
-                    position: 'fixed', top: '1rem', right: '1rem', zIndex: 100,
+                    position: 'fixed', top: '1rem', left: '1rem', zIndex: 100,
                     padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
                     display: 'none' // Hidden on desktop via CSS (need to ensure media query exists)
                 }}
