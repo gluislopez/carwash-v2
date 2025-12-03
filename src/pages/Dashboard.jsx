@@ -307,9 +307,10 @@ const Dashboard = () => {
         e.preventDefault();
 
         const basePrice = parseFloat(formData.price) || 0;
-        const extrasTotal = formData.extras.reduce((sum, extra) => sum + extra.price, 0);
-        const tip = parseFloat(formData.tipAmount) || 0;
-        const totalPrice = basePrice + extrasTotal + tip;
+        // En flujo pendiente, extras y propina son 0 inicialmente
+        const extrasTotal = 0;
+        const tip = 0;
+        const totalPrice = basePrice;
 
         const transactionDate = new Date();
         const [hours, minutes] = formData.serviceTime.split(':');
@@ -410,7 +411,7 @@ const Dashboard = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: '#EC4899', fontWeight: 'bold' }}>v3.39 CLEANUP {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: '#F59E0B', fontWeight: 'bold' }}>v3.40 FIX CRASH {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                 </div>
 
