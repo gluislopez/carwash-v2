@@ -43,8 +43,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Si estaba pendiente, al guardar se marca como pagado
-        const newStatus = formData.status === 'pending' ? 'paid' : formData.status;
+        // Logic: If pending -> paid. If in_progress -> completed (which means paid & done)
+        let newStatus = formData.status;
+        if (formData.status === 'pending') newStatus = 'paid';
+        if (formData.status === 'in_progress') newStatus = 'completed';
 
         onUpdate(transaction.id, {
             service_id: formData.serviceId,

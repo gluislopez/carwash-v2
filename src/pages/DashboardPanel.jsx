@@ -198,20 +198,9 @@ const Dashboard = () => {
         }
     };
 
-    const handlePayment = async (tx) => {
-        if (!confirm(`¿Cobrar $${tx.total_price} y finalizar?`)) return;
-
-        try {
-            await updateTransaction(tx.id, {
-                status: 'completed',
-                finished_at: new Date().toISOString()
-            });
-            await refreshTransactions();
-            alert("Cobro registrado correctamente.");
-        } catch (error) {
-            console.error("Payment error:", error);
-            alert("Error al cobrar: " + error.message);
-        }
+    const handlePayment = (tx) => {
+        // Open the Edit Modal to allow adding tips, extras, and selecting payment method
+        setEditingTransactionId(tx.id);
     };
 
     const { create: createCustomer } = useSupabase('customers');
@@ -505,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
-                            v4.73 MODAL FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.74 PAYMENT FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
