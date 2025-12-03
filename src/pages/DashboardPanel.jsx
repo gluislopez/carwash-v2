@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, ShoppingBag, User } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, ShoppingBag, User, Search } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -128,6 +128,8 @@ const Dashboard = () => {
     });
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
+    const [customerSearch, setCustomerSearch] = useState(''); // Estado para el buscador de clientes
+    const [showCustomerSearch, setShowCustomerSearch] = useState(false); // Toggle para mostrar el input
 
     // Quick Add Customer State
     const [isAddingCustomer, setIsAddingCustomer] = useState(false);
@@ -441,8 +443,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.19 UI FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366F1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366F1' }}>
+                            v4.20 SEARCH FEATURE {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -737,175 +739,223 @@ const Dashboard = () => {
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <select
                                                 className="input"
-                                                required
-                                                value={formData.customerId}
-                                                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                                style={{ flex: 1 }}
-                                            >
-                                                <option value="">Seleccionar Cliente...</option>
-                                                {customers.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary"
-                                                onClick={() => setIsAddingCustomer(true)}
-                                                title="Nuevo Cliente"
-                                                style={{
-                                                    flexShrink: 0,
-                                                    width: '48px',
-                                                    padding: 0,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                }}
-                                            >
-                                                <Plus size={24} color="white" strokeWidth={3} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
-                                            <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Nuevo Cliente Rápido</h4>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    placeholder="Nombre"
-                                                    value={newCustomer.name}
-                                                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    placeholder="Teléfono"
-                                                    value={newCustomer.phone}
-                                                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    placeholder="Placa"
-                                                    value={newCustomer.vehicle_plate}
-                                                    onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    placeholder="Modelo (Opcional)"
-                                                    value={newCustomer.vehicle_model}
-                                                    onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
-                                                />
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {/* SEARCH INPUT (Conditional) */}
+                                                {showCustomerSearch && (
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="🔍 Buscar por nombre o placa..."
+                                                        value={customerSearch}
+                                                        onChange={(e) => setCustomerSearch(e.target.value)}
+                                                        autoFocus
+                                                        style={{ marginBottom: '0.25rem' }}
+                                                    />
+                                                )}
+
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <select
+                                                        className="input"
+                                                        required
+                                                        value={formData.customerId}
+                                                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        <option value="">Seleccionar Cliente...</option>
+                                                        {customers
+                                                            .filter(c =>
+                                                                c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                                c.vehicle_plate.toLowerCase().includes(customerSearch.toLowerCase())
+                                                            )
+                                                            .map(c => (
+                                                                <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
+                                                            ))}
+                                                    </select>
+
+                                                    {/* SEARCH TOGGLE BUTTON */}
+                                                    <button
+                                                        type="button"
+                                                        className="btn"
+                                                        onClick={() => {
+                                                            setShowCustomerSearch(!showCustomerSearch);
+                                                            if (showCustomerSearch) setCustomerSearch(''); // Clear search on close
+                                                        }}
+                                                        title="Buscar Cliente"
+                                                        style={{
+                                                            flexShrink: 0,
+                                                            width: '48px',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            backgroundColor: showCustomerSearch ? 'var(--primary)' : 'var(--bg-secondary)',
+                                                            color: 'white'
+                                                        }}
+                                                    >
+                                                        <Search size={20} />
+                                                    </button>
+
+                                                    {/* ADD CUSTOMER BUTTON */}
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary"
+                                                        onClick={() => setIsAddingCustomer(true)}
+                                                        title="Nuevo Cliente"
+                                                        style={{
+                                                            flexShrink: 0,
+                                                            width: '48px',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        <Plus size={24} color="white" strokeWidth={3} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                <button
-                                                    type="button"
-                                                    className="btn"
-                                                    onClick={() => setIsAddingCustomer(false)}
-                                                    style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                                                >
-                                                    Cancelar
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary"
-                                                    onClick={handleCreateCustomer}
-                                                    disabled={!newCustomer.name || !newCustomer.vehicle_plate}
-                                                    style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                                                >
-                                                    Guardar Cliente
-                                                </button>
+                                            ) : (
+                                            <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
+                                                <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Nuevo Cliente Rápido</h4>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="Nombre"
+                                                        value={newCustomer.name}
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="Teléfono"
+                                                        value={newCustomer.phone}
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="Placa"
+                                                        value={newCustomer.vehicle_plate}
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="Modelo (Opcional)"
+                                                        value={newCustomer.vehicle_model}
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                    <button
+                                                        type="button"
+                                                        className="btn"
+                                                        onClick={() => setIsAddingCustomer(false)}
+                                                        style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary"
+                                                        onClick={handleCreateCustomer}
+                                                        disabled={!newCustomer.name || !newCustomer.vehicle_plate}
+                                                        style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                                                    >
+                                                        Guardar Cliente
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
                                     )}
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label className="label">Servicio Principal</label>
-                                <select
-                                    className="input"
-                                    required
-                                    value={formData.serviceId}
-                                    onChange={handleServiceChange}
-                                >
-                                    <option value="">Seleccionar Servicio...</option>
-                                    {services.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* SELECTOR DE EMPLEADO (SOLO ADMIN) - AHORA MULTIPLE */}
-                            {userRole === 'admin' && (
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Realizado por (Selección Múltiple)</label>
-                                    <div style={{
-                                        maxHeight: '150px',
-                                        overflowY: 'auto',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: 'var(--radius-md)',
-                                        padding: '0.5rem',
-                                        backgroundColor: 'var(--bg-card)'
-                                    }}>
-                                        <div style={{ marginBottom: '0.5rem' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.selectedEmployees.includes(myEmployeeId)}
-                                                    onChange={(e) => {
-                                                        const newSelection = e.target.checked
-                                                            ? [...formData.selectedEmployees, myEmployeeId]
-                                                            : formData.selectedEmployees.filter(id => id !== myEmployeeId);
-                                                        setFormData({ ...formData, selectedEmployees: newSelection });
-                                                    }}
-                                                />
-                                                <span>Yo (Admin)</span>
-                                            </label>
                                         </div>
-                                        {employees.filter(e => e.role !== 'admin').map(emp => (
-                                            <div key={emp.id} style={{ marginBottom: '0.5rem' }}>
+                            </div>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Servicio Principal</label>
+                                    <select
+                                        className="input"
+                                        required
+                                        value={formData.serviceId}
+                                        onChange={handleServiceChange}
+                                    >
+                                        <option value="">Seleccionar Servicio...</option>
+                                        {services.map(s => (
+                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* SELECTOR DE EMPLEADO (SOLO ADMIN) - AHORA MULTIPLE */}
+                                {userRole === 'admin' && (
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label className="label">Realizado por (Selección Múltiple)</label>
+                                        <div style={{
+                                            maxHeight: '150px',
+                                            overflowY: 'auto',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: 'var(--radius-md)',
+                                            padding: '0.5rem',
+                                            backgroundColor: 'var(--bg-card)'
+                                        }}>
+                                            <div style={{ marginBottom: '0.5rem' }}>
                                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        checked={formData.selectedEmployees.includes(emp.id)}
+                                                        checked={formData.selectedEmployees.includes(myEmployeeId)}
                                                         onChange={(e) => {
                                                             const newSelection = e.target.checked
-                                                                ? [...formData.selectedEmployees, emp.id]
-                                                                : formData.selectedEmployees.filter(id => id !== emp.id);
+                                                                ? [...formData.selectedEmployees, myEmployeeId]
+                                                                : formData.selectedEmployees.filter(id => id !== myEmployeeId);
                                                             setFormData({ ...formData, selectedEmployees: newSelection });
                                                         }}
                                                     />
-                                                    <span>{emp.name}</span>
+                                                    <span>Yo (Admin)</span>
                                                 </label>
                                             </div>
-                                        ))}
+                                            {employees.filter(e => e.role !== 'admin').map(emp => (
+                                                <div key={emp.id} style={{ marginBottom: '0.5rem' }}>
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formData.selectedEmployees.includes(emp.id)}
+                                                            onChange={(e) => {
+                                                                const newSelection = e.target.checked
+                                                                    ? [...formData.selectedEmployees, emp.id]
+                                                                    : formData.selectedEmployees.filter(id => id !== emp.id);
+                                                                setFormData({ ...formData, selectedEmployees: newSelection });
+                                                            }}
+                                                        />
+                                                        <span>{emp.name}</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <small style={{ color: 'var(--text-muted)' }}>Selecciona todos los que participaron.</small>
                                     </div>
-                                    <small style={{ color: 'var(--text-muted)' }}>Selecciona todos los que participaron.</small>
+                                )}
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Hora del Servicio</label>
+                                    <input
+                                        type="time"
+                                        className="input"
+                                        required
+                                        value={formData.serviceTime}
+                                        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
+                                    />
                                 </div>
-                            )}
-
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label className="label">Hora del Servicio</label>
-                                <input
-                                    type="time"
-                                    className="input"
-                                    required
-                                    value={formData.serviceTime}
-                                    onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
-                                />
-                            </div>
 
 
 
-                            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
-                                    Cancelar
-                                </button>
-                                <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-                                    Registrar Venta
-                                </button>
-                            </div>
+                                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                    <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
+                                        Cancelar
+                                    </button>
+                                    <button type="button" className="btn btn-primary" onClick={handleSubmit}>
+                                        Registrar Venta
+                                    </button>
+                                </div>
                         </form>
                     </div>
                 </div >
