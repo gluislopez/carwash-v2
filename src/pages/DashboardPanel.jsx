@@ -167,14 +167,15 @@ const Dashboard = () => {
         return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
     };
 
-    const today = getPRDateString(new Date());
+    // DATE FILTER LOGIC
+    const effectiveDate = dateFilter === 'today' ? getPRDateString(new Date()) : customDate;
 
-    // Filtro corregido: Compara fechas convertidas a PR, no strings crudos
-    const todaysTransactions = transactions.filter(t => getPRDateString(t.date) === today);
-    const todaysExpenses = expenses.filter(e => getPRDateString(e.date) === today && e.category === 'lunch');
+    // Filter transactions by the effective date
+    const filteredTransactions = transactions.filter(t => getPRDateString(t.date) === effectiveDate);
+    const filteredExpenses = expenses.filter(e => getPRDateString(e.date) === effectiveDate && e.category === 'lunch');
 
     // Para empleados: Filtrar SOLO sus transacciones para los contadores
-    const myTransactions = todaysTransactions.filter(t => {
+    const myTransactions = filteredTransactions.filter(t => {
         // 1. Verificar si está en la lista de asignaciones (Multi-empleado)
         const isAssigned = t.transaction_assignments?.some(a => a.employee_id === myEmployeeId);
         // 2. Verificar si es el empleado principal (Legacy/Fallback)
@@ -184,9 +185,9 @@ const Dashboard = () => {
     });
 
     // Si es Admin, usa TODO. Si es Empleado, usa SOLO LO SUYO.
-    const statsTransactions = userRole === 'admin' ? todaysTransactions : myTransactions;
+    const statsTransactions = userRole === 'admin' ? filteredTransactions : myTransactions;
 
-    const totalIncome = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+    const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
 
     // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
     const totalCommissions = statsTransactions.reduce((sum, t) => {
@@ -206,7 +207,7 @@ const Dashboard = () => {
     }, 0);
 
     // Calcular Almuerzos (Deducciones)
-    const totalLunches = todaysExpenses.reduce((sum, e) => {
+    const totalLunches = filteredExpenses.reduce((sum, e) => {
         // Si es Admin, suma todos los almuerzos. Si es Empleado, solo los suyos.
         if (userRole === 'admin' || e.employee_id === myEmployeeId) {
             return sum + (parseFloat(e.amount) || 0);
@@ -438,8 +439,43 @@ const Dashboard = () => {
         <div>
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#10B981', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #10B981' }}>v4.11 EMPLOYEES NET {new Date().toLocaleTimeString()}</span></h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#6366F1', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #6366F1' }}>v4.12 HISTORY VIEW {new Date().toLocaleTimeString()}</span></h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones: {effectiveDate}</p>
+
+                    {/* DATE FILTER CONTROLS */}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', alignItems: 'center' }}>
+                        <button
+                            className="btn"
+                            style={{
+                                backgroundColor: dateFilter === 'today' ? 'var(--primary)' : 'var(--bg-secondary)',
+                                color: 'white'
+                            }}
+                            onClick={() => setDateFilter('today')}
+                        >
+                            Hoy
+                        </button>
+                        <button
+                            className="btn"
+                            style={{
+                                backgroundColor: dateFilter === 'custom' ? 'var(--primary)' : 'var(--bg-secondary)',
+                                color: 'white'
+                            }}
+                            onClick={() => setDateFilter('custom')}
+                        >
+                            Historial
+                        </button>
+
+                        {dateFilter === 'custom' && (
+                            <input
+                                type="date"
+                                className="input"
+                                style={{ padding: '0.4rem', width: 'auto' }}
+                                value={customDate}
+                                onChange={(e) => setCustomDate(e.target.value)}
+                            />
+                        )}
+                    </div>
+
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
                     </div>
@@ -595,7 +631,7 @@ const Dashboard = () => {
                                             }, 0);
 
                                             // Calculate lunches
-                                            const empLunches = todaysExpenses
+                                            const empLunches = filteredExpenses
                                                 .filter(e => e.employee_id === emp.id)
                                                 .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
