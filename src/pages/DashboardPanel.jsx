@@ -441,7 +441,7 @@ const Dashboard = () => {
         <div>
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#2563EB', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.97 UI COMPLETE {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#EC4899', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>v3.98 MOBILE DASHBOARD {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
@@ -710,159 +710,147 @@ const Dashboard = () => {
 
             {/* SECCIÓN DE SERVICIOS ACTIVOS (PENDIENTES) */}
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#F59E0B' }}>⏳ Servicios en Proceso</h2>
-            <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflowX: 'auto', marginBottom: '3rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                            <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Hora</th>
-                            <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Cliente</th>
-                            <th style={{ padding: '1rem' }}>Servicio</th>
-                            <th style={{ padding: '1rem' }}>Empleado</th>
-                            <th style={{ padding: '1rem' }}>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {statsTransactions.filter(t => t.status === 'pending').length === 0 ? (
-                            <tr>
-                                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                    No hay servicios activos en este momento.
-                                </td>
-                            </tr>
-                        ) : (
-                            statsTransactions.filter(t => t.status === 'pending').map(t => (
-                                <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {getServiceName(t.service_id)}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                {statsTransactions.filter(t => t.status === 'pending').length === 0 ? (
+                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
+                        No hay servicios activos en este momento.
+                    </div>
+                ) : (
+                    statsTransactions.filter(t => t.status === 'pending').map(t => (
+                        <div key={t.id} className="card" style={{ position: 'relative', borderLeft: '4px solid #F59E0B' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <div>
+                                    <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</span>
+                                </div>
+                                <span style={{
+                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                    color: '#F59E0B',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold'
+                                }}>
+                                    {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <ShoppingBag size={16} className="text-primary" />
+                                    <span style={{ fontWeight: 'bold' }}>{getServiceName(t.service_id)}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                    <User size={16} />
+                                    <span>
                                         {t.transaction_assignments && t.transaction_assignments.length > 0
                                             ? t.transaction_assignments.map(a => {
                                                 const emp = employees.find(e => e.id === a.employee_id);
                                                 return emp ? emp.name : 'Unknown';
                                             }).join(', ')
                                             : (employees.find(e => e.id === t.employee_id)?.name || 'Unknown')}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <button
-                                            onClick={() => setEditingTransactionId(t.id)}
-                                            className="btn btn-primary"
-                                            style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem' }}
-                                        >
-                                            Completar y Cobrar
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setEditingTransactionId(t.id)}
+                                className="btn btn-primary"
+                                style={{ width: '100%', justifyContent: 'center' }}
+                            >
+                                Completar y Cobrar
+                            </button>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* SECCIÓN DE HISTORIAL (PAGADOS) */}
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
-            <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                            <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Hora</th>
-                            <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Cliente</th>
-                            <th style={{ padding: '1rem' }}>Servicio</th>
-                            <th style={{ padding: '1rem' }}>Empleado</th>
-                            <th style={{ padding: '1rem' }}>Total</th>
-                            <th style={{ padding: '1rem' }}>Pago</th>
-                            <th style={{ padding: '1rem' }}>Comisión</th>
-                            <th style={{ padding: '1rem' }}>Propina</th>
-                            {userRole === 'admin' && <th style={{ padding: '1rem' }}>Acciones</th>}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {statsTransactions.filter(t => t.status !== 'pending').map(t => (
-                            <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</td>
-                                <td style={{ padding: '1rem' }}>
-                                    <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                </td>
-                                <td style={{ padding: '1rem' }}>
-                                    {getServiceName(t.service_id)}
-                                    {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
-                                </td>
-                                <td style={{ padding: '1rem' }}>
-                                    {t.transaction_assignments && t.transaction_assignments.length > 0
-                                        ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                        : getEmployeeName(t.employee_id) // Fallback
-                                    }
-                                </td>
-                                <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                                    ${parseFloat(t.price || 0).toFixed(2)}
-                                </td>
-                                <td style={{ padding: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {statsTransactions.filter(t => t.status !== 'pending').map(t => (
+                    <div key={t.id} className="card" style={{ position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <div>
+                                <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span>•</span>
                                     <span style={{
-                                        padding: '0.25rem 0.75rem',
+                                        padding: '0.1rem 0.5rem',
                                         borderRadius: '9999px',
-                                        fontSize: '0.875rem',
                                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                                         color: '#10B981'
                                     }}>
                                         {getPaymentMethodLabel(t.payment_method)}
                                     </span>
-                                </td>
-                                <td style={{ padding: '1rem', color: 'var(--success)' }}>
-                                    ${parseFloat(t.commission_amount || 0).toFixed(2)}
-                                    {t.transaction_assignments?.length > 1 && (
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                            (÷ {t.transaction_assignments.length})
-                                        </span>
-                                    )}
-                                </td>
-                                <td style={{ padding: '1rem', color: 'var(--warning)' }}>
-                                    ${parseFloat(t.tip || 0).toFixed(2)}
-                                    {t.transaction_assignments?.length > 1 && (
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                            (÷ {t.transaction_assignments.length})
-                                        </span>
-                                    )}
-                                </td>
-                                {/* BOTÓN DE BORRAR (SOLO ADMIN) */}
-                                {userRole === 'admin' && (
-                                    <td style={{ padding: '1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                        <button
-                                            className="btn"
-                                            style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent', marginRight: '0.5rem' }}
-                                            onClick={() => setEditingTransactionId(t.id)}
-                                            title="Editar"
-                                        >
-                                            ✏️
-                                        </button>
-                                        <button
-                                            className="btn"
-                                            style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                            onClick={() => {
-                                                if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
-                                                    handleDeleteTransactionV2(t.id);
-                                                }
-                                            }}
-                                            title="Eliminar"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                    ${parseFloat(t.price || 0).toFixed(2)}
+                                </div>
+                                {t.tip > 0 && (
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
+                                        + ${parseFloat(t.tip).toFixed(2)} propina
+                                    </div>
                                 )}
-                            </tr>
-                        ))}
-                        {statsTransactions.length === 0 && (
-                            <tr>
-                                <td colSpan={userRole === 'admin' ? "9" : "8"} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                    No hay ventas registradas hoy
-                                </td>
-                            </tr>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
+                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
+                            </div>
+                            {t.extras && t.extras.length > 0 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
+                                    <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
+                                </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
+                                <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
+                                    {t.transaction_assignments && t.transaction_assignments.length > 0
+                                        ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                        : getEmployeeName(t.employee_id)
+                                    }
+                                </span>
+                            </div>
+                        </div>
+
+                        {userRole === 'admin' && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                                <button
+                                    className="btn"
+                                    style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
+                                    onClick={() => setEditingTransactionId(t.id)}
+                                    title="Editar"
+                                >
+                                    <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
+                                </button>
+                                <button
+                                    className="btn"
+                                    style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                    onClick={() => {
+                                        if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                            handleDeleteTransactionV2(t.id);
+                                        }
+                                    }}
+                                    title="Eliminar"
+                                >
+                                    <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
+                                </button>
+                            </div>
                         )}
-                    </tbody>
-                </table>
+                    </div>
+                ))}
+                {statsTransactions.length === 0 && (
+                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
+                        No hay ventas registradas hoy
+                    </div>
+                )}
             </div>
 
 
