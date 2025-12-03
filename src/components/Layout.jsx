@@ -15,18 +15,20 @@ const Layout = ({ children }) => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                setUserEmail(user.email);
+                setUserEmail(user.email || 'No Email');
 
                 // Fetch role and name
-                const { data: employee } = await supabase
+                const { data: employee, error } = await supabase
                     .from('employees')
                     .select('role, name')
                     .eq('user_id', user.id)
-                    .single();
+                    .maybeSingle(); // Use maybeSingle to avoid error on 0 rows
 
                 if (employee) {
                     setUserRole(employee.role);
                     setEmployeeName(employee.name);
+                } else if (error) {
+                    console.error("Error fetching employee in Layout:", error);
                 }
             }
         };

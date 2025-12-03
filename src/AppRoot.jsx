@@ -95,13 +95,24 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div style={{ padding: '2rem', color: 'red', backgroundColor: 'white', height: '100vh' }}>
-                    <h1>Algo salió mal.</h1>
-                    <details style={{ whiteSpace: 'pre-wrap' }}>
-                        {this.state.error && this.state.error.toString()}
-                        <br />
-                        {this.state.errorInfo && this.state.errorInfo.componentStack}
-                    </details>
+                <div style={{ padding: '2rem', color: '#DC2626', backgroundColor: '#FEF2F2', minHeight: '100vh', fontFamily: 'monospace' }}>
+                    <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>💥 CRASH DETECTED</h1>
+                    <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #FCA5A5', overflow: 'auto' }}>
+                        <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Error:</h3>
+                        <pre style={{ whiteSpace: 'pre-wrap', marginBottom: '1rem' }}>
+                            {this.state.error && this.state.error.toString()}
+                        </pre>
+                        <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Stack:</h3>
+                        <pre style={{ fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
+                            {this.state.errorInfo && this.state.errorInfo.componentStack}
+                        </pre>
+                    </div>
+                    <button
+                        onClick={() => window.location.reload()}
+                        style={{ marginTop: '2rem', padding: '1rem 2rem', backgroundColor: '#DC2626', color: 'white', border: 'none', borderRadius: '0.5rem', fontSize: '1.2rem', cursor: 'pointer' }}
+                    >
+                        🔄 RECARGAR PÁGINA
+                    </button>
                 </div>
             );
         }
