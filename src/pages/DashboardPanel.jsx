@@ -265,8 +265,10 @@ const Dashboard = () => {
         const isAssigned = t.transaction_assignments?.some(a => a.employee_id === myEmployeeId);
         // 2. Verificar si es el empleado principal (Legacy/Fallback)
         const isPrimary = t.employee_id === myEmployeeId;
+        // 3. Permitir ver la Cola de Espera (Shared Pool)
+        const isWaiting = t.status === 'waiting';
 
-        return isAssigned || isPrimary;
+        return isAssigned || isPrimary || isWaiting;
     });
 
     // Si es Admin, usa TODO. Si es Empleado, usa SOLO LO SUYO.
@@ -320,7 +322,8 @@ const Dashboard = () => {
     // GAMIFICATION CALCULATIONS
     // 1. Daily Count: Already filtered in 'myTransactions' (todaysTransactions for Admin, myTransactions for Employee)
     // For the bar, we want to show the specific employee's progress. If Admin, maybe show global? Let's show personal for now.
-    const dailyProductivityCount = myTransactions.length;
+    // FIX: Exclude 'waiting' from productivity count
+    const dailyProductivityCount = myTransactions.filter(t => t.status !== 'waiting').length;
 
     // 2. Total XP (Lifetime Cars)
     const [totalXp, setTotalXp] = useState(0);
@@ -502,8 +505,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.71 RLS FIX 2 {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.72 WAITING FIX {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
