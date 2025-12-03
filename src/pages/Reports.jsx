@@ -142,7 +142,12 @@ const Reports = () => {
         });
     };
 
-    const filteredTransactions = getFilteredTransactions();
+    const filteredTransactions = getFilteredTransactions().sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateB - dateA !== 0) return dateB - dateA;
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
     const filteredExpenses = getFilteredExpenses();
 
     // Stats Calculation
