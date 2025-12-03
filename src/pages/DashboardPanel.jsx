@@ -203,11 +203,17 @@ const Dashboard = () => {
     const handlePayment = async (tx) => {
         if (!confirm(`¿Cobrar $${tx.total_price} y finalizar?`)) return;
 
-        await updateTransaction(tx.id, {
-            status: 'completed',
-            finished_at: new Date().toISOString()
-        });
-        await refreshTransactions();
+        try {
+            await updateTransaction(tx.id, {
+                status: 'completed',
+                finished_at: new Date().toISOString()
+            });
+            await refreshTransactions();
+            alert("Cobro registrado correctamente.");
+        } catch (error) {
+            console.error("Payment error:", error);
+            alert("Error al cobrar: " + error.message);
+        }
     };
 
     const { create: createCustomer } = useSupabase('customers');
@@ -234,8 +240,14 @@ const Dashboard = () => {
     // Helper para manejar fechas en zona horaria de Puerto Rico
     const getPRDateString = (dateInput) => {
         if (!dateInput) return '';
-        const date = new Date(dateInput);
-        return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+        try {
+            const date = new Date(dateInput);
+            // Ensure we are getting YYYY-MM-DD
+            return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+        } catch (e) {
+            console.error("Date parse error:", e);
+            return '';
+        }
     };
 
     // DATE FILTER LOGIC
@@ -531,7 +543,7 @@ const Dashboard = () => {
                     </div>
 
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
-                        DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
+                        DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Filt={filteredTransactions.length} | EffDate={effectiveDate}
                     </div>
                 </div>
 
