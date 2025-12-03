@@ -494,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.74 PAYMENT FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
+                            v4.75 PAYMENT DETAIL {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -781,7 +781,20 @@ const Dashboard = () => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <span style={{
+                                                            fontSize: '0.75rem',
+                                                            padding: '0.1rem 0.4rem',
+                                                            borderRadius: '4px',
+                                                            marginRight: '0.5rem',
+                                                            backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                            color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
+                                                            border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`
+                                                        }}>
+                                                            {getPaymentMethodLabel(t.payment_method)}
+                                                        </span>
+                                                        <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                    </div>
                                                 </li>
                                             ))}
                                     </ul>
