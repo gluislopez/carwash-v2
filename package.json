@@ -1,8 +1,7 @@
-```json
 {
   "name": "carwash-saas",
   "private": true,
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Carwash SaaS Application",
   "main": "index.html",
   "scripts": {
