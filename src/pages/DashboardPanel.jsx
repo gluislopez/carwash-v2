@@ -112,6 +112,7 @@ const Dashboard = () => {
     const expenses = expensesData || [];
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeDetailModal, setActiveDetailModal] = useState(null); // 'cars', 'income', 'commissions'
     const [error, setError] = useState(null); // FIX: Define error state
 
     // Transaction Form State
@@ -436,7 +437,7 @@ const Dashboard = () => {
         <div>
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#F59E0B', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #F59E0B' }}>v4.07 EXTRAS MANUAL {new Date().toLocaleTimeString()}</span></h1>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Dashboard <span style={{ fontSize: '1rem', color: 'white', backgroundColor: '#3B82F6', border: '2px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 15px #3B82F6' }}>v4.08 INTERACTIVE STATS {new Date().toLocaleTimeString()}</span></h1>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones del día: {today}</p>
                     <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
                         DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Svc={services.length} | Emp={employees.length}
@@ -460,8 +461,14 @@ const Dashboard = () => {
             />
 
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div className="card">
-                    <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy' : 'Mis Autos Lavados'}</h3>
+                <div
+                    className="card"
+                    onClick={() => userRole === 'admin' && setActiveDetailModal('cars')}
+                    style={{ cursor: userRole === 'admin' ? 'pointer' : 'default', transition: 'transform 0.2s' }}
+                    onMouseEnter={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1.02)')}
+                    onMouseLeave={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1)')}
+                >
+                    <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy (Ver Detalles)' : 'Mis Autos Lavados'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{statsTransactions.length}</p>
@@ -470,15 +477,27 @@ const Dashboard = () => {
 
                 {/* SOLO ADMIN VE INGRESOS TOTALES */}
                 {userRole === 'admin' && (
-                    <div className="card">
-                        <h3 className="label">Ingresos Totales Hoy</h3>
+                    <div
+                        className="card"
+                        onClick={() => setActiveDetailModal('income')}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <h3 className="label">Ingresos Totales Hoy (Ver Detalles)</h3>
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
                         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>(Incluye extras y propinas)</p>
                     </div>
                 )}
 
-                <div className="card">
-                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Netas' : 'Mi Neto (Menos Almuerzos)'}</h3>
+                <div
+                    className="card"
+                    onClick={() => userRole === 'admin' && setActiveDetailModal('commissions')}
+                    style={{ cursor: userRole === 'admin' ? 'pointer' : 'default', transition: 'transform 0.2s' }}
+                    onMouseEnter={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1.02)')}
+                    onMouseLeave={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1)')}
+                >
+                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Netas (Ver Desglose)' : 'Mi Neto (Menos Almuerzos)'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</p>
                         {totalLunches > 0 && (
@@ -489,6 +508,117 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* DETAIL MODAL */}
+            {activeDetailModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+                }} onClick={() => setActiveDetailModal(null)}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        padding: '2rem',
+                        borderRadius: '0.5rem',
+                        width: '90%',
+                        maxWidth: '500px',
+                        maxHeight: '80vh',
+                        overflowY: 'auto'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ margin: 0 }}>
+                                {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
+                                {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
+                                {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
+                            </h2>
+                            <button onClick={() => setActiveDetailModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
+                        </div>
+
+                        {/* CONTENT BASED ON TYPE */}
+                        {activeDetailModal === 'cars' && (
+                            <div>
+                                {statsTransactions.length === 0 ? <p>No hay autos hoy.</p> : (
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {statsTransactions.map(t => (
+                                            <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>{t.customers?.vehicle_plate || 'Sin Placa'} ({t.customers?.name})</span>
+                                                <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+
+                        {activeDetailModal === 'income' && (
+                            <div>
+                                <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span>Efectivo:</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span>Tarjeta:</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Ath Móvil:</span>
+                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0).toFixed(2)}</span>
+                                    </div>
+                                    <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
+                                        <span>Total:</span>
+                                        <span>${totalIncome.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeDetailModal === 'commissions' && (
+                            <div>
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {employees.map(emp => {
+                                        // Calculate commission for this employee
+                                        const empCommission = statsTransactions.reduce((sum, t) => {
+                                            const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                            const isPrimary = t.employee_id === emp.id;
+
+                                            if (isAssigned || isPrimary) {
+                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                const count = (t.transaction_assignments?.length) || 1;
+                                                return sum + (txTotalCommission / count);
+                                            }
+                                            return sum;
+                                        }, 0);
+
+                                        // Calculate lunches
+                                        const empLunches = todaysExpenses
+                                            .filter(e => e.employee_id === emp.id)
+                                            .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                        const empNet = empCommission - empLunches;
+
+                                        if (empCommission === 0 && empLunches === 0) return null;
+
+                                        return (
+                                            <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                                    <span>{emp.name}</span>
+                                                    <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                    <span>Comisión: ${empCommission.toFixed(2)}</span>
+                                                    <span>Almuerzos: -${empLunches.toFixed(2)}</span>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div className="modal-overlay" style={{
