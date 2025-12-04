@@ -1,10 +1,5 @@
--- Ensure Storage Extension
-create extension if not exists "storage" schema "extensions";
-
--- Create bucket if not exists
-insert into storage.buckets (id, name, public)
-values ('receipts', 'receipts', true)
-on conflict (id) do nothing;
+-- 1. Create the 'receipts' bucket MANUALLY in Supabase Dashboard > Storage
+-- Then run this script to set up permissions.
 
 -- Drop existing policies to avoid conflicts
 drop policy if exists "Public Access" on storage.objects;
