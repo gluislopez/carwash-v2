@@ -496,8 +496,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.94 SEARCH FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.95 AUTOCOMPLETE {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -1086,82 +1086,141 @@ const Dashboard = () => {
                                     {!isAddingCustomer ? (
 
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            {/* SEARCH INPUT (Conditional) */}
-                                            {showCustomerSearch && (
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    placeholder="🔍 Buscar por nombre o placa..."
-                                                    value={customerSearch}
-                                                    onChange={(e) => setCustomerSearch(e.target.value)}
-                                                    autoFocus
-                                                    style={{ marginBottom: '0.25rem' }}
-                                                />
-                                            )}
+                                            {/* SEARCH MODE OR SELECT MODE */}
+                                            {showCustomerSearch ? (
+                                                <div style={{ position: 'relative' }}>
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <input
+                                                            type="text"
+                                                            className="input"
+                                                            placeholder="🔍 Escribe nombre o placa..."
+                                                            value={customerSearch}
+                                                            onChange={(e) => setCustomerSearch(e.target.value)}
+                                                            autoFocus
+                                                            style={{ flex: 1 }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="btn"
+                                                            onClick={() => {
+                                                                setShowCustomerSearch(false);
+                                                                setCustomerSearch('');
+                                                            }}
+                                                            style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
 
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <select
-                                                    className="input"
-                                                    required
-                                                    value={formData.customerId}
-                                                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                                    style={{ flex: 1 }}
-                                                >
-                                                    <option value="">Seleccionar Cliente...</option>
-                                                    {customers
-                                                        .filter(c =>
-                                                            (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                                                            (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())
-                                                        )
-                                                        .map(c => (
+                                                    {/* RESULTS LIST */}
+                                                    {customerSearch.length > 0 && (
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '100%',
+                                                            left: 0,
+                                                            right: 0,
+                                                            backgroundColor: 'var(--bg-card)',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '0.5rem',
+                                                            maxHeight: '200px',
+                                                            overflowY: 'auto',
+                                                            zIndex: 10,
+                                                            marginTop: '0.25rem',
+                                                            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                                                        }}>
+                                                            {customers
+                                                                .filter(c =>
+                                                                    (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                                    (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())
+                                                                )
+                                                                .map(c => (
+                                                                    <div
+                                                                        key={c.id}
+                                                                        onClick={() => {
+                                                                            setFormData({ ...formData, customerId: c.id });
+                                                                            setShowCustomerSearch(false);
+                                                                            setCustomerSearch('');
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '0.75rem',
+                                                                            borderBottom: '1px solid var(--border-color)',
+                                                                            cursor: 'pointer',
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center'
+                                                                        }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    >
+                                                                        <span style={{ fontWeight: 'bold' }}>{c.name}</span>
+                                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{c.vehicle_plate}</span>
+                                                                    </div>
+                                                                ))}
+                                                            {customers.filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
+                                                                <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                                    No se encontraron resultados
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <select
+                                                        className="input"
+                                                        required
+                                                        value={formData.customerId}
+                                                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        <option value="">Seleccionar Cliente...</option>
+                                                        {customers.map(c => (
                                                             <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
                                                         ))}
-                                                </select>
+                                                    </select>
 
-                                                {/* SEARCH TOGGLE BUTTON */}
-                                                <button
-                                                    type="button"
-                                                    className="btn"
-                                                    onClick={() => {
-                                                        setShowCustomerSearch(!showCustomerSearch);
-                                                        if (showCustomerSearch) setCustomerSearch(''); // Clear search on close
-                                                    }}
-                                                    title="Buscar Cliente"
-                                                    style={{
-                                                        flexShrink: 0,
-                                                        width: '48px',
-                                                        padding: 0,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        backgroundColor: showCustomerSearch ? 'var(--primary)' : 'var(--bg-secondary)',
-                                                        color: 'white',
-                                                        fontSize: '1.5rem'
-                                                    }}
-                                                >
-                                                    🔍
-                                                </button>
+                                                    {/* SEARCH TOGGLE BUTTON */}
+                                                    <button
+                                                        type="button"
+                                                        className="btn"
+                                                        onClick={() => setShowCustomerSearch(true)}
+                                                        title="Buscar Cliente"
+                                                        style={{
+                                                            flexShrink: 0,
+                                                            width: '48px',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            backgroundColor: 'var(--bg-secondary)',
+                                                            color: 'white',
+                                                            fontSize: '1.5rem'
+                                                        }}
+                                                    >
+                                                        🔍
+                                                    </button>
 
-                                                {/* ADD CUSTOMER BUTTON */}
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-primary"
-                                                    onClick={() => setIsAddingCustomer(true)}
-                                                    title="Nuevo Cliente"
-                                                    style={{
-                                                        flexShrink: 0,
-                                                        width: '48px',
-                                                        padding: 0,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '2rem',
-                                                        lineHeight: '1'
-                                                    }}
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
+                                                    {/* ADD CUSTOMER BUTTON */}
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-primary"
+                                                        onClick={() => setIsAddingCustomer(true)}
+                                                        title="Nuevo Cliente"
+                                                        style={{
+                                                            flexShrink: 0,
+                                                            width: '48px',
+                                                            padding: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '2rem',
+                                                            lineHeight: '1'
+                                                        }}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
