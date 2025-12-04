@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export const generateReceiptPDF = (transaction, serviceName, extras, total, tip) => {
     const doc = new jsPDF({
