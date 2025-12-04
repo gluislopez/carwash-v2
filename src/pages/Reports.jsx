@@ -352,7 +352,7 @@ const Reports = () => {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.124 PDF IMPORT FIX</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.125 PDF FIX 2</span></p>
                 </div>
 
                 <button

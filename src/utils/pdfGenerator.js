@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export const generateReceiptPDF = (transaction, serviceName, extras, total, tip) => {
     const doc = new jsPDF({
@@ -137,7 +137,7 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
         ['Ganancia Neta', `$${stats.net.toFixed(2)}`]
     ];
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: y,
         head: [['Métrica', 'Valor']],
         body: summaryData,
@@ -168,7 +168,7 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
         `$${t.total_price.toFixed(2)}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: y,
         head: tableHeaders,
         body: tableBody,
