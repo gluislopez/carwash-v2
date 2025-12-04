@@ -494,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
-                            v4.83 HISTORY MODEL {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.84 CLEAN UI {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -538,9 +538,7 @@ const Dashboard = () => {
                         )}
                     </div>
 
-                    <div style={{ fontSize: '0.8rem', color: 'yellow', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px', marginTop: '5px' }}>
-                        DEBUG: Role={userRole || 'null'} | Tx={transactions.length} | Filt={filteredTransactions.length} | EffDate={effectiveDate}
-                    </div>
+
                 </div>
 
                 {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
@@ -1492,62 +1490,8 @@ const Dashboard = () => {
 
 
 
-            {/* DEBUG PANEL */}
-            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1e293b', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-                <h4 style={{ marginBottom: '0.5rem', color: 'white' }}>🛠️ Panel de Diagnóstico (Solo visible durante pruebas)</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
 
-                        <p><strong>Mi ID (Auth):</strong> {myUserId || 'No detectado'}</p>
-                        <p><strong>Mi ID (Empleado):</strong> {myEmployeeId || '⚠️ NO VINCULADO'}</p>
-                        <p><strong>Rol:</strong> {userRole || 'Sin rol'}</p>
-                        <p style={{ color: 'red' }}><strong>Error:</strong> {debugInfo || 'Ninguno'}</p>
-                    </div>
-                    <div>
-                        {/* <p><strong>Sucursal:</strong> {branchId || 'Cargando...'}</p> REMOVED CAUSE CRASH */}
-                        <p><strong>Transacciones Hoy:</strong> {statsTransactions.length}</p>
-                        <p><strong>Total Ventas:</strong> ${totalIncome.toFixed(2)}</p>
-                        <p><strong>Total Comisiones:</strong> ${totalCommissions.toFixed(2)}</p>
-                    </div>
-                </div>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
-                    <em>Si "Mi ID (Empleado)" dice "NO VINCULADO", contacta al administrador para que vincule tu email.</em>
-                </p>
-            </div>
-            {/* DEBUG SECTION */}
-            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#1f2937', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#9ca3af' }}>
-                <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>DEBUG DATA (v4.52)</h4>
-                <p>Effective Date: {effectiveDate}</p>
-                <p>Total Transactions: {transactions.length}</p>
-                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left' }}>
-                                <th>ID</th>
-                                <th>Date (Raw)</th>
-                                <th>PR Date</th>
-                                <th>Status</th>
-                                <th>Match?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {transactions.map(t => {
-                                const prDate = getPRDateString(t.date);
-                                const isMatch = prDate === effectiveDate;
-                                return (
-                                    <tr key={t.id} style={{ borderBottom: '1px solid #374151', color: isMatch ? '#10B981' : '#EF4444' }}>
-                                        <td>{t.id.slice(0, 4)}</td>
-                                        <td>{t.date}</td>
-                                        <td>{prDate}</td>
-                                        <td>{t.status}</td>
-                                        <td>{isMatch ? 'YES' : 'NO'}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+
         </div >
     );
 };
