@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
+import { generateReceiptPDF } from '../utils/pdfGenerator';
 
 const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate }) => {
     if (!isOpen || !transaction) return null;
@@ -60,69 +61,30 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
             extras: extras // Save the extras array
         });
 
-        // WHATSAPP RECEIPT LOGIC (POS STYLE)
+        // PDF RECEIPT LOGIC
         if (sendReceipt && transaction.customers?.phone) {
-            const phone = transaction.customers.phone.replace(/\D/g, ''); // Remove non-digits
-            if (phone) {
-                const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
-                const dateObj = new Date();
-                const dateStr = dateObj.toLocaleDateString('es-PR');
-                const timeStr = dateObj.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' });
+            const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
+            const doc = generateReceiptPDF(
+                transaction,
+                serviceName,
+                extras,
+                formData.price,
+                formData.tip || 0
+            );
 
-                // Helper for alignment
-                const pad = (str, length) => {
-                    str = str.toString();
-                    return str.length < length ? str + ' '.repeat(length - str.length) : str.substring(0, length);
-                };
+            // Mobile Share
+            if (navigator.share) {
+                const pdfBlob = doc.output('blob');
+                const file = new File([pdfBlob], `recibo_${transaction.customers.vehicle_plate}.pdf`, { type: 'application/pdf' });
 
-                const padLeft = (str, length) => {
-                    str = str.toString();
-                    return str.length < length ? ' '.repeat(length - str.length) + str : str.substring(0, length);
-                };
-
-                const line = '--------------------------------';
-
-                let receipt = `🧾 *RECIBO DE PAGO*\n`;
-                receipt += `CarWash SaaS\n`;
-                receipt += `San Juan, PR\n`;
-                receipt += `${line}\n`;
-                receipt += `FECHA: ${dateStr} ${timeStr}\n`;
-                receipt += `CLIENTE: ${transaction.customers.name.toUpperCase()}\n`;
-                receipt += `AUTO: ${transaction.customers.vehicle_plate.toUpperCase()} (${(transaction.customers.vehicle_model || '').toUpperCase()})\n`;
-                receipt += `${line}\n`;
-                receipt += `DESCRIPCION          PRECIO\n`;
-                receipt += `${line}\n`;
-
-                // Items
-                const basePrice = (parseFloat(formData.price) - extras.reduce((sum, e) => sum + parseFloat(e.price), 0));
-                receipt += `${pad(serviceName.toUpperCase(), 20)} $${padLeft(basePrice.toFixed(2), 6)}\n`;
-
-                extras.forEach(ex => {
-                    receipt += `${pad(ex.description.toUpperCase(), 20)} $${padLeft(parseFloat(ex.price).toFixed(2), 6)}\n`;
-                });
-
-                receipt += `${line}\n`;
-
-                // Totals
-                const total = parseFloat(formData.price);
-                const tip = parseFloat(formData.tip) || 0;
-
-                receipt += `${pad('SUBTOTAL', 20)} $${padLeft(total.toFixed(2), 6)}\n`;
-                if (tip > 0) {
-                    receipt += `${pad('PROPINA', 20)} $${padLeft(tip.toFixed(2), 6)}\n`;
-                }
-
-                receipt += `${line}\n`;
-                receipt += `*${pad('TOTAL', 20)} $${padLeft((total + tip).toFixed(2), 6)}*\n`;
-                receipt += `${line}\n`;
-                receipt += `METODO: ${formData.paymentMethod === 'cash' ? 'EFECTIVO' : formData.paymentMethod === 'card' ? 'TARJETA' : 'ATH MOVIL'}\n`;
-                receipt += `${line}\n`;
-                receipt += `    ¡GRACIAS POR SU VISITA!\n`;
-
-                // Encode and wrap in monospace block for WhatsApp
-                const finalMessage = `\`\`\`\n${receipt}\n\`\`\``;
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(finalMessage)}`;
-                window.open(url, '_blank');
+                navigator.share({
+                    files: [file],
+                    title: 'Recibo de Pago',
+                    text: 'Aquí tiene su recibo de pago.'
+                }).catch(console.error);
+            } else {
+                // Desktop Fallback: Download
+                doc.save(`recibo_${transaction.customers.vehicle_plate}.pdf`);
             }
         }
     };
@@ -283,7 +245,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                                 style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
                             />
                             <label htmlFor="sendReceipt" style={{ cursor: 'pointer', color: 'var(--text-primary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>📱 Enviar Recibo por WhatsApp</span>
+                                <span>📄 Generar PDF y Compartir</span>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>({transaction.customers.phone})</span>
                             </label>
                         </div>
