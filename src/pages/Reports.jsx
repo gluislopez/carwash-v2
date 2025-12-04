@@ -352,7 +352,7 @@ const Reports = () => {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.125 PDF FIX 2</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#8B5CF6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.126 PDF DETAILS</span></p>
                 </div>
 
                 <button
@@ -365,10 +365,19 @@ const Reports = () => {
                                 net: adminNet
                             };
                             // Map service IDs to names for the PDF
-                            const enrichedTransactions = filteredTransactions.map(t => ({
-                                ...t,
-                                service_id: getServiceName(t.service_id)
-                            }));
+                            const enrichedTransactions = filteredTransactions.map(t => {
+                                const customer = customersList.find(c => c.id === t.customer_id) || {};
+                                const serviceName = getServiceName(t.service_id);
+                                const extrasCount = t.extras ? t.extras.length : 0;
+                                const extrasText = extrasCount > 0 ? ` (+ ${extrasCount} extras)` : '';
+
+                                return {
+                                    ...t,
+                                    client_info: `${customer.name || 'Cliente'} \n(${customer.vehicle_model || 'Modelo N/A'})`,
+                                    service_info: `${serviceName}${extrasText}`,
+                                    vehicle_plate: customer.vehicle_plate || 'N/A'
+                                };
+                            });
                             generateReportPDF(enrichedTransactions, dateRange, stats, userRole);
                         } catch (error) {
                             console.error("PDF Error:", error);

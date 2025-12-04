@@ -162,8 +162,8 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
 
     const tableBody = transactions.map(t => [
         new Date(t.date).toLocaleDateString() + ' ' + new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        t.customers?.vehicle_plate || 'Sin Placa',
-        t.service_id, // Ideally map to name, but ID is passed in raw txs usually. We might need names.
+        t.client_info || 'Cliente',
+        t.service_info || t.service_id,
         t.payment_method === 'cash' ? 'Efectivo' : t.payment_method === 'card' ? 'Tarjeta' : 'Ath Móvil',
         `$${t.total_price.toFixed(2)}`
     ]);
