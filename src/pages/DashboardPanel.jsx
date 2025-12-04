@@ -531,8 +531,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.114 FINAL ICONS {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.115 UNIFIED CARDS {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -674,18 +674,28 @@ const Dashboard = () => {
 
                 {/* COLA DE ESPERA (Summary Card) */}
                 <div
-                    className="card"
                     onClick={() => setActiveDetailModal('waiting_list')}
-                    style={{ cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}
+                    style={{
+                        backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '0.5rem',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
+                        border: activeDetailModal === 'waiting_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                        transition: 'transform 0.2s'
+                    }}
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <h3 className="label" style={{ color: 'var(--text-primary)' }}>⏳ Cola de Espera</h3>
-                    <Clock size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
-                    <p style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <h3 style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Cola de Espera</h3>
+                        <div style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', padding: '0.5rem', borderRadius: '50%' }}>
+                            <Clock size={24} color="#6366f1" />
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                         {statsTransactions.filter(t => t.status === 'waiting').length}
-                    </p>
-                    <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Click para asignar empleados</p>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                        Click para asignar
+                    </div>
                 </div>
 
                 {/* CARD: EN PROCESO */}
