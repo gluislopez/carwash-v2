@@ -494,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
-                            v4.82 VEHICLE MODEL {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#F59E0B', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #F59E0B' }}>
+                            v4.83 HISTORY MODEL {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -1301,6 +1301,9 @@ const Dashboard = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <div>
                                     <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                                        🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
+                                    </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                         <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
                                         <span>•</span>
