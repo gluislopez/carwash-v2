@@ -133,6 +133,8 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
     const summaryData = [
         ['Total Autos', stats.count],
         ['Ingresos Totales', `$${stats.income.toFixed(2)}`],
+        ['   - Efectivo', `$${stats.totalCash.toFixed(2)}`],
+        ['   - Ath Móvil', `$${stats.totalTransfer.toFixed(2)}`],
         ['Gastos (Comisiones + Compras)', `$${stats.expenses.toFixed(2)}`],
         ['Ganancia Neta', `$${stats.net.toFixed(2)}`]
     ];

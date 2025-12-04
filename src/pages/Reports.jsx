@@ -352,17 +352,27 @@ const Reports = () => {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#F472B6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.127 PDF COLORS</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.128 PDF TOTALS</span></p>
                 </div>
 
                 <button
                     onClick={() => {
                         try {
+                            const totalCash = filteredTransactions
+                                .filter(t => t.payment_method === 'cash')
+                                .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+
+                            const totalTransfer = filteredTransactions
+                                .filter(t => t.payment_method === 'transfer')
+                                .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+
                             const stats = {
                                 count: totalCount,
                                 income: totalIncome,
                                 expenses: totalCommissions + totalProductExpenses,
-                                net: adminNet
+                                net: adminNet,
+                                totalCash,
+                                totalTransfer
                             };
                             // Map service IDs to names for the PDF
                             const enrichedTransactions = filteredTransactions.map(t => {
