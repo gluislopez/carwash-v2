@@ -18,6 +18,7 @@ const Dashboard = () => {
     // REFACTOR: Store ID only, not the whole object
     const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
     const [userRole, setUserRole] = useState(null); // Estado para el rol
+    const [isRefreshing, setIsRefreshing] = useState(false); // Estado para el botón de refresh
 
     useEffect(() => {
         const getUser = async () => {
@@ -494,8 +495,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.85 REFRESH BTN {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.86 REFRESH SPIN {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -545,15 +546,23 @@ const Dashboard = () => {
                                 padding: '0.5rem',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.5rem'
+                                gap: '0.5rem',
+                                opacity: isRefreshing ? 0.7 : 1,
+                                cursor: isRefreshing ? 'wait' : 'pointer'
                             }}
                             onClick={async () => {
+                                if (isRefreshing) return;
+                                setIsRefreshing(true);
                                 await refreshTransactions();
                                 await refreshCustomers();
+                                setTimeout(() => setIsRefreshing(false), 500); // Visual delay
                             }}
                             title="Recargar datos"
                         >
-                            <RefreshCw size={18} />
+                            <RefreshCw size={18} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                            <style>{`
+                                @keyframes spin { 100% { transform: rotate(360deg); } }
+                            `}</style>
                         </button>
                     </div>
 
