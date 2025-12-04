@@ -532,7 +532,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.106 FIX LIST {new Date().toLocaleTimeString()}
+                            v4.107 FIX LIST 2 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -972,6 +972,50 @@ const Dashboard = () => {
                                                                     style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
                                                                 >
                                                                     🔔 Listo
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingTransactionId(t.id)}
+                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                                                                >
+                                                                    Editar
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeDetailModal === 'ready_list' && (
+                                <div>
+                                    {statsTransactions.filter(t => t.status === 'ready').length === 0 ? <p>No hay autos listos para recoger.</p> : (
+                                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                                            {statsTransactions
+                                                .filter(t => t.status === 'ready')
+                                                .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
+                                                .map(t => (
+                                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                            <div>
+                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
+                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+
+                                                                {t.finished_at && (
+                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                                                        Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                <button
+                                                                    className="btn"
+                                                                    onClick={() => handlePayment(t)}
+                                                                    style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                                >
+                                                                    Pagar
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setEditingTransactionId(t.id)}
