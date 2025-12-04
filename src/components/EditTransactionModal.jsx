@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Plus, Trash2, Loader2 } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
+import { supabase } from '../supabaseClient'; // Import Supabase Client
 
 const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate }) => {
     if (!isOpen || !transaction) return null;
@@ -18,6 +19,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     });
 
     const [sendReceipt, setSendReceipt] = useState(false); // WhatsApp Checkbox State
+    const [isUploading, setIsUploading] = useState(false); // Upload Loading State
 
     const handleAddExtra = () => {
         if (newExtra.description && newExtra.price) {
@@ -43,8 +45,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         setFormData({ ...formData, price: currentTotal - extraToRemove.price });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsUploading(true); // Start loading
 
         // Logic: If pending -> paid. If in_progress -> completed (which means paid & done)
         let newStatus = formData.status;
@@ -61,80 +64,51 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             extras: extras // Save the extras array
         });
 
-        // WHATSAPP RECEIPT LOGIC (CUSTOM TEXT)
+        // CLOUD PDF RECEIPT LOGIC
         if (sendReceipt && transaction.customers?.phone) {
-            const phone = transaction.customers.phone.replace(/\D/g, ''); // Remove non-digits
-            if (phone) {
+            try {
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
-                const dateObj = new Date();
-                const dateStr = dateObj.toLocaleDateString('es-PR');
-                const timeStr = dateObj.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' });
+                const doc = generateReceiptPDF(
+                    transaction,
+                    serviceName,
+                    extras,
+                    formData.price,
+                    formData.tip || 0
+                );
 
-                // Find Employee Name
-                // We check transaction_assignments first, but since we might be creating/updating, 
-                // we should ideally use the employee selected in the form if available, 
-                // but this modal doesn't seem to have employee selection logic visible in the snippet.
-                // Assuming transaction has assignments loaded.
-                const employeeId = transaction.transaction_assignments?.[0]?.employee_id;
-                const employeeName = employees?.find(e => e.id === employeeId)?.name || 'Personal';
+                const pdfBlob = doc.output('blob');
+                const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
 
-                // Helper for alignment
-                const pad = (str, length) => {
-                    str = str.toString();
-                    return str.length < length ? str + ' '.repeat(length - str.length) : str.substring(0, length);
-                };
+                // Upload to Supabase Storage
+                const { data, error } = await supabase.storage
+                    .from('receipts')
+                    .upload(fileName, pdfBlob, {
+                        contentType: 'application/pdf',
+                        upsert: true
+                    });
 
-                const padLeft = (str, length) => {
-                    str = str.toString();
-                    return str.length < length ? ' '.repeat(length - str.length) + str : str.substring(0, length);
-                };
+                if (error) throw error;
 
-                const line = '--------------------------------';
+                // Get Public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('receipts')
+                    .getPublicUrl(fileName);
 
-                let receipt = `🧾 *RECIBO DE PAGO*\n`;
-                receipt += `EXPRESS CARWASH\n`;
-                receipt += `BARRANQUITAS, PR\n`;
-                receipt += `${line}\n`;
-                receipt += `FECHA: ${dateStr} ${timeStr}\n`;
-                receipt += `CLIENTE: ${transaction.customers.name.toUpperCase()}\n`;
-                receipt += `AUTO: ${transaction.customers.vehicle_plate.toUpperCase()} (${(transaction.customers.vehicle_model || '').toUpperCase()})\n`;
-                receipt += `ATENDIDO POR: ${employeeName.toUpperCase()}\n`;
-                receipt += `${line}\n`;
-                receipt += `DESCRIPCION          PRECIO\n`;
-                receipt += `${line}\n`;
-
-                // Items
-                const basePrice = (parseFloat(formData.price) - extras.reduce((sum, e) => sum + parseFloat(e.price), 0));
-                receipt += `${pad(serviceName.toUpperCase(), 20)} $${padLeft(basePrice.toFixed(2), 6)}\n`;
-
-                extras.forEach(ex => {
-                    receipt += `${pad(ex.description.toUpperCase(), 20)} $${padLeft(parseFloat(ex.price).toFixed(2), 6)}\n`;
-                });
-
-                receipt += `${line}\n`;
-
-                // Totals
-                const total = parseFloat(formData.price);
-                const tip = parseFloat(formData.tip) || 0;
-
-                receipt += `${pad('SUBTOTAL', 20)} $${padLeft(total.toFixed(2), 6)}\n`;
-                if (tip > 0) {
-                    receipt += `${pad('PROPINA', 20)} $${padLeft(tip.toFixed(2), 6)}\n`;
+                // Send WhatsApp with Link
+                const phone = transaction.customers.phone.replace(/\D/g, '');
+                if (phone) {
+                    const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicUrl}`;
+                    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                    window.open(url, '_blank');
                 }
 
-                receipt += `${line}\n`;
-                receipt += `*${pad('TOTAL', 20)} $${padLeft((total + tip).toFixed(2), 6)}*\n`;
-                receipt += `${line}\n`;
-                receipt += `METODO: ${formData.paymentMethod === 'cash' ? 'EFECTIVO' : formData.paymentMethod === 'card' ? 'TARJETA' : 'ATH MOVIL'}\n`;
-                receipt += `${line}\n`;
-                receipt += `    ¡GRACIAS POR SU VISITA!\n`;
-
-                // Encode and wrap in monospace block for WhatsApp
-                const finalMessage = `\`\`\`\n${receipt}\n\`\`\``;
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(finalMessage)}`;
-                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Error uploading receipt:', error);
+                alert('Error al subir el recibo. Verifique su conexión.');
             }
         }
+
+        setIsUploading(false); // Stop loading
     };
 
     return (
@@ -293,7 +267,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                 style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
                             />
                             <label htmlFor="sendReceipt" style={{ cursor: 'pointer', color: 'var(--text-primary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>📱 Enviar Recibo por WhatsApp</span>
+                                <span>☁️ Subir PDF y Enviar Link</span>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>({transaction.customers.phone})</span>
                             </label>
                         </div>
@@ -303,9 +277,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                             Cancelar
                         </button>
-                        <button type="submit" className="btn btn-primary">
-                            <Save size={18} style={{ marginRight: '0.5rem' }} />
-                            {formData.status === 'pending' ? 'Completar y Pagar' : 'Guardar Cambios'}
+                        <button type="submit" className="btn btn-primary" disabled={isUploading}>
+                            {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
+                            {isUploading ? ' Procesando...' : (formData.status === 'pending' ? 'Completar y Pagar' : 'Guardar Cambios')}
                         </button>
                     </div>
                 </form>
