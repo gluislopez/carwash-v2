@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -531,8 +531,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
-                            v4.108 RECEIPT FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.109 UI POLISH {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -919,15 +919,15 @@ const Dashboard = () => {
                                                             <button
                                                                 className="btn btn-primary"
                                                                 onClick={() => handleStartService(t.id)}
-                                                                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                                             >
-                                                                Comenzar
+                                                                <Play size={16} /> Comenzar
                                                             </button>
                                                             <button
                                                                 onClick={() => setEditingTransactionId(t.id)}
-                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
                                                             >
-                                                                Editar
+                                                                <Edit2 size={14} /> Editar
                                                             </button>
                                                         </div>
                                                     </div>
@@ -969,15 +969,15 @@ const Dashboard = () => {
                                                                     className="btn"
                                                                     onClick={() => handleNotifyReady(t)}
                                                                     title="Notificar al cliente que está listo"
-                                                                    style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                                    style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                                                 >
-                                                                    🔔 Listo
+                                                                    <Send size={16} /> Listo
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setEditingTransactionId(t.id)}
-                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                                                 >
-                                                                    Editar
+                                                                    <Edit2 size={14} /> Editar
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -1013,15 +1013,15 @@ const Dashboard = () => {
                                                                 <button
                                                                     className="btn"
                                                                     onClick={() => handlePayment(t)}
-                                                                    style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                                    style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                                                 >
-                                                                    Pagar
+                                                                    <DollarSign size={16} /> Pagar
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setEditingTransactionId(t.id)}
-                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
+                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                                                 >
-                                                                    Editar
+                                                                    <Edit2 size={14} /> Editar
                                                                 </button>
                                                             </div>
                                                         </div>
