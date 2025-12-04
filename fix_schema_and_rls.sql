@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     model TEXT,
     brand TEXT,
     color TEXT,
-    customer_id BIGINT REFERENCES customers(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
