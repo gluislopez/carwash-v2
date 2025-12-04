@@ -98,7 +98,7 @@ const Dashboard = () => {
     const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
     const customers = customersData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model, phone), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
     const { data: expensesData } = useSupabase('expenses');
@@ -496,8 +496,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EC4899', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EC4899' }}>
-                            v4.91 LAYOUT FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#25D366', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #25D366' }}>
+                            v4.92 WHATSAPP {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>

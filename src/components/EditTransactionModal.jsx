@@ -16,6 +16,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
         status: transaction.status || 'pending'
     });
 
+    const [sendReceipt, setSendReceipt] = useState(false); // WhatsApp Checkbox State
+
     const handleAddExtra = () => {
         if (newExtra.description && newExtra.price) {
             const price = parseFloat(newExtra.price);
@@ -57,6 +59,34 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
             status: newStatus,
             extras: extras // Save the extras array
         });
+
+        // WHATSAPP RECEIPT LOGIC
+        if (sendReceipt && transaction.customers?.phone) {
+            const phone = transaction.customers.phone.replace(/\D/g, ''); // Remove non-digits
+            if (phone) {
+                const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
+                const dateStr = new Date().toLocaleDateString('es-PR');
+
+                let message = `🧾 *Recibo de Lavado - CarWash*\n`;
+                message += `📅 Fecha: ${dateStr}\n`;
+                message += `🚗 Vehículo: ${transaction.customers.vehicle_plate} (${transaction.customers.vehicle_model || ''})\n`;
+                message += `👤 Cliente: ${transaction.customers.name}\n\n`;
+
+                message += `🛠️ *Servicios:*\n`;
+                message += `- ${serviceName}: $${(parseFloat(formData.price) - extras.reduce((sum, e) => sum + parseFloat(e.price), 0)).toFixed(2)}\n`;
+
+                extras.forEach(ex => {
+                    message += `- ${ex.description}: $${parseFloat(ex.price).toFixed(2)}\n`;
+                });
+
+                message += `\n💰 *Total: $${parseFloat(formData.price).toFixed(2)}*\n`;
+                message += `💳 *Método:* ${formData.paymentMethod === 'cash' ? 'Efectivo' : formData.paymentMethod === 'card' ? 'Tarjeta' : 'AthMóvil'}\n\n`;
+                message += `¡Gracias por su preferencia! 🚿✨`;
+
+                const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            }
+        }
     };
 
     return (
@@ -203,6 +233,23 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
                             <option value="transfer">AthMóvil</option>
                         </select>
                     </div>
+
+                    {/* WHATSAPP CHECKBOX */}
+                    {transaction.customers?.phone && (
+                        <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: 'rgba(37, 211, 102, 0.1)', borderRadius: '0.5rem', border: '1px solid #25D366', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <input
+                                type="checkbox"
+                                id="sendReceipt"
+                                checked={sendReceipt}
+                                onChange={(e) => setSendReceipt(e.target.checked)}
+                                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="sendReceipt" style={{ cursor: 'pointer', color: 'var(--text-primary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>📱 Enviar Recibo por WhatsApp</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>({transaction.customers.phone})</span>
+                            </label>
+                        </div>
+                    )}
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                         <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
