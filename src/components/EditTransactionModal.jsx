@@ -54,7 +54,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         if (formData.status === 'pending') newStatus = 'paid';
         if (formData.status === 'in_progress') newStatus = 'completed';
 
-        onUpdate(transaction.id, {
+        await onUpdate(transaction.id, {
             service_id: formData.serviceId,
             price: parseFloat(formData.price),
             payment_method: formData.paymentMethod,
@@ -111,6 +111,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         }
 
         setIsUploading(false); // Stop loading
+        onClose(); // Close modal manually after everything is done
     };
 
     return (
