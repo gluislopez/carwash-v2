@@ -101,6 +101,14 @@ const Dashboard = () => {
     const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model, phone), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
+    // Auto-refresh transactions every 2 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            refreshTransactions();
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [refreshTransactions]);
+
     const { data: expensesData } = useSupabase('expenses');
     const expenses = expensesData || [];
 
@@ -531,8 +539,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
-                            v4.131 GLOBAL SYNC 10 {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
+                            v4.132 AUTO SYNC {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
