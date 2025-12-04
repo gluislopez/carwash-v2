@@ -60,30 +60,68 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, onUpdate
             extras: extras // Save the extras array
         });
 
-        // WHATSAPP RECEIPT LOGIC
+        // WHATSAPP RECEIPT LOGIC (POS STYLE)
         if (sendReceipt && transaction.customers?.phone) {
             const phone = transaction.customers.phone.replace(/\D/g, ''); // Remove non-digits
             if (phone) {
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
-                const dateStr = new Date().toLocaleDateString('es-PR');
+                const dateObj = new Date();
+                const dateStr = dateObj.toLocaleDateString('es-PR');
+                const timeStr = dateObj.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' });
 
-                let message = `🧾 *Recibo de Lavado - CarWash*\n`;
-                message += `📅 Fecha: ${dateStr}\n`;
-                message += `🚗 Vehículo: ${transaction.customers.vehicle_plate} (${transaction.customers.vehicle_model || ''})\n`;
-                message += `👤 Cliente: ${transaction.customers.name}\n\n`;
+                // Helper for alignment
+                const pad = (str, length) => {
+                    str = str.toString();
+                    return str.length < length ? str + ' '.repeat(length - str.length) : str.substring(0, length);
+                };
 
-                message += `🛠️ *Servicios:*\n`;
-                message += `- ${serviceName}: $${(parseFloat(formData.price) - extras.reduce((sum, e) => sum + parseFloat(e.price), 0)).toFixed(2)}\n`;
+                const padLeft = (str, length) => {
+                    str = str.toString();
+                    return str.length < length ? ' '.repeat(length - str.length) + str : str.substring(0, length);
+                };
+
+                const line = '--------------------------------';
+
+                let receipt = `🧾 *RECIBO DE PAGO*\n`;
+                receipt += `CarWash SaaS\n`;
+                receipt += `San Juan, PR\n`;
+                receipt += `${line}\n`;
+                receipt += `FECHA: ${dateStr} ${timeStr}\n`;
+                receipt += `CLIENTE: ${transaction.customers.name.toUpperCase()}\n`;
+                receipt += `AUTO: ${transaction.customers.vehicle_plate.toUpperCase()} (${(transaction.customers.vehicle_model || '').toUpperCase()})\n`;
+                receipt += `${line}\n`;
+                receipt += `DESCRIPCION          PRECIO\n`;
+                receipt += `${line}\n`;
+
+                // Items
+                const basePrice = (parseFloat(formData.price) - extras.reduce((sum, e) => sum + parseFloat(e.price), 0));
+                receipt += `${pad(serviceName.toUpperCase(), 20)} $${padLeft(basePrice.toFixed(2), 6)}\n`;
 
                 extras.forEach(ex => {
-                    message += `- ${ex.description}: $${parseFloat(ex.price).toFixed(2)}\n`;
+                    receipt += `${pad(ex.description.toUpperCase(), 20)} $${padLeft(parseFloat(ex.price).toFixed(2), 6)}\n`;
                 });
 
-                message += `\n💰 *Total: $${parseFloat(formData.price).toFixed(2)}*\n`;
-                message += `💳 *Método:* ${formData.paymentMethod === 'cash' ? 'Efectivo' : formData.paymentMethod === 'card' ? 'Tarjeta' : 'AthMóvil'}\n\n`;
-                message += `¡Gracias por su preferencia! 🚿✨`;
+                receipt += `${line}\n`;
 
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                // Totals
+                const total = parseFloat(formData.price);
+                const tip = parseFloat(formData.tip) || 0;
+
+                receipt += `${pad('SUBTOTAL', 20)} $${padLeft(total.toFixed(2), 6)}\n`;
+                if (tip > 0) {
+                    receipt += `${pad('PROPINA', 20)} $${padLeft(tip.toFixed(2), 6)}\n`;
+                }
+
+                receipt += `${line}\n`;
+                receipt += `*${pad('TOTAL', 20)} $${padLeft((total + tip).toFixed(2), 6)}*\n`;
+                receipt += `${line}\n`;
+                receipt += `METODO: ${formData.paymentMethod === 'cash' ? 'EFECTIVO' : formData.paymentMethod === 'card' ? 'TARJETA' : 'ATH MOVIL'}\n`;
+                receipt += `${line}\n`;
+                receipt += `    ¡GRACIAS POR SU VISITA!\n`;
+
+                // Encode and wrap in monospace block for WhatsApp
+                const finalMessage = `\`\`\`\n${receipt}\n\`\`\``;
+                const url = `https://wa.me/${phone}?text=${encodeURIComponent(finalMessage)}`;
                 window.open(url, '_blank');
             }
         }
