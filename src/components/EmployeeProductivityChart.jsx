@@ -49,9 +49,9 @@ const EmployeeProductivityChart = ({ transactions, employees }) => {
     return (
         <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>🏆 Productividad de Empleados (Hoy)</h3>
-            <div style={{ height: '250px', width: '100%' }}>
+            <div style={{ height: '150px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={data} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" horizontal={false} />
                         <XAxis type="number" hide />
                         <YAxis
@@ -75,7 +75,7 @@ const EmployeeProductivityChart = ({ transactions, employees }) => {
                                 return label;
                             }}
                         />
-                        <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} barSize={20}>
+                        <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: 'var(--text-main)', fontSize: 12, fontWeight: 'bold' }}>
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={index === 0 ? '#F59E0B' : index === 1 ? '#9CA3AF' : index === 2 ? '#B45309' : 'var(--primary)'} />
                             ))}
