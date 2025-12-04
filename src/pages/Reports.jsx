@@ -12,6 +12,7 @@ const Reports = () => {
     const [myEmployeeId, setMyEmployeeId] = useState(null);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [userRole, setUserRole] = useState(null);
+    const [paymentMethodFilter, setPaymentMethodFilter] = useState('all'); // 'all', 'cash', 'transfer'
 
     // Fetch user info
     useEffect(() => {
@@ -352,7 +353,8 @@ const Reports = () => {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.128 PDF TOTALS</span></p>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.129 PAYMENT FILTERS</span></p>
                 </div>
 
                 <button
@@ -419,7 +421,7 @@ const Reports = () => {
                     </div>
                     <select
                         className="input"
-                        style={{ width: 'auto' }}
+                        style={{ width: 'auto', padding: '0.4rem', fontSize: '0.9rem' }}
                         value={dateRange}
                         onChange={(e) => setDateRange(e.target.value)}
                     >
@@ -428,6 +430,42 @@ const Reports = () => {
                         <option value="month">Este Mes</option>
                         <option value="custom">Personalizado</option>
                     </select>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                        <button
+                            onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'transfer' ? 'all' : 'transfer')}
+                            style={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                padding: '0.3rem 0.8rem',
+                                border: '1px solid #F59E0B',
+                                borderRadius: '6px',
+                                backgroundColor: paymentMethodFilter === 'transfer' ? '#F59E0B' : 'transparent',
+                                color: paymentMethodFilter === 'transfer' ? 'white' : '#F59E0B',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>ATH MÓVIL</span>
+                            <span style={{ fontSize: '0.9rem' }}>${totalTransfer.toFixed(2)}</span>
+                        </button>
+
+                        <button
+                            onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'cash' ? 'all' : 'cash')}
+                            style={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                padding: '0.3rem 0.8rem',
+                                border: '1px solid #10B981',
+                                borderRadius: '6px',
+                                backgroundColor: paymentMethodFilter === 'cash' ? '#10B981' : 'transparent',
+                                color: paymentMethodFilter === 'cash' ? 'white' : '#10B981',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
+                            <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
+                        </button>
+                    </div>
 
                     {dateRange === 'custom' && (
                         <>
