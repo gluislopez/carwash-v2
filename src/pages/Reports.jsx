@@ -357,18 +357,23 @@ const Reports = () => {
 
                 <button
                     onClick={() => {
-                        const stats = {
-                            count: totalCount,
-                            income: totalIncome,
-                            expenses: totalCommissions + totalProductExpenses,
-                            net: adminNet
-                        };
-                        // Map service IDs to names for the PDF
-                        const enrichedTransactions = filteredTransactions.map(t => ({
-                            ...t,
-                            service_id: getServiceName(t.service_id)
-                        }));
-                        generateReportPDF(enrichedTransactions, dateRange, stats, userRole);
+                        try {
+                            const stats = {
+                                count: totalCount,
+                                income: totalIncome,
+                                expenses: totalCommissions + totalProductExpenses,
+                                net: adminNet
+                            };
+                            // Map service IDs to names for the PDF
+                            const enrichedTransactions = filteredTransactions.map(t => ({
+                                ...t,
+                                service_id: getServiceName(t.service_id)
+                            }));
+                            generateReportPDF(enrichedTransactions, dateRange, stats, userRole);
+                        } catch (error) {
+                            console.error("PDF Error:", error);
+                            alert("Error al generar PDF: " + error.message);
+                        }
                     }}
                     className="btn btn-primary"
                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
