@@ -106,7 +106,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             } catch (error) {
                 console.error('Error uploading receipt:', error);
-                alert('Error al subir el recibo. Verifique su conexión.');
+                alert('Error al subir el recibo: ' + (error.message || error.error_description || JSON.stringify(error)));
             }
         }
 
