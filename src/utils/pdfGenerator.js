@@ -34,9 +34,9 @@ export const generateReceiptPDF = (transaction, serviceName, extras, total, tip)
     // HEADER
     centerText('RECIBO DE PAGO', y, 12, true);
     y += 5;
-    centerText('CarWash SaaS', y, 10);
+    centerText('Express CarWash', y, 10);
     y += 5;
-    centerText('San Juan, PR', y, 10);
+    centerText('Barranquitas, PR', y, 10);
     y += 5;
     line(y);
     y += 5;
