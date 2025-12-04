@@ -104,6 +104,28 @@ const Dashboard = () => {
     const { data: expensesData } = useSupabase('expenses');
     const expenses = expensesData || [];
 
+    const handleNotifyReady = (transaction) => {
+        if (!transaction.customers?.phone) {
+            alert('Este cliente no tiene número de teléfono registrado.');
+            return;
+        }
+
+        const phone = transaction.customers.phone.replace(/\D/g, '');
+        if (!phone) {
+            alert('Número de teléfono inválido.');
+            return;
+        }
+
+        const customerName = transaction.customers.name.split(' ')[0]; // First name
+        const vehicle = `${transaction.customers.vehicle_plate} (${transaction.customers.vehicle_model || ''})`;
+
+        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo para recoger en Express CarWash. 🚗✨\n¡Lo esperamos!`;
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+        // Use location.href to avoid popup blockers
+        window.location.href = url;
+    };
+
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // HELPER FUNCTIONS (Moved to top to avoid ReferenceError)
@@ -496,8 +518,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#8B5CF6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #8B5CF6' }}>
-                            v4.101 ASYNC FIX {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
+                            v4.102 READY NOTIFY {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -937,6 +959,14 @@ const Dashboard = () => {
                                                                 style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
                                                             >
                                                                 Pagar
+                                                            </button>
+                                                            <button
+                                                                className="btn"
+                                                                onClick={() => handleNotifyReady(t)}
+                                                                title="Notificar al cliente que está listo"
+                                                                style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                                            >
+                                                                🔔 Listo
                                                             </button>
                                                             <button
                                                                 onClick={() => setEditingTransactionId(t.id)}
