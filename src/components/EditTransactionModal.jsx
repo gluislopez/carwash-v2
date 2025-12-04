@@ -49,10 +49,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         e.preventDefault();
         setIsUploading(true); // Start loading
 
-        // Logic: If pending -> paid. If in_progress -> completed (which means paid & done)
+        // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
         let newStatus = formData.status;
         if (formData.status === 'pending') newStatus = 'paid';
-        if (formData.status === 'in_progress') newStatus = 'completed';
+        if (formData.status === 'in_progress' || formData.status === 'ready') newStatus = 'completed';
 
         await onUpdate(transaction.id, {
             service_id: formData.serviceId,
