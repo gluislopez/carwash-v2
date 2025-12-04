@@ -104,7 +104,80 @@ export const generateReceiptPDF = (transaction, serviceName, extras, total, tip)
     // FOOTER
     centerText('¡GRACIAS POR SU VISITA!', y, 10);
     y += 5;
-    centerText('Vuelva Pronto', y, 9);
-
+    doc.save(`recibo_${transaction.id}.pdf`);
     return doc;
+};
+
+export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text('Reporte Financiero - Express CarWash', 14, 20);
+
+    doc.setFontSize(10);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Periodo: ${dateRange.toUpperCase()}`, 14, 34);
+
+    // Summary Section
+    let y = 45;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resumen', 14, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    const summaryData = [
+        ['Total Autos', stats.count],
+        ['Ingresos Totales', `$${stats.income.toFixed(2)}`],
+        ['Gastos (Comisiones + Compras)', `$${stats.expenses.toFixed(2)}`],
+        ['Ganancia Neta', `$${stats.net.toFixed(2)}`]
+    ];
+
+    doc.autoTable({
+        startY: y,
+        head: [['Métrica', 'Valor']],
+        body: summaryData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] }, // Blue header
+        columnStyles: {
+            0: { fontStyle: 'bold' },
+            1: { halign: 'right' }
+        },
+        margin: { left: 14, right: 100 } // Narrow table for summary
+    });
+
+    y = doc.lastAutoTable.finalY + 15;
+
+    // Transactions Table
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Detalle de Transacciones', 14, y);
+    y += 5;
+
+    const tableHeaders = [['Fecha', 'Cliente', 'Servicio', 'Método', 'Total']];
+
+    const tableBody = transactions.map(t => [
+        new Date(t.date).toLocaleDateString() + ' ' + new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        t.customers?.vehicle_plate || 'Sin Placa',
+        t.service_id, // Ideally map to name, but ID is passed in raw txs usually. We might need names.
+        t.payment_method === 'cash' ? 'Efectivo' : t.payment_method === 'card' ? 'Tarjeta' : 'Ath Móvil',
+        `$${t.total_price.toFixed(2)}`
+    ]);
+
+    doc.autoTable({
+        startY: y,
+        head: tableHeaders,
+        body: tableBody,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 41, 41] }, // Dark header
+        styles: { fontSize: 8 },
+        columnStyles: {
+            4: { halign: 'right', fontStyle: 'bold' }
+        }
+    });
+
+    doc.save(`reporte_${dateRange}_${Date.now()}.pdf`);
 };

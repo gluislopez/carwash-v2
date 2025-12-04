@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Calendar, DollarSign, Car, Users, Filter, X } from 'lucide-react';
+import { Calendar, DollarSign, Car, Users, Filter, X, Download } from 'lucide-react';
+import { generateReportPDF } from '../utils/pdfGenerator';
 import useSupabase from '../hooks/useSupabase';
 
 const Reports = () => {
@@ -351,8 +352,30 @@ const Reports = () => {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Historial y estadísticas</p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#8B5CF6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.119 PDF REPORTS</span></p>
                 </div>
+
+                <button
+                    onClick={() => {
+                        const stats = {
+                            count: totalCount,
+                            income: totalIncome,
+                            expenses: totalCommissions + totalProductExpenses,
+                            net: adminNet
+                        };
+                        // Map service IDs to names for the PDF
+                        const enrichedTransactions = filteredTransactions.map(t => ({
+                            ...t,
+                            service_id: getServiceName(t.service_id)
+                        }));
+                        generateReportPDF(enrichedTransactions, dateRange, stats, userRole);
+                    }}
+                    className="btn btn-primary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                    <Download size={20} />
+                    Descargar PDF
+                </button>
                 <div className="no-print" style={{ display: 'flex', gap: '1rem' }}>
                     <button className="btn" onClick={handleCopyToEmail} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
                         Copiar para Email
