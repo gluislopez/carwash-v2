@@ -7,7 +7,17 @@ const EmployeeProductivityChart = ({ transactions, employees }) => {
 
         const employeeCounts = {};
 
+        const startOfWeek = new Date();
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+
         transactions.forEach(t => {
+            const tDate = new Date(t.date);
+            // Filter: Must be within current week (>= Monday)
+            if (tDate < startOfWeek) return;
+
             // Only count completed/paid transactions
             if (t.status === 'completed' || t.status === 'paid') {
                 // Handle assignments
@@ -41,15 +51,15 @@ const EmployeeProductivityChart = ({ transactions, employees }) => {
     if (data.length === 0) {
         return (
             <div className="card" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <p>No hay datos de productividad hoy.</p>
+                <p>No hay datos de productividad esta semana.</p>
             </div>
         );
     }
 
     return (
-        <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>🏆 Productividad de Empleados (Hoy)</h3>
-            <div style={{ height: '150px', width: '100%' }}>
+        <div className="card" style={{ marginBottom: '2rem', padding: '1rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>🏆 Productividad Semanal</h3>
+            <div style={{ height: '120px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" horizontal={false} />
