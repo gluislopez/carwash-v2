@@ -174,9 +174,58 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
         body: tableBody,
         theme: 'grid',
         headStyles: { fillColor: [41, 41, 41] }, // Dark header
-        styles: { fontSize: 8 },
+        styles: { fontSize: 8, textColor: [0, 0, 0] }, // Ensure text is black for contrast
         columnStyles: {
             4: { halign: 'right', fontStyle: 'bold' }
+        },
+        didParseCell: function (data) {
+            if (data.section === 'body') {
+                const dateStr = data.row.raw[0]; // "DD/MM/YYYY HH:MM"
+                // Parse date manually or use the raw transaction if we had passed it. 
+                // Since we only have the string, let's parse it. 
+                // Assuming locale 'es-PR' or similar might be tricky, but let's try standard Date parse or just use the day from the string if possible.
+                // Actually, passing the raw date object in the row data would be cleaner, but 'body' expects arrays.
+                // Let's rely on the fact that the date string starts with the date.
+
+                // Better approach: We can't easily parse "DD/MM/YYYY" reliably across locales without a library.
+                // However, we can infer the day from the date string if we know the format.
+                // OR, we can pass the day index as a hidden column or metadata? 
+                // autoTable doesn't support hidden columns easily.
+
+                // Let's try to parse the date string. It was created with new Date(t.date).toLocaleDateString().
+                // If we assume standard format, we can try new Date(dateStr).
+
+                // Alternative: Calculate colors BEFORE mapping to tableBody? 
+                // No, autoTable needs to do the drawing.
+
+                // Let's try to parse the date string.
+                const parts = dateStr.split(' ')[0].split('/');
+                if (parts.length === 3) {
+                    // Assuming D/M/YYYY or M/D/YYYY depending on locale. 
+                    // Let's use the raw transaction date if possible? 
+                    // We can't access 'transactions' array easily by row index here safely if sorting changes.
+                    // BUT, data.row.index corresponds to the body index.
+                    const originalTx = transactions[data.row.index];
+                    if (originalTx) {
+                        const day = new Date(originalTx.date).getDay(); // 0 = Sunday, 1 = Monday...
+
+                        // Pastel Colors for Days
+                        const colors = {
+                            0: [254, 202, 202], // Sun: Red-200
+                            1: [253, 230, 138], // Mon: Amber-200
+                            2: [254, 240, 138], // Tue: Yellow-200
+                            3: [187, 247, 208], // Wed: Green-200
+                            4: [191, 219, 254], // Thu: Blue-200
+                            5: [221, 214, 254], // Fri: Violet-200
+                            6: [251, 207, 232]  // Sat: Pink-200
+                        };
+
+                        if (colors[day]) {
+                            data.cell.styles.fillColor = colors[day];
+                        }
+                    }
+                }
+            }
         }
     });
 
