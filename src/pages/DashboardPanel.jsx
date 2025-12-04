@@ -531,8 +531,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#EF4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #EF4444' }}>
-                            v4.105 FIX CRASH {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
+                            v4.106 FIX LIST {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -938,46 +938,7 @@ const Dashboard = () => {
                                 </div>
                             )}
 
-                            {activeDetailModal === 'waiting_list' && (
-                                <div>
-                                    {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? <p>No hay autos en espera.</p> : (
-                                        <ul style={{ listStyle: 'none', padding: 0 }}>
-                                            {statsTransactions
-                                                .filter(t => t.status === 'waiting')
-                                                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) // Oldest first
-                                                .map(t => (
-                                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                            <div>
-                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
-                                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
-                                                                <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
-                                                                <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
-                                                                    {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </div>
-                                                            </div>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                                <button
-                                                                    className="btn btn-primary"
-                                                                    onClick={() => handleStartService(t.id)}
-                                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                                                                >
-                                                                    Comenzar
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setEditingTransactionId(t.id)}
-                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}
-                                                                >
-                                                                    Editar
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            )}
+
 
                             {activeDetailModal === 'in_progress_list' && (
                                 <div>
