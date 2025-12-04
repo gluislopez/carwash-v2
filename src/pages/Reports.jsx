@@ -125,7 +125,7 @@ const Reports = () => {
         });
     };
 
-    const filteredTransactions = getFilteredTransactions();
+
 
     // Calculate totals based on DATE FILTER ONLY (to show in buttons)
     const getDateFilteredTransactions = () => {
@@ -406,7 +406,7 @@ const Reports = () => {
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#EF4444', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.130 CRASH FIX</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.131 DUPLICATE FIX</span></p>
                 </div>
 
                 <button
