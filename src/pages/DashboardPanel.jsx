@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -494,8 +494,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#10B981', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #10B981' }}>
-                            v4.84 CLEAN UI {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#3B82F6', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #3B82F6' }}>
+                            v4.85 REFRESH BTN {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                     <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
@@ -536,6 +536,25 @@ const Dashboard = () => {
                                 onChange={(e) => setCustomDate(e.target.value)}
                             />
                         )}
+
+                        <button
+                            className="btn"
+                            style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)',
+                                padding: '0.5rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                            onClick={async () => {
+                                await refreshTransactions();
+                                await refreshCustomers();
+                            }}
+                            title="Recargar datos"
+                        >
+                            <RefreshCw size={18} />
+                        </button>
                     </div>
 
 
