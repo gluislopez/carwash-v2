@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Save, Plus, Trash2, Loader2 } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
-import { supabase } from '../supabaseClient'; // Import Supabase Client
+import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
 
 const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate }) => {
     if (!isOpen || !transaction) return null;
