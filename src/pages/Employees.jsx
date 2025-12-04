@@ -120,23 +120,34 @@ const Employees = () => {
         else if (performanceFilter === 'month') filterDate = startOfMonth;
 
         const filteredTxs = transactions.filter(t => {
-            // Fix Timezone Issue: Parse YYYY-MM-DD as Local Time by appending T00:00:00
-            // If using created_at (ISO UTC), it works fine.
-            const tDate = t.date ? new Date(t.date + 'T00:00:00') : new Date(t.created_at);
-
             // Check if transaction belongs to employee
             const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
             const isPrimary = t.employee_id === selectedEmployee.id; // Legacy support
 
             if (!(isAssigned || isPrimary)) return false;
 
+            const txDate = new Date(t.created_at);
+            const now = new Date();
+
             if (performanceFilter === 'today') {
-                // String comparison for Today to avoid timezone headaches
-                const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-                return t.date === todayStr;
+                return txDate.getDate() === now.getDate() &&
+                    txDate.getMonth() === now.getMonth() &&
+                    txDate.getFullYear() === now.getFullYear();
             }
 
-            return tDate >= filterDate;
+            if (performanceFilter === 'week') {
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay());
+                startOfWeek.setHours(0, 0, 0, 0);
+                return txDate >= startOfWeek;
+            }
+
+            if (performanceFilter === 'month') {
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                return txDate >= startOfMonth;
+            }
+
+            return true; // 'all'
         });
 
         const filteredExps = expenses.filter(e => {
@@ -182,7 +193,7 @@ const Employees = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Empleados</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo</p>
+                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.117 FILTER FIX</span></p>
                 </div>
 
                 {/* SOLO ADMIN PUEDE CREAR EMPLEADOS */}
