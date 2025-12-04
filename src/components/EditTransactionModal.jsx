@@ -99,7 +99,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 if (phone) {
                     const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicUrl}`;
                     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-                    window.open(url, '_blank');
+
+                    // Use location.href to avoid popup blockers on mobile/async
+                    window.location.href = url;
                 }
 
             } catch (error) {
