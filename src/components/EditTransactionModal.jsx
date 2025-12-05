@@ -84,23 +84,24 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
                 // DEBUG: Step 3
                 console.log('Step 3: Outputting Blob');
-                const pdfArrayBuffer = doc.output('arraybuffer');
-                const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+                // FORCE DUMMY TEXT UPLOAD TO ISOLATE PDF ISSUE
+                const pdfBlob = new Blob(['TEST FROM MODAL'], { type: 'text/plain' });
+                console.log('DEBUG: Uploading DUMMY TEXT instead of PDF');
+
+                // const pdfArrayBuffer = doc.output('arraybuffer');
+                // const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
 
                 if (pdfBlob.size === 0) throw new Error('PDF vacío (0 bytes).');
 
-                const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
+                const fileName = `DEBUG_TEXT_${transaction.id}_${Date.now()}.txt`;
 
                 // DEBUG: Step 4
                 console.log('Step 4: Uploading to Supabase');
-                // alert('Debug: Subiendo PDF de ' + pdfBlob.size + ' bytes...');
 
+                // SIMPLIFIED UPLOAD (Like the Test Button)
                 const { data, error } = await supabase.storage
                     .from('receipts')
-                    .upload(fileName, pdfBlob, {
-                        contentType: 'application/pdf',
-                        upsert: true
-                    });
+                    .upload(fileName, pdfBlob); // Removed options to match Test Button
 
                 if (error) {
                     console.error('Supabase Upload Error:', error);
