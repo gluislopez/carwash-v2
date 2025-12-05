@@ -445,16 +445,57 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                        <label className="label">Método de Pago</label>
-                        <select
-                            className="input"
-                            value={formData.paymentMethod}
-                            onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                        >
-                            <option value="cash">Efectivo</option>
-                            <option value="card">Tarjeta</option>
-                            <option value="transfer">AthMóvil</option>
-                        </select>
+                        <label className="label" style={{ marginBottom: '0.5rem', display: 'block' }}>Método de Pago</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, paymentMethod: 'cash' })}
+                                style={{
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: formData.paymentMethod === 'cash' ? '2px solid #10B981' : '1px solid var(--border-color)',
+                                    backgroundColor: formData.paymentMethod === 'cash' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                                    color: formData.paymentMethod === 'cash' ? '#10B981' : 'var(--text-muted)',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                💵 Efectivo
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, paymentMethod: 'card' })}
+                                style={{
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: formData.paymentMethod === 'card' ? '2px solid #3B82F6' : '1px solid var(--border-color)',
+                                    backgroundColor: formData.paymentMethod === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                    color: formData.paymentMethod === 'card' ? '#3B82F6' : 'var(--text-muted)',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                💳 Tarjeta
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, paymentMethod: 'transfer' })}
+                                style={{
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: formData.paymentMethod === 'transfer' ? '2px solid #F59E0B' : '1px solid var(--border-color)',
+                                    backgroundColor: formData.paymentMethod === 'transfer' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                                    color: formData.paymentMethod === 'transfer' ? '#F59E0B' : 'var(--text-muted)',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                📱 Ath Móvil
+                            </button>
+                        </div>
                     </div>
 
                     {/* WHATSAPP CHECKBOX */}
