@@ -1,24 +1,35 @@
 @import './mobile.css';
 
 :root {
-    /* Color Palette - Premium Dark/Glass Theme */
+    /* Color Palette - Premium True Dark (Zinc/Black) Theme */
     --primary: #6366f1;
+    /* Indigo 500 - Kept for brand identity */
     --primary-hover: #4f46e5;
     --secondary: #ec4899;
+    /* Pink 500 */
     --accent: #8b5cf6;
+    /* Violet 500 */
 
-    --bg-dark: #0f172a;
-    --bg-card: #1e293b;
-    --bg-glass: rgba(30, 41, 59, 0.7);
+    /* True Dark Backgrounds */
+    --bg-dark: #09090b;
+    /* Zinc 950 - Deep Black/Gray */
+    --bg-card: #18181b;
+    /* Zinc 900 - Card Background */
+    --bg-glass: rgba(24, 24, 27, 0.8);
+    /* Zinc 900 with opacity */
 
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
+    /* Text Colors */
+    --text-main: #fafafa;
+    /* Zinc 50 */
+    --text-muted: #a1a1aa;
+    /* Zinc 400 */
 
-    --border-color: rgba(148, 163, 184, 0.1);
+    /* Borders & Separators */
+    --border-color: rgba(255, 255, 255, 0.08);
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-    --gradient-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    --gradient-surface: linear-gradient(180deg, rgba(24, 24, 27, 0.9) 0%, rgba(9, 9, 11, 0.9) 100%);
 
     /* Spacing & Radius */
     --radius-sm: 8px;
@@ -26,7 +37,7 @@
     --radius-lg: 20px;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
     --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
 }
 
