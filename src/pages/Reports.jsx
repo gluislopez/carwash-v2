@@ -57,8 +57,9 @@ const Reports = () => {
     const getServiceName = (id) => servicesList.find(s => s.id === id)?.name || 'Servicio Desconocido';
     const getEmployeeName = (id) => employeesList.find(e => e.id === id)?.name || 'Desconocido';
     const getVehicleModel = (id) => {
-        const vehicle = vehiclesList.find(v => v.id === id);
-        return vehicle ? `${vehicle.make} ${vehicle.model}` : '';
+        if (!id) return '';
+        const vehicle = vehiclesList.find(v => v.id == id); // Use loose equality for string/number mismatch
+        return vehicle ? `${vehicle.make} ${vehicle.model}` : `(Vehículo ${id})`;
     };
 
     // Date Helpers
