@@ -112,7 +112,32 @@ const Dashboard = () => {
     const { data: expensesData } = useSupabase('expenses');
     const expenses = expensesData || [];
 
-    const handleNotifyReady = async (transaction) => {
+    const [verifyingTransaction, setVerifyingTransaction] = useState(null);
+    const [verificationChecks, setVerificationChecks] = useState({
+        cristales: false,
+        entrePuertas: false,
+        baul: false,
+        dash: false,
+        portaVasos: false,
+        manchas: false
+    });
+
+    const handleOpenVerification = (transaction) => {
+        setVerifyingTransaction(transaction);
+        setVerificationChecks({
+            cristales: false,
+            entrePuertas: false,
+            baul: false,
+            dash: false,
+            portaVasos: false,
+            manchas: false
+        });
+    };
+
+    const handleConfirmReady = async () => {
+        const transaction = verifyingTransaction;
+        if (!transaction) return;
+
         if (!transaction.customers?.phone) {
             alert('Este cliente no tiene número de teléfono registrado.');
             return;
@@ -131,6 +156,7 @@ const Dashboard = () => {
                 finished_at: new Date().toISOString()
             });
             await refreshTransactions();
+            setVerifyingTransaction(null); // Close modal
         } catch (error) {
             console.error('Error updating status:', error);
             alert('Error al actualizar estado.');
@@ -540,7 +566,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.165 BUILD FIX {new Date().toLocaleTimeString()}
+                            v4.166 CHECKLIST {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1015,8 +1041,8 @@ const Dashboard = () => {
                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
                                                                     <button
                                                                         className="btn"
-                                                                        onClick={() => handleNotifyReady(t)}
-                                                                        title="Notificar al cliente que está listo"
+                                                                        onClick={() => handleOpenVerification(t)}
+                                                                        title="Verificar y Notificar"
                                                                         style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                                                     >
                                                                         <Send size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Listo</span>
@@ -1720,9 +1746,66 @@ const Dashboard = () => {
             }
 
 
+            {/* VERIFICATION MODAL */}
+            {verifyingTransaction && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 4000
+                }} onClick={() => setVerifyingTransaction(null)}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        padding: '2rem',
+                        borderRadius: '0.5rem',
+                        width: '90%',
+                        maxWidth: '400px'
+                    }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Verificar antes de entregar</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                            Confirma que todo esté listo para {verifyingTransaction.customers?.vehicle_plate}:
+                        </p>
 
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                            {[
+                                { key: 'cristales', label: 'Cristales' },
+                                { key: 'entrePuertas', label: 'Entre puertas' },
+                                { key: 'baul', label: 'Baúl' },
+                                { key: 'dash', label: 'Dash' },
+                                { key: 'portaVasos', label: 'Porta vasos' },
+                                { key: 'manchas', label: 'Manchas' }
+                            ].map(item => (
+                                <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={verificationChecks[item.key]}
+                                        onChange={(e) => setVerificationChecks({ ...verificationChecks, [item.key]: e.target.checked })}
+                                        style={{ width: '20px', height: '20px', accentColor: 'var(--primary)' }}
+                                    />
+                                    {item.label}
+                                </label>
+                            ))}
+                        </div>
 
-
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                className="btn"
+                                style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                onClick={() => setVerifyingTransaction(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                style={{ flex: 1 }}
+                                disabled={!Object.values(verificationChecks).every(Boolean)}
+                                onClick={handleConfirmReady}
+                            >
+                                Confirmar y Enviar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
