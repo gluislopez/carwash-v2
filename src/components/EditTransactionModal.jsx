@@ -66,13 +66,20 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     };
 
     const handleSubmit = async () => {
-        // e.preventDefault(); // No longer needed
         setIsUploading(true); // Start loading
 
-        // 1. CLOUD PDF RECEIPT LOGIC (UPLOAD FIRST to avoid UI refresh race condition)
+        // 1. DETERMINE NEW STATUS FIRST
+        let newStatus = formData.status;
+        if (formData.status === 'pending') newStatus = 'paid';
+        if (formData.status === 'ready') newStatus = 'completed';
+        // if (formData.status === 'in_progress') newStatus = 'completed'; // REMOVED: Don't auto-complete in-progress
+
+        const isCompleting = newStatus === 'paid' || newStatus === 'completed';
+
+        // 2. CLOUD PDF RECEIPT LOGIC (Only if completing)
         let publicReceiptUrl = null;
 
-        if (sendReceipt && transaction.customers?.phone) {
+        if (isCompleting && sendReceipt && transaction.customers?.phone) {
             try {
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
 
@@ -122,7 +129,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             }
         }
 
-        // 2. UPDATE ASSIGNMENTS & CALCULATE COMMISSION
+        // 3. UPDATE ASSIGNMENTS & CALCULATE COMMISSION
         try {
             // A. Update Assignments
             // First delete existing assignments
@@ -155,25 +162,11 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             let finalCommission = baseCommission;
             // Check for the specific $35 condition (adjust if price logic changes)
-            // Note: Using currentPrice might be risky if extras are added, but the original logic
-            // checked tx.price === 35. Let's stick to the base service price check if possible,
-            // or just the total price as per original logic.
-            // Original logic: if (tx.price === 35 && selectedEmployeesForAssignment.length > 1)
-            // We'll use the current total price to be consistent.
             if (currentPrice === 35 && selectedEmployeeIds.length > 1) {
                 finalCommission = 12;
             }
 
-            // 2. UPDATE DATABASE (This might trigger UI refresh)
-            // Logic: 
-            // - Pending -> Paid (Complete)
-            // - Ready -> Completed (Paid & Done)
-            // - In Progress -> KEEP In Progress (Just Save Changes)
-            let newStatus = formData.status;
-            if (formData.status === 'pending') newStatus = 'paid';
-            if (formData.status === 'ready') newStatus = 'completed';
-            // if (formData.status === 'in_progress') newStatus = 'completed'; // REMOVED: Don't auto-complete in-progress
-
+            // 4. UPDATE TRANSACTION
             await onUpdate(transaction.id, {
                 service_id: formData.serviceId,
                 price: parseFloat(formData.price),
@@ -194,9 +187,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
         setIsUploading(false); // Stop loading
 
-        // 3. SHOW SUCCESS STATE (Manual Button to avoid Popup Blockers)
-        // Only show success/receipt if we actually completed/paid (status changed to paid or completed)
-        if ((newStatus === 'paid' || newStatus === 'completed') && publicReceiptUrl && transaction.customers?.phone) {
+        // 5. SHOW SUCCESS STATE OR CLOSE
+        if (isCompleting && publicReceiptUrl && transaction.customers?.phone) {
             const phone = transaction.customers.phone.replace(/\D/g, '');
             const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicReceiptUrl}`;
             const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
