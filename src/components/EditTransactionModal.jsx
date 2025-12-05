@@ -18,7 +18,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         status: transaction.status || 'pending'
     });
 
-    const [sendReceipt, setSendReceipt] = useState(false); // WhatsApp Checkbox State
+    const [sendReceipt, setSendReceipt] = useState(true); // WhatsApp Checkbox State (Default TRUE)
     const [isUploading, setIsUploading] = useState(false); // Upload Loading State
     const [successUrl, setSuccessUrl] = useState(null); // Success View State
 
@@ -69,7 +69,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     .map(e => e.name)
                     .join(', ');
 
-                const doc = await generateReceiptPDF(
+                // FIX: Destructure blob and fileName directly from generateReceiptPDF
+                const { blob: pdfBlob, fileName: generatedFileName } = await generateReceiptPDF(
                     transaction,
                     serviceName,
                     extras,
@@ -78,12 +79,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     assignedNames
                 );
 
-                const pdfArrayBuffer = doc.output('arraybuffer');
-                const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
-
                 if (pdfBlob.size === 0) throw new Error('PDF vacío (0 bytes).');
 
-                const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
+                const fileName = generatedFileName || `recibo_${transaction.id}_${Date.now()}.pdf`;
 
                 // STABILITY DELAY
                 await new Promise(resolve => setTimeout(resolve, 500));
