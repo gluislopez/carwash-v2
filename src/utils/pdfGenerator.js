@@ -12,7 +12,7 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     const centerX = pageWidth / 2;
     let y = 10; // Start Y position
 
-    // --- LOGO WATERMARK ---
+    // --- LOGO TOP ---
     try {
         // Load logo from public folder
         const logoUrl = '/logo.jpg';
@@ -24,18 +24,17 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
             img.onerror = reject;
         });
 
-        // Add faded logo
-        doc.saveGraphicsState();
-        doc.setGState(new doc.GState({ opacity: 0.1 })); // 10% opacity
-
         // Calculate dimensions to fit/center
-        const logoWidth = 60; // 60mm wide
+        const logoWidth = 40; // 40mm wide (smaller for top)
         const logoHeight = (img.height / img.width) * logoWidth;
         const logoX = (pageWidth - logoWidth) / 2;
-        const logoY = 40; // Start a bit down
 
-        doc.addImage(img, 'JPEG', logoX, logoY, logoWidth, logoHeight);
-        doc.restoreGraphicsState();
+        // Draw Logo (Normal Opacity)
+        doc.addImage(img, 'JPEG', logoX, y, logoWidth, logoHeight);
+
+        // Move Y down
+        y += logoHeight + 5;
+
     } catch (e) {
         console.warn('Could not load logo for receipt:', e);
     }
