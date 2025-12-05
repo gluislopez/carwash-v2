@@ -164,11 +164,15 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 finalCommission = 12;
             }
 
-            // 3. UPDATE TRANSACTION
-            // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
+            // 2. UPDATE DATABASE (This might trigger UI refresh)
+            // Logic: 
+            // - Pending -> Paid (Complete)
+            // - Ready -> Completed (Paid & Done)
+            // - In Progress -> KEEP In Progress (Just Save Changes)
             let newStatus = formData.status;
             if (formData.status === 'pending') newStatus = 'paid';
-            if (formData.status === 'in_progress' || formData.status === 'ready') newStatus = 'completed';
+            if (formData.status === 'ready') newStatus = 'completed';
+            // if (formData.status === 'in_progress') newStatus = 'completed'; // REMOVED: Don't auto-complete in-progress
 
             await onUpdate(transaction.id, {
                 service_id: formData.serviceId,
@@ -190,15 +194,16 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
         setIsUploading(false); // Stop loading
 
-        // 4. SHOW SUCCESS STATE (Manual Button to avoid Popup Blockers)
-        if (publicReceiptUrl && transaction.customers?.phone) {
+        // 3. SHOW SUCCESS STATE (Manual Button to avoid Popup Blockers)
+        // Only show success/receipt if we actually completed/paid (status changed to paid or completed)
+        if ((newStatus === 'paid' || newStatus === 'completed') && publicReceiptUrl && transaction.customers?.phone) {
             const phone = transaction.customers.phone.replace(/\D/g, '');
             const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicReceiptUrl}`;
             const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
             setSuccessUrl(url); // Trigger Success View
         } else {
-            onClose(); // Close if no receipt needed
+            onClose(); // Close if no receipt needed or just saved
         }
     };
 
@@ -483,7 +488,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         </button>
                         <button type="button" onClick={handleSubmit} className="btn btn-primary" disabled={isUploading}>
                             {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
-                            {isUploading ? ' Procesando...' : (formData.status === 'pending' ? 'Completar y Pagar' : 'Guardar Cambios')}
+                            {isUploading ? ' Procesando...' : 'Guardar'}
                         </button>
                     </div>
                 </div>
