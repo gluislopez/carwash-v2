@@ -617,7 +617,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.201 DUAL DROPDOWNS {new Date().toLocaleTimeString()}
+                            v4.202 FIX EXTRAS SELECT {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1537,11 +1537,13 @@ const Dashboard = () => {
                                         onChange={(e) => {
                                             const sId = e.target.value;
                                             if (!sId) return;
-                                            const s = services.find(srv => srv.id === parseInt(sId));
+                                            // Use loose comparison for ID to handle string/number mismatch
+                                            const s = services.find(srv => srv.id == sId);
                                             if (s) {
                                                 // Add to extras list
+                                                const currentExtras = formData.extras || [];
                                                 const newExtraItem = { description: s.name, price: s.price };
-                                                const updatedExtras = [...formData.extras, newExtraItem];
+                                                const updatedExtras = [...currentExtras, newExtraItem];
                                                 const currentPrice = parseFloat(formData.price) || 0;
 
                                                 setFormData({
