@@ -67,7 +67,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         // CLOUD PDF RECEIPT LOGIC
         if (sendReceipt && transaction.customers?.phone) {
             try {
+                // DEBUG: Step 1
+                console.log('Step 1: Starting PDF Generation');
+
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
+
+                // DEBUG: Step 2
+                console.log('Step 2: Calling generateReceiptPDF');
                 const doc = generateReceiptPDF(
                     transaction,
                     serviceName,
@@ -76,16 +82,19 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     formData.tip || 0
                 );
 
-                // ROBUST BLOB GENERATION
+                // DEBUG: Step 3
+                console.log('Step 3: Outputting Blob');
                 const pdfArrayBuffer = doc.output('arraybuffer');
                 const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
 
-                console.log('PDF Generated. Size:', pdfBlob.size);
-                if (pdfBlob.size === 0) throw new Error('El PDF generado está vacío.');
+                if (pdfBlob.size === 0) throw new Error('PDF vacío (0 bytes).');
 
                 const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
 
-                // Upload to Supabase Storage
+                // DEBUG: Step 4
+                console.log('Step 4: Uploading to Supabase');
+                // alert('Debug: Subiendo PDF de ' + pdfBlob.size + ' bytes...');
+
                 const { data, error } = await supabase.storage
                     .from('receipts')
                     .upload(fileName, pdfBlob, {
@@ -93,12 +102,18 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         upsert: true
                     });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase Upload Error:', error);
+                    throw new Error('Supabase Upload: ' + error.message);
+                }
 
-                // Get Public URL
+                // DEBUG: Step 5
+                console.log('Step 5: Getting Public URL');
                 const { data: { publicUrl } } = supabase.storage
                     .from('receipts')
                     .getPublicUrl(fileName);
+
+                console.log('Public URL:', publicUrl);
 
                 // Send WhatsApp with Link
                 const phone = transaction.customers.phone.replace(/\D/g, '');
@@ -106,13 +121,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicUrl}`;
                     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-                    // Use location.href to avoid popup blockers on mobile/async
                     window.location.href = url;
                 }
 
             } catch (error) {
                 console.error('Error uploading receipt:', error);
-                alert('Error al subir el recibo: ' + (error.message || error.error_description || JSON.stringify(error)));
+                alert('ERROR EN PASO: ' + (error.message || JSON.stringify(error)));
             }
         }
 
