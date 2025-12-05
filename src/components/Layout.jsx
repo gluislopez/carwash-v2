@@ -58,7 +58,7 @@ const Layout = ({ children }) => {
     }
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-dark)', color: 'var(--text-main)' }}>
             {/* Mobile Menu Button */}
             <button
                 className="mobile-menu-btn"

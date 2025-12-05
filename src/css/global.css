@@ -17,6 +17,8 @@
     /* Zinc 900 - Card Background */
     --bg-glass: rgba(24, 24, 27, 0.8);
     /* Zinc 900 with opacity */
+    --bg-main: var(--bg-dark);
+    /* Alias for backward compatibility */
 
     /* Text Colors */
     --text-main: #fafafa;
