@@ -540,7 +540,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.163 ROUND LOGO {new Date().toLocaleTimeString()}
+                            v4.164 TIMER & MODEL {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -967,42 +967,71 @@ const Dashboard = () => {
                                             {statsTransactions
                                                 .filter(t => t.status === 'in_progress')
                                                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                                                .map(t => (
-                                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                            <div>
-                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
-                                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
-                                                                <div style={{ color: 'var(--warning)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                .map(t => {
+                                                    // Calculate Elapsed Time
+                                                    const start = new Date(t.created_at);
+                                                    const now = new Date();
+                                                    const diffMs = now - start;
+                                                    const diffMins = Math.floor(diffMs / 60000);
+                                                    const hours = Math.floor(diffMins / 60);
+                                                    const mins = diffMins % 60;
+                                                    const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
-                                                                {/* Assigned Employees */}
-                                                                <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                                                                    {t.transaction_assignments?.map(a => (
-                                                                        <span key={a.employee_id} style={{ fontSize: '0.75rem', backgroundColor: '#333', padding: '2px 6px', borderRadius: '4px' }}>
-                                                                            {getEmployeeName(a.employee_id)}
-                                                                        </span>
-                                                                    ))}
+                                                    return (
+                                                        <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                                    <div style={{ color: 'var(--text-muted)' }}>
+                                                                        {t.customers?.name}
+                                                                        {t.customers?.vehicle_model && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontStyle: 'italic' }}>({t.customers.vehicle_model})</span>}
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                                                        <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>{getServiceName(t.service_id)}</div>
+                                                                        <div style={{
+                                                                            fontSize: '0.8rem',
+                                                                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                                                            color: '#F59E0B',
+                                                                            padding: '2px 6px',
+                                                                            borderRadius: '4px',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px'
+                                                                        }}>
+                                                                            <Clock size={12} />
+                                                                            {timeString}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Assigned Employees */}
+                                                                    <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                                                        {t.transaction_assignments?.map(a => (
+                                                                            <span key={a.employee_id} style={{ fontSize: '0.75rem', backgroundColor: '#333', padding: '2px 6px', borderRadius: '4px' }}>
+                                                                                {getEmployeeName(a.employee_id)}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                    <button
+                                                                        className="btn"
+                                                                        onClick={() => handleNotifyReady(t)}
+                                                                        title="Notificar al cliente que está listo"
+                                                                        style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                    >
+                                                                        <Send size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Listo</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditingTransactionId(t.id)}
+                                                                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                    >
+                                                                        <Edit2 size={14} /> Editar
+
+                                                                    </button>
                                                                 </div>
                                                             </div>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                                                                <button
-                                                                    className="btn"
-                                                                    onClick={() => handleNotifyReady(t)}
-                                                                    title="Notificar al cliente que está listo"
-                                                                    style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                                                >
-                                                                    <Send size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Listo</span>
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setEditingTransactionId(t.id)}
-                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                                >
-                                                                    <Edit2 size={14} /> Editar
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </li>
-                                                ))}
+                                                        </li>
+                                                    ))}
                                         </ul>
                                     )}
                                 </div>
