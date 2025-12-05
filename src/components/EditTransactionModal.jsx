@@ -55,13 +55,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
         if (sendReceipt && transaction.customers?.phone) {
             try {
-                // DEBUG: Step 1
-                console.log('Step 1: Starting PDF Generation');
-
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
 
-                // DEBUG: Step 2
-                console.log('Step 2: Calling generateReceiptPDF');
                 const doc = generateReceiptPDF(
                     transaction,
                     serviceName,
@@ -70,17 +65,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     formData.tip || 0
                 );
 
-                // DEBUG: Step 3
-                console.log('Step 3: Outputting Blob');
                 const pdfArrayBuffer = doc.output('arraybuffer');
                 const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
 
                 if (pdfBlob.size === 0) throw new Error('PDF vacío (0 bytes).');
 
                 const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
-
-                // DEBUG: Step 4
-                console.log('Step 4: Uploading to Supabase');
 
                 // STABILITY DELAY
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -95,13 +85,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     throw new Error('Supabase Upload: ' + error.message);
                 }
 
-                // DEBUG: Step 5
-                console.log('Step 5: Getting Public URL');
                 const { data: { publicUrl } } = supabase.storage
                     .from('receipts')
                     .getPublicUrl(fileName);
 
-                console.log('Public URL:', publicUrl);
                 publicReceiptUrl = publicUrl;
 
             } catch (error) {
