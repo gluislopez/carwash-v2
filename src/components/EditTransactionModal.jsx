@@ -76,7 +76,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     formData.tip || 0
                 );
 
-                const pdfBlob = doc.output('blob');
+                // ROBUST BLOB GENERATION
+                const pdfArrayBuffer = doc.output('arraybuffer');
+                const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+
+                console.log('PDF Generated. Size:', pdfBlob.size);
+                if (pdfBlob.size === 0) throw new Error('El PDF generado está vacío.');
+
                 const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
 
                 // Upload to Supabase Storage
