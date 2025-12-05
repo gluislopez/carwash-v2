@@ -596,7 +596,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.180 SYNTAX FIX 3 {new Date().toLocaleTimeString()}
+                            v4.181 SYNTAX FIX 4 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1643,31 +1643,34 @@ const Dashboard = () => {
                                     <RefreshCw size={14} /> <span>Devolver</span>
                                 </button>
                                 {userRole === 'admin' && (
-                                    <button
-                                        className="btn"
-                                        style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingTransactionId(t.id);
-                                        }}
-                                        title="Editar"
-                                    >
-                                        <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
-                                    </button>
-                                    <button
-                                        className="btn"
-                                        style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
-                                                handleDeleteTransactionV2(t.id);
-                                            }
-                                        }}
-                                        title="Eliminar"
-                                    >
-                                        <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
-                                    </button>
-                                </div>
+                                    <>
+                                        <button
+                                            className="btn"
+                                            style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingTransactionId(t.id);
+                                            }}
+                                            title="Editar"
+                                        >
+                                            <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
+                                        </button>
+                                        <button
+                                            className="btn"
+                                            style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                                    handleDeleteTransactionV2(t.id);
+                                                }
+                                            }}
+                                            title="Eliminar"
+                                        >
+                                            <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                             )}
                         </div>
                     ))}
