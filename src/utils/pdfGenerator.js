@@ -105,7 +105,7 @@ export const generateReceiptPDF = (transaction, serviceName, extras, total, tip)
     // FOOTER
     centerText('¡GRACIAS POR SU VISITA!', y, 10);
     y += 5;
-    doc.save(`recibo_${transaction.id}.pdf`);
+    // doc.save(`recibo_${transaction.id}.pdf`); // REMOVED: Prevent auto-download, we handle blob manually
     return doc;
 };
 
