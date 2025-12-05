@@ -59,7 +59,7 @@ const Reports = () => {
     const getVehicleModel = (id) => {
         if (!id) return '';
         const vehicle = vehiclesList.find(v => v.id == id); // Use loose equality for string/number mismatch
-        return vehicle ? `${vehicle.make} ${vehicle.model}` : `(Vehículo ${id})`;
+        return vehicle ? `${vehicle.make} ${vehicle.model}` : `(ID: ${id} | List: ${vehiclesList?.length})`;
     };
 
     // Date Helpers
