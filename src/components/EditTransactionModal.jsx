@@ -80,13 +80,14 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
                 // DEBUG: Step 4
                 console.log('Step 4: Uploading to Supabase');
+                
+                // STABILITY DELAY
+                await new Promise(resolve => setTimeout(resolve, 500));
 
+                // SIMPLIFIED UPLOAD (Match Test Button exactly)
                 const { data, error } = await supabase.storage
                     .from('receipts')
-                    .upload(fileName, pdfBlob, {
-                        contentType: 'application/pdf',
-                        upsert: true
-                    });
+                    .upload(fileName, pdfBlob); // Removed options (upsert, contentType) to match Test Button
 
                 if (error) {
                     console.error('Supabase Upload Error:', error);
@@ -160,30 +161,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ margin: 0 }}>Editar Venta</h2>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        {/* ISOLATED TEST BUTTON */}
-                        <button
-                            type="button"
-                            onClick={async () => {
-                                try {
-                                    alert('MODAL TEST: Iniciando...');
-                                    const blob = new Blob(['TEST FROM INSIDE MODAL'], { type: 'text/plain' });
-                                    const fileName = `MODAL_TEST_${Date.now()}.txt`;
-                                    const { data, error } = await supabase.storage.from('receipts').upload(fileName, blob);
-                                    if (error) throw error;
-                                    alert('MODAL TEST: ¡ÉXITO! (El modal funciona)');
-                                } catch (e) {
-                                    alert('MODAL TEST: FALLÓ (' + e.message + ')');
-                                }
-                            }}
-                            style={{ backgroundColor: '#3B82F6', color: 'white', border: 'none', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
-                        >
-                            TEST
-                        </button>
-                        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                            <X size={24} />
-                        </button>
-                    </div>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        <X size={24} />
+                    </button>
                 </div>
 
                 {/* REMOVED FORM TAG TO PREVENT SUBMIT ISSUES */}
