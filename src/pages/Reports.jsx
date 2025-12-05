@@ -483,41 +483,43 @@ const Reports = () => {
                         <option value="custom">Personalizado</option>
                     </select>
 
-                    <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
-                        <button
-                            onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'transfer' ? 'all' : 'transfer')}
-                            style={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                padding: '0.3rem 0.8rem',
-                                border: '1px solid #F59E0B',
-                                borderRadius: '6px',
-                                backgroundColor: paymentMethodFilter === 'transfer' ? '#F59E0B' : 'transparent',
-                                color: paymentMethodFilter === 'transfer' ? 'white' : '#F59E0B',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>ATH MÓVIL</span>
-                            <span style={{ fontSize: '0.9rem' }}>${totalTransfer.toFixed(2)}</span>
-                        </button>
+                    {userRole === 'admin' && (
+                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                            <button
+                                onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'transfer' ? 'all' : 'transfer')}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                    padding: '0.3rem 0.8rem',
+                                    border: '1px solid #F59E0B',
+                                    borderRadius: '6px',
+                                    backgroundColor: paymentMethodFilter === 'transfer' ? '#F59E0B' : 'transparent',
+                                    color: paymentMethodFilter === 'transfer' ? 'white' : '#F59E0B',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>ATH MÓVIL</span>
+                                <span style={{ fontSize: '0.9rem' }}>${totalTransfer.toFixed(2)}</span>
+                            </button>
 
-                        <button
-                            onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'cash' ? 'all' : 'cash')}
-                            style={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                padding: '0.3rem 0.8rem',
-                                border: '1px solid #10B981',
-                                borderRadius: '6px',
-                                backgroundColor: paymentMethodFilter === 'cash' ? '#10B981' : 'transparent',
-                                color: paymentMethodFilter === 'cash' ? 'white' : '#10B981',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
-                            <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
-                        </button>
-                    </div>
+                            <button
+                                onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'cash' ? 'all' : 'cash')}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                    padding: '0.3rem 0.8rem',
+                                    border: '1px solid #10B981',
+                                    borderRadius: '6px',
+                                    backgroundColor: paymentMethodFilter === 'cash' ? '#10B981' : 'transparent',
+                                    color: paymentMethodFilter === 'cash' ? 'white' : '#10B981',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
+                                <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
+                            </button>
+                        </div>
+                    )}
 
                     {dateRange === 'custom' && (
                         <>
