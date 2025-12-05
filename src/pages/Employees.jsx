@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, User, Phone, Mail, Shield, Calendar, DollarSign, Clock, X } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
+import { createAccount } from '../utils/authAdmin';
 
 const Employees = () => {
     const { data: employees, create, remove } = useSupabase('employees');
@@ -62,22 +63,42 @@ const Employees = () => {
         position: 'Lavador',
         phone: '',
         email: '',
+        password: '', // New password field
         user_id: ''
     });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            let finalUserId = formData.user_id.trim();
+
+            // If password is provided, try to create the account first
+            if (formData.password && formData.email) {
+                const { user, error } = await createAccount(formData.email, formData.password);
+
+                if (error) {
+                    throw new Error('Error creando usuario: ' + error.message);
+                }
+
+                if (user) {
+                    finalUserId = user.id;
+                    alert(`Usuario creado exitosamente.\nID: ${user.id}\n\nSi la confirmación de email está activa, el empleado deberá verificar su correo.`);
+                }
+            }
+
             const dataToSave = {
-                ...formData,
-                user_id: formData.user_id.trim() === '' ? null : formData.user_id
+                name: formData.name,
+                position: formData.position,
+                phone: formData.phone,
+                email: formData.email,
+                user_id: finalUserId === '' ? null : finalUserId
             };
 
             await create(dataToSave);
             setIsModalOpen(false);
-            setFormData({ name: '', position: 'Lavador', phone: '', email: '', user_id: '' });
+            setFormData({ name: '', position: 'Lavador', phone: '', email: '', password: '', user_id: '' });
         } catch (error) {
-            alert('Error al crear empleado: ' + error.message);
+            alert('Error: ' + error.message);
         }
     };
 
@@ -422,13 +443,27 @@ const Employees = () => {
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>
-                                <label className="label">Email (Contacto)</label>
+                                <label className="label">Email (Contacto y Login)</label>
                                 <input
                                     type="email"
                                     className="input"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label className="label">Contraseña (Opcional - Para crear cuenta)</label>
+                                <input
+                                    type="password"
+                                    className="input"
+                                    placeholder="Mínimo 6 caracteres"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                    Si escribes una contraseña, se creará el usuario automáticamente.
+                                </p>
                             </div>
 
                             <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px', border: '1px solid var(--primary)' }}>
