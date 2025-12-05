@@ -498,21 +498,6 @@ const Dashboard = () => {
         }
     };
 
-    const handleRevertToInProgress = async (tx) => {
-        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "En Proceso"?`)) return;
-
-        try {
-            await updateTransaction(tx.id, {
-                status: 'in_progress',
-                finished_at: null // Clear finished time
-            });
-            await refreshTransactions();
-        } catch (error) {
-            console.error("Error reverting status:", error);
-            alert("Error al devolver estado: " + error.message);
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -581,7 +566,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.178 FORCE DEPLOY 3 {new Date().toLocaleTimeString()}
+                            v4.179 SYNTAX FIX 2 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1594,6 +1579,21 @@ const Dashboard = () => {
                                     )}
                                 </div>
                             </div>
+
+    const handleRevertToInProgress = async (tx) => {
+        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "En Proceso"?`)) return;
+
+                            try {
+                                await updateTransaction(tx.id, {
+                                    status: 'in_progress',
+                                    finished_at: null // Clear finished time
+                                });
+                            await refreshTransactions();
+        } catch (error) {
+                                console.error("Error reverting status:", error);
+                            alert("Error al devolver estado: " + error.message);
+        }
+    };
 
     const handleRevertToReady = async (tx) => {
         if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "Listo para Recoger"?`)) return;
