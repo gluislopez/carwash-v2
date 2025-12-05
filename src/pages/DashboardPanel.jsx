@@ -261,6 +261,7 @@ const Dashboard = () => {
             // 3. Update Transaction Status & Commission
             await updateTransaction(tx.id, {
                 status: 'in_progress',
+                started_at: new Date().toISOString(), // Start the "Wash Timer"
                 commission_amount: finalCommission,
                 employee_id: selectedEmployeesForAssignment[0] // Legacy primary
             });
@@ -618,7 +619,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.205 FIX TOTAL PRICE {new Date().toLocaleTimeString()}
+                            v4.206 TIME TRACKING {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1010,7 +1011,10 @@ const Dashboard = () => {
                                                             <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
                                                             <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
                                                             <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
-                                                                {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                Llegada: {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#F59E0B', marginTop: '0.2rem', fontWeight: 'bold' }}>
+                                                                Espera: {Math.round((new Date() - new Date(t.created_at)) / 60000)} min
                                                             </div>
                                                         </div>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1046,8 +1050,8 @@ const Dashboard = () => {
                                                 .filter(t => t.status === 'in_progress')
                                                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                                                 .map(t => {
-                                                    // Calculate Elapsed Time
-                                                    const start = new Date(t.created_at);
+                                                    // Calculate Wash Time (Current - Started)
+                                                    const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at); // Fallback to created_at if started_at missing
                                                     const now = new Date();
                                                     const diffMs = now - start;
                                                     const diffMins = Math.floor(diffMs / 60000);
@@ -1079,6 +1083,10 @@ const Dashboard = () => {
                                                                             <Clock size={12} />
                                                                             {timeString}
                                                                         </div>
+                                                                    </div>
+                                                                    {/* Show Wait Time for context */}
+                                                                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                        Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)}m
                                                                     </div>
 
                                                                     {/* Assigned Employees */}
@@ -1133,7 +1141,10 @@ const Dashboard = () => {
 
                                                                 {t.finished_at && (
                                                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                                                                        Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min
+                                                                        <div>Llegada: {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                        <div>Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)} min</div>
+                                                                        <div>Lavado: {Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min</div>
+                                                                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min</div>
                                                                     </div>
                                                                 )}
                                                             </div>
