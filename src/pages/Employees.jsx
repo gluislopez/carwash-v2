@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, User, Phone, Mail, Shield, Calendar, DollarSign, Clock, X } from 'lucide-react';
+import { Plus, Trash2, User, Phone, Mail, Shield, Calendar, DollarSign, Clock, X, Edit, Power } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 import { createAccount } from '../utils/authAdmin';
 
 const Employees = () => {
-    const { data: employees, create, remove } = useSupabase('employees');
+    const { data: employees, create, remove, update } = useSupabase('employees', '*', { orderBy: { column: 'is_active', ascending: false } });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [userRole, setUserRole] = useState(null);
 
@@ -67,22 +67,22 @@ const Employees = () => {
         user_id: ''
     });
 
+    const [editingId, setEditingId] = useState(null);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             let finalUserId = formData.user_id.trim();
 
-            // If password is provided, try to create the account first
-            if (formData.password && formData.email) {
+            // Only create auth user if we are NOT editing (or if we want to allow linking later, but for now keep simple)
+            // If editing, we generally don't change the auth user unless explicitly requested, but the form allows editing the ID.
+
+            if (!editingId && formData.password && formData.email) {
                 const { user, error } = await createAccount(formData.email, formData.password);
-
-                if (error) {
-                    throw new Error('Error creando usuario: ' + error.message);
-                }
-
+                if (error) throw new Error('Error creando usuario: ' + error.message);
                 if (user) {
                     finalUserId = user.id;
-                    alert(`Usuario creado exitosamente.\nID: ${user.id}\n\nSi la confirmación de email está activa, el empleado deberá verificar su correo.`);
+                    alert(`Usuario creado exitosamente.\nID: ${user.id}`);
                 }
             }
 
@@ -94,17 +94,46 @@ const Employees = () => {
                 user_id: finalUserId === '' ? null : finalUserId
             };
 
-            await create(dataToSave);
+            if (editingId) {
+                await update(editingId, dataToSave);
+                alert('Empleado actualizado correctamente');
+            } else {
+                await create(dataToSave);
+            }
+
             setIsModalOpen(false);
             setFormData({ name: '', position: 'Lavador', phone: '', email: '', password: '', user_id: '' });
+            setEditingId(null);
         } catch (error) {
             alert('Error: ' + error.message);
         }
     };
 
+    const handleEdit = (employee) => {
+        setFormData({
+            name: employee.name,
+            position: employee.position,
+            phone: employee.phone || '',
+            email: employee.email || '',
+            password: '', // Don't edit password here
+            user_id: employee.user_id || ''
+        });
+        setEditingId(employee.id);
+        setIsModalOpen(true);
+    };
+
+    const handleToggleStatus = async (employee, e) => {
+        e.stopPropagation();
+        const newStatus = !employee.is_active;
+        const action = newStatus ? 'activar' : 'desactivar';
+        if (window.confirm(`¿Estás seguro de ${action} a ${employee.name}?`)) {
+            await update(employee.id, { is_active: newStatus });
+        }
+    };
+
     const handleDelete = async (id, e) => {
-        e.stopPropagation(); // Prevent opening modal
-        if (window.confirm('¿Estás seguro de eliminar este empleado?')) {
+        e.stopPropagation();
+        if (window.confirm('¿Estás seguro de eliminar este empleado permanentemente?')) {
             await remove(id);
         }
     };
@@ -219,7 +248,11 @@ const Employees = () => {
 
                 {/* SOLO ADMIN PUEDE CREAR EMPLEADOS */}
                 {userRole === 'admin' && (
-                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                    <button className="btn btn-primary" onClick={() => {
+                        setEditingId(null);
+                        setFormData({ name: '', position: 'Lavador', phone: '', email: '', password: '', user_id: '' });
+                        setIsModalOpen(true);
+                    }}>
                         <Plus size={20} />
                         Nuevo Empleado
                     </button>
@@ -235,7 +268,8 @@ const Employees = () => {
                             position: 'relative',
                             cursor: userRole === 'admin' ? 'pointer' : 'default',
                             transition: 'transform 0.2s',
-                            opacity: userRole === 'admin' ? 1 : 0.9
+                            opacity: employee.is_active ? (userRole === 'admin' ? 1 : 0.9) : 0.5,
+                            filter: employee.is_active ? 'none' : 'grayscale(100%)'
                         }}
                         onClick={() => {
                             if (userRole === 'admin') setSelectedEmployee(employee);
@@ -281,17 +315,31 @@ const Employees = () => {
                             )}
                         </div>
 
-                        {/* SOLO ADMIN PUEDE BORRAR */}
+                        {/* ADMIN ACTIONS */}
                         {userRole === 'admin' && (
-                            <button
-                                onClick={(e) => handleDelete(employee.id, e)}
-                                style={{
-                                    position: 'absolute', top: '1rem', right: '1rem',
-                                    background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', opacity: 0.7
-                                }}
-                            >
-                                <Trash2 size={18} />
-                            </button>
+                            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleEdit(employee); }}
+                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                                    title="Editar"
+                                >
+                                    <Edit size={18} />
+                                </button>
+                                <button
+                                    onClick={(e) => handleToggleStatus(employee, e)}
+                                    style={{ background: 'none', border: 'none', color: employee.is_active ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer' }}
+                                    title={employee.is_active ? "Desactivar" : "Activar"}
+                                >
+                                    <Power size={18} />
+                                </button>
+                                <button
+                                    onClick={(e) => handleDelete(employee.id, e)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', opacity: 0.5 }}
+                                    title="Eliminar permanentemente"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
                         )}
                     </div>
                 ))}
@@ -405,7 +453,7 @@ const Employees = () => {
                     backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
                 }}>
                     <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>Registrar Empleado</h3>
+                        <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Editar Empleado' : 'Registrar Empleado'}</h3>
                         <form onSubmit={handleSubmit}>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label className="label">Nombre Completo</label>
