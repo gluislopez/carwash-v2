@@ -46,6 +46,25 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         setFormData({ ...formData, price: currentTotal - extraToRemove.price });
     };
 
+    // Initialize selected employees
+    const [selectedEmployeeIds, setSelectedEmployeeIds] = useState(() => {
+        const assigned = transaction.transaction_assignments?.map(a => a.employee_id) || [];
+        if (assigned.length === 0 && transaction.employee_id) {
+            return [transaction.employee_id];
+        }
+        return assigned;
+    });
+
+    const handleToggleEmployee = (employeeId) => {
+        setSelectedEmployeeIds(prev => {
+            if (prev.includes(employeeId)) {
+                return prev.filter(id => id !== employeeId);
+            } else {
+                return [...prev, employeeId];
+            }
+        });
+    };
+
     const handleSubmit = async () => {
         // e.preventDefault(); // No longer needed
         setIsUploading(true); // Start loading
@@ -57,15 +76,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             try {
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
 
-                // Get Employee Names
-                const assignedEmployeeIds = transaction.transaction_assignments?.map(a => a.employee_id) || [];
-                // Also include primary employee_id if not in assignments (legacy support)
-                if (transaction.employee_id && !assignedEmployeeIds.includes(transaction.employee_id)) {
-                    assignedEmployeeIds.push(transaction.employee_id);
-                }
-
+                // Get Employee Names from current selection
                 const assignedNames = employees
-                    .filter(e => assignedEmployeeIds.includes(e.id))
+                    .filter(e => selectedEmployeeIds.includes(e.id))
                     .map(e => e.name)
                     .join(', ');
 
@@ -109,25 +122,75 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             }
         }
 
-        // 2. UPDATE DATABASE (This might trigger UI refresh)
-        // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
-        let newStatus = formData.status;
-        if (formData.status === 'pending') newStatus = 'paid';
-        if (formData.status === 'in_progress' || formData.status === 'ready') newStatus = 'completed';
+        // 2. UPDATE ASSIGNMENTS & CALCULATE COMMISSION
+        try {
+            // A. Update Assignments
+            // First delete existing assignments
+            const { error: deleteError } = await supabase
+                .from('transaction_assignments')
+                .delete()
+                .eq('transaction_id', transaction.id);
 
-        await onUpdate(transaction.id, {
-            service_id: formData.serviceId,
-            price: parseFloat(formData.price),
-            payment_method: formData.paymentMethod,
-            tip: parseFloat(formData.tip) || 0,
-            commission_amount: parseFloat(formData.commissionAmount) || 0,
-            status: newStatus,
-            extras: extras // Save the extras array
-        });
+            if (deleteError) throw deleteError;
+
+            // Then insert new assignments
+            if (selectedEmployeeIds.length > 0) {
+                const newAssignments = selectedEmployeeIds.map(empId => ({
+                    transaction_id: transaction.id,
+                    employee_id: empId
+                }));
+
+                const { error: insertError } = await supabase
+                    .from('transaction_assignments')
+                    .insert(newAssignments);
+
+                if (insertError) throw insertError;
+            }
+
+            // B. Recalculate Commission
+            // Logic: If $35 service & >1 employee => $12 total commission. Else standard.
+            const service = services.find(s => s.id === formData.serviceId);
+            const baseCommission = service?.commission || 0;
+            const currentPrice = parseFloat(formData.price);
+
+            let finalCommission = baseCommission;
+            // Check for the specific $35 condition (adjust if price logic changes)
+            // Note: Using currentPrice might be risky if extras are added, but the original logic
+            // checked tx.price === 35. Let's stick to the base service price check if possible,
+            // or just the total price as per original logic.
+            // Original logic: if (tx.price === 35 && selectedEmployeesForAssignment.length > 1)
+            // We'll use the current total price to be consistent.
+            if (currentPrice === 35 && selectedEmployeeIds.length > 1) {
+                finalCommission = 12;
+            }
+
+            // 3. UPDATE TRANSACTION
+            // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
+            let newStatus = formData.status;
+            if (formData.status === 'pending') newStatus = 'paid';
+            if (formData.status === 'in_progress' || formData.status === 'ready') newStatus = 'completed';
+
+            await onUpdate(transaction.id, {
+                service_id: formData.serviceId,
+                price: parseFloat(formData.price),
+                payment_method: formData.paymentMethod,
+                tip: parseFloat(formData.tip) || 0,
+                commission_amount: finalCommission, // Updated commission
+                status: newStatus,
+                extras: extras, // Save the extras array
+                employee_id: selectedEmployeeIds[0] || null // Update primary employee (legacy)
+            });
+
+        } catch (error) {
+            console.error("Error updating transaction/assignments:", error);
+            alert("Error al actualizar: " + error.message);
+            setIsUploading(false);
+            return;
+        }
 
         setIsUploading(false); // Stop loading
 
-        // 3. SHOW SUCCESS STATE (Manual Button to avoid Popup Blockers)
+        // 4. SHOW SUCCESS STATE (Manual Button to avoid Popup Blockers)
         if (publicReceiptUrl && transaction.customers?.phone) {
             const phone = transaction.customers.phone.replace(/\D/g, '');
             const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicReceiptUrl}`;
@@ -255,6 +318,56 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         </select>
                     </div>
 
+                    {/* SECCIÓN DE LAVADORES (NUEVO) */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label className="label">Lavadores Asignados</label>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                            gap: '0.5rem',
+                            maxHeight: '150px',
+                            overflowY: 'auto',
+                            padding: '0.5rem',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '0.5rem'
+                        }}>
+                            {employees.map(emp => (
+                                <div
+                                    key={emp.id}
+                                    onClick={() => handleToggleEmployee(emp.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.5rem',
+                                        borderRadius: '0.25rem',
+                                        cursor: 'pointer',
+                                        backgroundColor: selectedEmployeeIds.includes(emp.id)
+                                            ? 'rgba(99, 102, 241, 0.2)'
+                                            : 'transparent',
+                                        border: selectedEmployeeIds.includes(emp.id)
+                                            ? '1px solid var(--primary)'
+                                            : '1px solid transparent'
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        borderRadius: '4px',
+                                        border: '1px solid var(--text-muted)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: selectedEmployeeIds.includes(emp.id) ? 'var(--primary)' : 'transparent'
+                                    }}>
+                                        {selectedEmployeeIds.includes(emp.id) && <div style={{ width: '8px', height: '8px', backgroundColor: 'white', borderRadius: '2px' }} />}
+                                    </div>
+                                    <span style={{ fontSize: '0.9rem' }}>{emp.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* SECCIÓN DE EXTRAS */}
                     <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem' }}>
                         <label className="label" style={{ marginBottom: '0.5rem', display: 'block' }}>Servicios Extra (Opcional)</label>
@@ -320,7 +433,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                 style={{ backgroundColor: 'var(--bg-secondary)', opacity: 0.7 }}
                                 value={formData.commissionAmount}
                                 readOnly
-                                title="La comisión no cambia con los extras"
+                                title="La comisión se recalcula al guardar"
                             />
                         </div>
                         <div>
