@@ -57,12 +57,25 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             try {
                 const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
 
-                const doc = generateReceiptPDF(
+                // Get Employee Names
+                const assignedEmployeeIds = transaction.transaction_assignments?.map(a => a.employee_id) || [];
+                // Also include primary employee_id if not in assignments (legacy support)
+                if (transaction.employee_id && !assignedEmployeeIds.includes(transaction.employee_id)) {
+                    assignedEmployeeIds.push(transaction.employee_id);
+                }
+
+                const assignedNames = employees
+                    .filter(e => assignedEmployeeIds.includes(e.id))
+                    .map(e => e.name)
+                    .join(', ');
+
+                const doc = await generateReceiptPDF(
                     transaction,
                     serviceName,
                     extras,
                     formData.price,
-                    formData.tip || 0
+                    formData.tip || 0,
+                    assignedNames
                 );
 
                 const pdfArrayBuffer = doc.output('arraybuffer');

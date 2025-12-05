@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export const generateReceiptPDF = (transaction, serviceName, extras, total, tip) => {
+export const generateReceiptPDF = async (transaction, serviceName, extras, total, tip, employeeNames = '') => {
     const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -11,6 +11,35 @@ export const generateReceiptPDF = (transaction, serviceName, extras, total, tip)
     const pageWidth = doc.internal.pageSize.getWidth();
     const centerX = pageWidth / 2;
     let y = 10; // Start Y position
+
+    // --- LOGO WATERMARK ---
+    try {
+        // Load logo from public folder
+        const logoUrl = '/logo.jpg';
+        const img = new Image();
+        img.src = logoUrl;
+
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+        });
+
+        // Add faded logo
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.1 })); // 10% opacity
+
+        // Calculate dimensions to fit/center
+        const logoWidth = 60; // 60mm wide
+        const logoHeight = (img.height / img.width) * logoWidth;
+        const logoX = (pageWidth - logoWidth) / 2;
+        const logoY = 40; // Start a bit down
+
+        doc.addImage(img, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+        doc.restoreGraphicsState();
+    } catch (e) {
+        console.warn('Could not load logo for receipt:', e);
+    }
+    // ----------------------
 
     // Helper for centering text
     const centerText = (text, yPos, size = 10, bold = false) => {
@@ -56,6 +85,16 @@ export const generateReceiptPDF = (transaction, serviceName, extras, total, tip)
     y += 4;
     doc.text(`      (${(transaction.customers.vehicle_model || '').toUpperCase()})`, 5, y);
     y += 5;
+
+    if (employeeNames) {
+        doc.text(`ATENDIDO POR:`, 5, y);
+        y += 4;
+        // Split long names if needed
+        const splitNames = doc.splitTextToSize(employeeNames.toUpperCase(), pageWidth - 10);
+        doc.text(splitNames, 10, y);
+        y += (splitNames.length * 4) + 1;
+    }
+
     line(y);
     y += 5;
 
