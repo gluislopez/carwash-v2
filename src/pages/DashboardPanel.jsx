@@ -569,7 +569,8 @@ const Dashboard = () => {
             payment_method: 'cash',
             extras: formData.extras || [],
 
-            status: 'waiting' // Initial Status
+            status: 'waiting', // Initial Status
+            total_price: basePrice // REQUIRED by DB constraint
         };
 
         try {
@@ -617,7 +618,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.204 DB FIX {new Date().toLocaleTimeString()}
+                            v4.205 FIX TOTAL PRICE {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
