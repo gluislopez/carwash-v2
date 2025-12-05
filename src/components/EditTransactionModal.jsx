@@ -45,8 +45,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         setFormData({ ...formData, price: currentTotal - extraToRemove.price });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
+        // e.preventDefault(); // No longer needed
         setIsUploading(true); // Start loading
 
         // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
@@ -84,24 +84,22 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
                 // DEBUG: Step 3
                 console.log('Step 3: Outputting Blob');
-                // FORCE DUMMY TEXT UPLOAD TO ISOLATE PDF ISSUE
-                const pdfBlob = new Blob(['TEST FROM MODAL'], { type: 'text/plain' });
-                console.log('DEBUG: Uploading DUMMY TEXT instead of PDF');
-
-                // const pdfArrayBuffer = doc.output('arraybuffer');
-                // const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+                const pdfArrayBuffer = doc.output('arraybuffer');
+                const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
 
                 if (pdfBlob.size === 0) throw new Error('PDF vacío (0 bytes).');
 
-                const fileName = `DEBUG_TEXT_${transaction.id}_${Date.now()}.txt`;
+                const fileName = `recibo_${transaction.id}_${Date.now()}.pdf`;
 
                 // DEBUG: Step 4
                 console.log('Step 4: Uploading to Supabase');
 
-                // SIMPLIFIED UPLOAD (Like the Test Button)
                 const { data, error } = await supabase.storage
                     .from('receipts')
-                    .upload(fileName, pdfBlob); // Removed options to match Test Button
+                    .upload(fileName, pdfBlob, {
+                        contentType: 'application/pdf',
+                        upsert: true
+                    });
 
                 if (error) {
                     console.error('Supabase Upload Error:', error);
@@ -159,7 +157,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit}>
+                {/* REMOVED FORM TAG TO PREVENT SUBMIT ISSUES */}
+                <div id="edit-transaction-form">
                     <div style={{ marginBottom: '1rem' }}>
                         <label className="label">Servicio Base</label>
                         <select
@@ -301,12 +300,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                             Cancelar
                         </button>
-                        <button type="submit" className="btn btn-primary" disabled={isUploading}>
+                        <button type="button" onClick={handleSubmit} className="btn btn-primary" disabled={isUploading}>
                             {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
                             {isUploading ? ' Procesando...' : (formData.status === 'pending' ? 'Completar y Pagar' : 'Guardar Cambios')}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );
