@@ -467,17 +467,19 @@ const Employees = () => {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px', border: '1px solid var(--primary)' }}>
-                                <label className="label" style={{ color: 'var(--primary)' }}>Vincular Usuario (Importante)</label>
+                                <label className="label" style={{ color: 'var(--primary)' }}>ID de Usuario (Automático)</label>
                                 <p style={{ fontSize: '0.8rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
-                                    Crea el usuario en Supabase (Authentication), copia su "User UID" y pégalo aquí.
+                                    Si pusiste contraseña arriba, <b>esto se llenará solo</b>. <br />
+                                    Solo úsalo si ya creaste el usuario manualmente en Supabase.
                                 </p>
                                 <input
                                     type="text"
                                     className="input"
-                                    placeholder="Ej: a1b2c3d4-..."
+                                    placeholder="Se genera automáticamente..."
                                     value={formData.user_id}
                                     onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                                    style={{ fontFamily: 'monospace' }}
+                                    style={{ fontFamily: 'monospace', backgroundColor: formData.password ? 'rgba(0,0,0,0.1)' : 'var(--bg-card)' }}
+                                    readOnly={!!formData.password}
                                 />
                             </div>
 
