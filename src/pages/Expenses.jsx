@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, ShoppingBag, Utensils, Trash2, DollarSign } from 'lucide-react';
+import { Plus, ShoppingBag, Utensils, Trash2, DollarSign, Edit2, Check, X } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const Expenses = () => {
     const [activeTab, setActiveTab] = useState('product'); // 'product' | 'lunch'
-    const { data: expenses, create: createExpense, remove: removeExpense } = useSupabase('expenses');
+    const { data: expenses, create: createExpense, remove: removeExpense, update: updateExpense } = useSupabase('expenses');
     const { data: employees } = useSupabase('employees');
 
     const [formData, setFormData] = useState({
@@ -14,6 +14,43 @@ const Expenses = () => {
         employeeId: '',
         date: new Date().toISOString().split('T')[0]
     });
+
+    // Inline Editing State
+    const [editingId, setEditingId] = useState(null);
+    const [editDate, setEditDate] = useState('');
+
+    const startEditing = (item) => {
+        setEditingId(item.id);
+        // Ensure we get YYYY-MM-DD from the timestamp
+        setEditDate(new Date(item.date).toISOString().split('T')[0]);
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditDate('');
+    };
+
+    const saveDate = async (id) => {
+        if (!editDate) return;
+        try {
+            // Keep the time part or just use the date? 
+            // The original code uses new Date().toISOString() which includes time.
+            // But for expenses, date is usually enough. Let's append T12:00:00 to avoid timezone shifts if possible,
+            // or just use the date string if the DB supports it. 
+            // The DB column is TIMESTAMPTZ.
+            // Let's construct a date at noon UTC to be safe, or just use the input value.
+            // A simple approach:
+            const newDate = new Date(editDate);
+            // Adjust for timezone offset to keep the selected day
+            const userTimezoneOffset = newDate.getTimezoneOffset() * 60000;
+            const adjustedDate = new Date(newDate.getTime() + userTimezoneOffset + (12 * 60 * 60 * 1000)); // Noon local
+
+            await updateExpense(id, { date: adjustedDate.toISOString() });
+            setEditingId(null);
+        } catch (error) {
+            alert('Error al actualizar fecha: ' + error.message);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -149,7 +186,34 @@ const Expenses = () => {
                                 {filteredExpenses.map(item => (
                                     <tr key={item.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                         <td style={{ padding: '1rem' }}>
-                                            {new Date(item.date).toLocaleDateString('es-PR')}
+                                            {editingId === item.id ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <input
+                                                        type="date"
+                                                        className="input"
+                                                        style={{ padding: '0.25rem', fontSize: '0.9rem' }}
+                                                        value={editDate}
+                                                        onChange={(e) => setEditDate(e.target.value)}
+                                                    />
+                                                    <button onClick={() => saveDate(item.id)} style={{ color: '#10B981', background: 'none', border: 'none', cursor: 'pointer' }} title="Guardar">
+                                                        <Check size={18} />
+                                                    </button>
+                                                    <button onClick={cancelEditing} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }} title="Cancelar">
+                                                        <X size={18} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span>{new Date(item.date).toLocaleDateString('es-PR')}</span>
+                                                    <button
+                                                        onClick={() => startEditing(item)}
+                                                        style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}
+                                                        title="Editar Fecha"
+                                                    >
+                                                        <Edit2 size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                         <td style={{ padding: '1rem' }}>
                                             {activeTab === 'lunch'
