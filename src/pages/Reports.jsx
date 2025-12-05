@@ -59,7 +59,8 @@ const Reports = () => {
     const getVehicleModel = (id) => {
         if (!id) return '(No Vehicle ID)';
         const vehicle = vehiclesList?.find(v => v.id == id);
-        return vehicle ? `${vehicle.make} ${vehicle.model}` : `(Missing Model for ID: ${id} | List: ${vehiclesList?.length})`;
+        // Schema uses 'brand' and 'model', not 'make'
+        return vehicle ? `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Sin Modelo' : `(Missing Model for ID: ${id})`;
     };
 
     // Date Helpers
