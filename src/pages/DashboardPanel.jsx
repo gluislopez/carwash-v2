@@ -498,6 +498,36 @@ const Dashboard = () => {
         }
     };
 
+    const handleRevertToInProgress = async (tx) => {
+        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "En Proceso"?`)) return;
+
+        try {
+            await updateTransaction(tx.id, {
+                status: 'in_progress',
+                finished_at: null // Clear finished time
+            });
+            await refreshTransactions();
+        } catch (error) {
+            console.error("Error reverting status:", error);
+            alert("Error al devolver estado: " + error.message);
+        }
+    };
+
+    const handleRevertToReady = async (tx) => {
+        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "Listo para Recoger"?`)) return;
+
+        try {
+            await updateTransaction(tx.id, {
+                status: 'ready',
+                // Keep finished_at so we know when it was finished
+            });
+            await refreshTransactions();
+        } catch (error) {
+            console.error("Error reverting to ready:", error);
+            alert("Error al devolver estado: " + error.message);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -566,7 +596,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.179 SYNTAX FIX 2 {new Date().toLocaleTimeString()}
+                            v4.180 SYNTAX FIX 3 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1579,38 +1609,6 @@ const Dashboard = () => {
                                     )}
                                 </div>
                             </div>
-
-    const handleRevertToInProgress = async (tx) => {
-        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "En Proceso"?`)) return;
-
-                            try {
-                                await updateTransaction(tx.id, {
-                                    status: 'in_progress',
-                                    finished_at: null // Clear finished time
-                                });
-                            await refreshTransactions();
-        } catch (error) {
-                                console.error("Error reverting status:", error);
-                            alert("Error al devolver estado: " + error.message);
-        }
-    };
-
-    const handleRevertToReady = async (tx) => {
-        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "Listo para Recoger"?`)) return;
-
-                            try {
-                                await updateTransaction(tx.id, {
-                                    status: 'ready',
-                                    // Keep finished_at so we know when it was finished
-                                });
-                            await refreshTransactions();
-        } catch (error) {
-                                console.error("Error reverting to ready:", error);
-                            alert("Error al devolver estado: " + error.message);
-        }
-    };
-
-                            // ... (inside render)
 
                             <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
