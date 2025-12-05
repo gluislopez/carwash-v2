@@ -153,18 +153,25 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     }
 
     doc.setFont('courier', 'bold');
-    row('TOTAL', `$${(parseFloat(total) + parseFloat(tip)).toFixed(2)}`, y, 11);
-    y += 5;
-    doc.setFont('courier', 'normal');
+    row('TOTAL', `$${(parseFloat(total) + parseFloat(tip)).toFixed(2)}`, y, 12);
+    y += 10;
 
-    line(y);
+    doc.setFontSize(10);
+    centerText('¡GRACIAS POR SU VISITA!', y);
     y += 5;
+    centerText('Vuelva Pronto', y);
+    y += 8;
 
-    // FOOTER
-    centerText('¡GRACIAS POR SU VISITA!', y, 10);
-    y += 5;
-    // doc.save(`recibo_${transaction.id}.pdf`); // REMOVED: Prevent auto-download, we handle blob manually
-    return doc;
+    // Footer Note
+    doc.setFontSize(8);
+    const footerNote = "* Si tiene alguna reclamación sobre el servicio, comuníquese al 787-857-8983.";
+    const splitFooter = doc.splitTextToSize(footerNote, pageWidth - 10);
+    doc.text(splitFooter, pageWidth / 2, y, { align: 'center' });
+
+    // Save
+    const fileName = `recibo_${transaction.customers.vehicle_plate}_${Date.now()}.pdf`;
+    const pdfBlob = doc.output('blob');
+    return { blob: pdfBlob, fileName };
 };
 
 export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
