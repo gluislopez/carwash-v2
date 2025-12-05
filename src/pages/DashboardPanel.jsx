@@ -566,7 +566,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.173 FORCE DEPLOY {new Date().toLocaleTimeString()}
+                            v4.174 REVERT BUTTON {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1064,6 +1064,24 @@ const Dashboard = () => {
                                 </div>
                             )}
 
+    const handleRevertToInProgress = async (tx) => {
+        if (!window.confirm(`¿Devolver ${tx.customers?.vehicle_plate} a "En Proceso"?`)) return;
+
+                            try {
+                                await updateTransaction(tx.id, {
+                                    status: 'in_progress',
+                                    finished_at: null // Clear finished time
+                                });
+                            await refreshTransactions();
+            // setActiveDetailModal(null); // Optional: Close modal or keep open to see change
+        } catch (error) {
+                                console.error("Error reverting status:", error);
+                            alert("Error al devolver estado: " + error.message);
+        }
+    };
+
+                            // ... (inside render)
+
                             {activeDetailModal === 'ready_list' && (
                                 <div>
                                     {statsTransactions.filter(t => t.status === 'ready').length === 0 ? <p>No hay autos listos para recoger.</p> : (
@@ -1093,6 +1111,17 @@ const Dashboard = () => {
                                                                 >
                                                                     <DollarSign size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Pagar</span>
                                                                 </button>
+
+                                                                {/* REVERT BUTTON */}
+                                                                <button
+                                                                    className="btn"
+                                                                    onClick={() => handleRevertToInProgress(t)}
+                                                                    title="Devolver a En Proceso"
+                                                                    style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                                >
+                                                                    <RefreshCw size={14} /> <span>En Proceso</span>
+                                                                </button>
+
                                                                 <button
                                                                     onClick={() => setEditingTransactionId(t.id)}
                                                                     style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
