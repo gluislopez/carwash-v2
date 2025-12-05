@@ -162,11 +162,11 @@ const Reports = () => {
     const dateFilteredTxs = getDateFilteredTransactions();
     const totalCash = dateFilteredTxs
         .filter(t => t.payment_method === 'cash')
-        .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
     const totalTransfer = dateFilteredTxs
         .filter(t => t.payment_method === 'transfer')
-        .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
     const getFilteredExpenses = () => {
         if (!expenses) return [];
@@ -216,7 +216,7 @@ const Reports = () => {
 
     // Stats Calculation
     const totalCount = filteredTransactions.length;
-    const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+    const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
         const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
@@ -269,7 +269,7 @@ const Reports = () => {
                 groups[dateKey] = { date: dateKey, count: 0, income: 0, expenses: 0 };
             }
 
-            const txIncome = parseFloat(t.total_price) || 0;
+            const txIncome = parseFloat(t.price) || 0;
             const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
 
             groups[dateKey].count += 1;
@@ -414,11 +414,11 @@ const Reports = () => {
                         try {
                             const totalCash = filteredTransactions
                                 .filter(t => t.payment_method === 'cash')
-                                .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
                             const totalTransfer = filteredTransactions
                                 .filter(t => t.payment_method === 'transfer')
-                                .reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
+                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
                             const stats = {
                                 count: totalCount,
@@ -689,7 +689,7 @@ const Reports = () => {
                                     </td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                                         {userRole === 'admin' ? (
-                                            `$${t.total_price.toFixed(2)}`
+                                            `$${t.price.toFixed(2)}`
                                         ) : (
                                             (() => {
                                                 const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);

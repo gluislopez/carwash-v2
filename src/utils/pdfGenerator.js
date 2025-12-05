@@ -232,7 +232,7 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
         t.client_info || 'Cliente',
         t.service_info || t.service_id,
         t.payment_method === 'cash' ? 'Efectivo' : t.payment_method === 'card' ? 'Tarjeta' : 'Ath Móvil',
-        `$${t.total_price.toFixed(2)}`
+        `$${t.price.toFixed(2)}`
     ]);
 
     autoTable(doc, {
