@@ -98,6 +98,9 @@ const Dashboard = () => {
     const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
     const customers = customersData || [];
 
+    const { data: vehiclesData } = useSupabase('vehicles');
+    const vehicles = vehiclesData || [];
+
     const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model, phone), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
@@ -188,6 +191,7 @@ const Dashboard = () => {
     // Transaction Form State
     const [formData, setFormData] = useState({
         customerId: '',
+        vehicleId: '', // Added vehicleId
         serviceId: '',
         employeeId: '',
         selectedEmployees: [], // Inicializar array vacío
@@ -540,6 +544,7 @@ const Dashboard = () => {
         const newTransaction = {
             date: transactionDate.toISOString(),
             customer_id: formData.customerId,
+            vehicle_id: formData.vehicleId || null, // Add vehicle_id
             service_id: formData.serviceId,
             employee_id: null, // No assigned yet
             price: basePrice,
@@ -596,7 +601,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.195 AGGRESSIVE DEBUG {new Date().toLocaleTimeString()}
+                            v4.196 FIX VEHICLE SAVE {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1335,7 +1340,13 @@ const Dashboard = () => {
                                                                         <div
                                                                             key={c.id}
                                                                             onClick={() => {
-                                                                                setFormData({ ...formData, customerId: c.id });
+                                                                                // Auto-select vehicle if exists
+                                                                                const custVehicle = vehicles.find(v => v.customer_id === c.id);
+                                                                                setFormData({
+                                                                                    ...formData,
+                                                                                    customerId: c.id,
+                                                                                    vehicleId: custVehicle ? custVehicle.id : ''
+                                                                                });
                                                                                 setShowCustomerSearch(false);
                                                                                 setCustomerSearch('');
                                                                             }}
@@ -1368,7 +1379,15 @@ const Dashboard = () => {
                                                             className="input"
                                                             required
                                                             value={formData.customerId}
-                                                            onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                                                            onChange={(e) => {
+                                                                const cId = e.target.value;
+                                                                const custVehicle = vehicles.find(v => v.customer_id === cId);
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    customerId: cId,
+                                                                    vehicleId: custVehicle ? custVehicle.id : ''
+                                                                });
+                                                            }}
                                                             style={{ flex: 1 }}
                                                         >
                                                             <option value="">Seleccionar Cliente...</option>
