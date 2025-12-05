@@ -51,10 +51,15 @@ const Reports = () => {
     const { data: customersList } = useSupabase('customers');
     const { data: servicesList } = useSupabase('services');
     const { data: employeesList } = useSupabase('employees');
+    const { data: vehiclesList } = useSupabase('vehicles');
 
     const getCustomerName = (id) => customersList.find(c => c.id === id)?.name || 'Cliente Casual';
     const getServiceName = (id) => servicesList.find(s => s.id === id)?.name || 'Servicio Desconocido';
     const getEmployeeName = (id) => employeesList.find(e => e.id === id)?.name || 'Desconocido';
+    const getVehicleModel = (id) => {
+        const vehicle = vehiclesList.find(v => v.id === id);
+        return vehicle ? `${vehicle.make} ${vehicle.model}` : '';
+    };
 
     // Date Helpers
     const getPRDateString = (dateInput) => {
@@ -648,25 +653,37 @@ const Reports = () => {
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         {userRole === 'admin' ? (
-                                            <button
-                                                onClick={() => {
-                                                    const cust = customersList.find(c => c.id === t.customer_id);
-                                                    if (cust) setSelectedCustomer(cust);
-                                                }}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: 'var(--primary)',
-                                                    textDecoration: 'underline',
-                                                    cursor: 'pointer',
-                                                    fontWeight: 'bold',
-                                                    fontSize: 'inherit'
-                                                }}
-                                            >
-                                                {getCustomerName(t.customer_id)}
-                                            </button>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        const cust = customersList.find(c => c.id === t.customer_id);
+                                                        if (cust) setSelectedCustomer(cust);
+                                                    }}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: 'var(--primary)',
+                                                        textDecoration: 'underline',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 'bold',
+                                                        fontSize: 'inherit',
+                                                        textAlign: 'left',
+                                                        padding: 0
+                                                    }}
+                                                >
+                                                    {getCustomerName(t.customer_id)}
+                                                </button>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                    {getVehicleModel(t.vehicle_id)}
+                                                </span>
+                                            </div>
                                         ) : (
-                                            getCustomerName(t.customer_id)
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span>{getCustomerName(t.customer_id)}</span>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                    {getVehicleModel(t.vehicle_id)}
+                                                </span>
+                                            </div>
                                         )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
