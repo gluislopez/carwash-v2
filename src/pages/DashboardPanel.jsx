@@ -197,8 +197,10 @@ const Dashboard = () => {
         selectedEmployees: [], // Inicializar array vacío
         price: '',
         commissionAmount: '',
-        serviceTime: new Date().toTimeString().slice(0, 5)
+        serviceTime: new Date().toTimeString().slice(0, 5),
+        extras: [] // Initialize extras
     });
+    const [activeTab, setActiveTab] = useState('main'); // 'main' | 'extras'
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
     const [customerSearch, setCustomerSearch] = useState(''); // Estado para el buscador de clientes
@@ -439,10 +441,11 @@ const Dashboard = () => {
         const serviceId = e.target.value;
         const service = services.find(s => s.id === serviceId);
         if (service) {
+            const extrasTotal = (formData.extras || []).reduce((sum, ex) => sum + ex.price, 0);
             setFormData({
                 ...formData,
                 serviceId,
-                price: service.price,
+                price: service.price + extrasTotal,
                 commissionAmount: service.commission || 0 // Use fixed commission
             });
         } else {
@@ -452,18 +455,31 @@ const Dashboard = () => {
 
     const handleAddExtra = () => {
         if (newExtra.description && newExtra.price) {
+            const price = parseFloat(newExtra.price);
+            const updatedExtras = [...formData.extras, { ...newExtra, price }];
+            const currentPrice = parseFloat(formData.price) || 0;
+
             setFormData({
                 ...formData,
-                extras: [...formData.extras, { ...newExtra, price: parseFloat(newExtra.price) }]
+                extras: updatedExtras,
+                price: currentPrice + price
             });
             setNewExtra({ description: '', price: '' });
         }
     };
 
     const handleRemoveExtra = (index) => {
+        const extraToRemove = formData.extras[index];
         const newExtras = [...formData.extras];
         newExtras.splice(index, 1);
-        setFormData({ ...formData, extras: newExtras });
+
+        const currentPrice = parseFloat(formData.price) || 0;
+
+        setFormData({
+            ...formData,
+            extras: newExtras,
+            price: currentPrice - extraToRemove.price
+        });
     };
 
     const handleUpdateTransaction = async (id, updates) => {
@@ -551,7 +567,7 @@ const Dashboard = () => {
             commission_amount: 0, // Calculated at assignment/completion
             tip: 0,
             payment_method: 'cash',
-            extras: [],
+            extras: formData.extras || [],
 
             status: 'waiting' // Initial Status
         };
@@ -601,7 +617,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.197 PAYMENT BUTTONS {new Date().toLocaleTimeString()}
+                            v4.198 EXTRAS TAB {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1496,32 +1512,129 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Servicio Principal</label>
-                                    <select
-                                        className="input"
-                                        required
-                                        value={formData.serviceId}
-                                        onChange={handleServiceChange}
+
+                                {/* TABS HEADER */}
+                                <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('main')}
+                                        style={{
+                                            padding: '0.75rem 1.5rem',
+                                            background: 'none',
+                                            border: 'none',
+                                            borderBottom: activeTab === 'main' ? '2px solid var(--primary)' : '2px solid transparent',
+                                            color: activeTab === 'main' ? 'var(--primary)' : 'var(--text-muted)',
+                                            fontWeight: activeTab === 'main' ? 'bold' : 'normal',
+                                            cursor: 'pointer'
+                                        }}
                                     >
-                                        <option value="">Seleccionar Servicio...</option>
-                                        {services.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                        ))}
-                                    </select>
+                                        Servicio Principal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('extras')}
+                                        style={{
+                                            padding: '0.75rem 1.5rem',
+                                            background: 'none',
+                                            border: 'none',
+                                            borderBottom: activeTab === 'extras' ? '2px solid var(--primary)' : '2px solid transparent',
+                                            color: activeTab === 'extras' ? 'var(--primary)' : 'var(--text-muted)',
+                                            fontWeight: activeTab === 'extras' ? 'bold' : 'normal',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Servicios Extra ({formData.extras?.length || 0})
+                                    </button>
                                 </div>
 
+                                {/* TAB CONTENT: MAIN */}
+                                {activeTab === 'main' && (
+                                    <>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="label">Servicio Principal</label>
+                                            <select
+                                                className="input"
+                                                required
+                                                value={formData.serviceId}
+                                                onChange={handleServiceChange}
+                                            >
+                                                <option value="">Seleccionar Servicio...</option>
+                                                {services.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                                ))}
+                                            </select>
+                                        </div>
 
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="label">Hora del Servicio</label>
+                                            <input
+                                                type="time"
+                                                className="input"
+                                                required
+                                                value={formData.serviceTime}
+                                                onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
+                                            />
+                                        </div>
+                                    </>
+                                )}
 
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Hora del Servicio</label>
-                                    <input
-                                        type="time"
-                                        className="input"
-                                        required
-                                        value={formData.serviceTime}
-                                        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
-                                    />
+                                {/* TAB CONTENT: EXTRAS */}
+                                {activeTab === 'extras' && (
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem' }}>
+                                            <label className="label" style={{ marginBottom: '0.5rem', display: 'block' }}>Agregar Extra</label>
+
+                                            {/* Lista de Extras */}
+                                            {formData.extras && formData.extras.length > 0 && (
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    {formData.extras.map((extra, index) => (
+                                                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.9rem', padding: '0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
+                                                            <span>{extra.description} (${extra.price})</span>
+                                                            <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Inputs para Nuevo Extra */}
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Descripción (ej. Cera)"
+                                                    className="input"
+                                                    style={{ flex: 2 }}
+                                                    value={newExtra.description}
+                                                    onChange={(e) => setNewExtra({ ...newExtra, description: e.target.value })}
+                                                />
+                                                <input
+                                                    type="number"
+                                                    placeholder="$"
+                                                    className="input"
+                                                    style={{ flex: 1 }}
+                                                    value={newExtra.price}
+                                                    onChange={(e) => setNewExtra({ ...newExtra, price: e.target.value })}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddExtra}
+                                                    className="btn"
+                                                    style={{ backgroundColor: '#10B981', padding: '0.5rem' }}
+                                                >
+                                                    <Plus size={20} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TOTAL PRICE DISPLAY */}
+                                <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 'bold' }}>Total Estimado:</span>
+                                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                                        ${formData.price || 0}
+                                    </span>
                                 </div>
 
 
