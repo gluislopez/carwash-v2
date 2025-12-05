@@ -57,10 +57,15 @@ const Reports = () => {
     const getServiceName = (id) => servicesList.find(s => s.id === id)?.name || 'Servicio Desconocido';
     const getEmployeeName = (id) => employeesList.find(e => e.id === id)?.name || 'Desconocido';
     const getVehicleModel = (id) => {
-        if (!id) return '(No Vehicle ID)';
-        const vehicle = vehiclesList?.find(v => v.id == id);
-        // Schema uses 'brand' and 'model', not 'make'
-        return vehicle ? `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Sin Modelo' : `(Missing Model for ID: ${id})`;
+        if (!id) return '(No Vehicle ID - Null)';
+        if (!vehiclesList || vehiclesList.length === 0) return `(Loading Vehicles... ${vehiclesList?.length})`;
+
+        const vehicle = vehiclesList.find(v => v.id == id);
+        if (vehicle) {
+            return `${vehicle.brand || 'NoBrand'} ${vehicle.model || 'NoModel'}`;
+        } else {
+            return `(ID: ${id} Not Found in ${vehiclesList.length} vehicles)`;
+        }
     };
 
     // Date Helpers
