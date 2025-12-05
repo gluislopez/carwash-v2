@@ -49,22 +49,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         // e.preventDefault(); // No longer needed
         setIsUploading(true); // Start loading
 
-        // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
-        let newStatus = formData.status;
-        if (formData.status === 'pending') newStatus = 'paid';
-        if (formData.status === 'in_progress' || formData.status === 'ready') newStatus = 'completed';
+        // 1. CLOUD PDF RECEIPT LOGIC (UPLOAD FIRST to avoid UI refresh race condition)
+        let publicReceiptUrl = null;
 
-        await onUpdate(transaction.id, {
-            service_id: formData.serviceId,
-            price: parseFloat(formData.price),
-            payment_method: formData.paymentMethod,
-            tip: parseFloat(formData.tip) || 0,
-            commission_amount: parseFloat(formData.commissionAmount) || 0,
-            status: newStatus,
-            extras: extras // Save the extras array
-        });
-
-        // CLOUD PDF RECEIPT LOGIC
         if (sendReceipt && transaction.customers?.phone) {
             try {
                 // DEBUG: Step 1
@@ -113,19 +100,40 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     .getPublicUrl(fileName);
 
                 console.log('Public URL:', publicUrl);
-
-                // Send WhatsApp with Link
-                const phone = transaction.customers.phone.replace(/\D/g, '');
-                if (phone) {
-                    const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicUrl}`;
-                    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-
-                    window.location.href = url;
-                }
+                publicReceiptUrl = publicUrl;
 
             } catch (error) {
                 console.error('Error uploading receipt:', error);
-                alert('ERROR EN PASO: ' + (error.message || JSON.stringify(error)));
+                alert('ERROR AL SUBIR RECIBO: ' + (error.message || JSON.stringify(error)));
+                // We continue to save the transaction even if receipt fails
+            }
+        }
+
+        // 2. UPDATE DATABASE (This might trigger UI refresh)
+        // Logic: If pending -> paid. If in_progress or ready -> completed (which means paid & done)
+        let newStatus = formData.status;
+        if (formData.status === 'pending') newStatus = 'paid';
+        if (formData.status === 'in_progress' || formData.status === 'ready') newStatus = 'completed';
+
+        await onUpdate(transaction.id, {
+            service_id: formData.serviceId,
+            price: parseFloat(formData.price),
+            payment_method: formData.paymentMethod,
+            tip: parseFloat(formData.tip) || 0,
+            commission_amount: parseFloat(formData.commissionAmount) || 0,
+            status: newStatus,
+            extras: extras // Save the extras array
+        });
+
+        // 3. REDIRECT TO WHATSAPP (After DB update is safe)
+        if (publicReceiptUrl && transaction.customers?.phone) {
+            const phone = transaction.customers.phone.replace(/\D/g, '');
+            if (phone) {
+                const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicReceiptUrl}`;
+                const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+                // Use window.open for better compatibility
+                window.open(url, '_blank');
             }
         }
 
