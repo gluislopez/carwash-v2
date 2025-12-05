@@ -487,6 +487,7 @@ const Reports = () => {
                         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
                             <button
                                 onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'transfer' ? 'all' : 'transfer')}
+                                title={paymentMethodFilter === 'transfer' ? "Mostrar Todos" : "Filtrar solo ATH Móvil"}
                                 style={{
                                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                                     padding: '0.3rem 0.8rem',
@@ -504,6 +505,7 @@ const Reports = () => {
 
                             <button
                                 onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'cash' ? 'all' : 'cash')}
+                                title={paymentMethodFilter === 'cash' ? "Mostrar Todos" : "Filtrar solo Efectivo"}
                                 style={{
                                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                                     padding: '0.3rem 0.8rem',
