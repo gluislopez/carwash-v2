@@ -31,12 +31,34 @@ const RequireAuth = ({ children }) => {
             }
         }, 5000);
 
-        supabase.auth.getSession().then(({ data: { session }, error }) => {
+        supabase.auth.getSession().then(async ({ data: { session }, error }) => {
             if (error) {
                 console.error("Error getting session:", error);
                 setError(error.message);
+                setLoading(false);
+                return;
             }
-            setSession(session);
+
+            if (session?.user) {
+                // Check if user is active in employees table
+                const { data: employee, error: empError } = await supabase
+                    .from('employees')
+                    .select('is_active')
+                    .eq('user_id', session.user.id)
+                    .single();
+
+                // If employee record exists and is_active is false, deny access
+                if (employee && employee.is_active === false) {
+                    await supabase.auth.signOut();
+                    alert("Tu cuenta ha sido desactivada. Contacta al administrador.");
+                    setSession(null);
+                } else {
+                    setSession(session);
+                }
+            } else {
+                setSession(null);
+            }
+
             setLoading(false);
             clearTimeout(timer);
         }).catch(err => {
