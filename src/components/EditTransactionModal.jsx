@@ -20,6 +20,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
     const [sendReceipt, setSendReceipt] = useState(false); // WhatsApp Checkbox State
     const [isUploading, setIsUploading] = useState(false); // Upload Loading State
+    const [successUrl, setSuccessUrl] = useState(null); // Success View State
 
     const handleAddExtra = () => {
         if (newExtra.description && newExtra.price) {
@@ -80,7 +81,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
                 // DEBUG: Step 4
                 console.log('Step 4: Uploading to Supabase');
-                
+
                 // STABILITY DELAY
                 await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -126,21 +127,81 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             extras: extras // Save the extras array
         });
 
-        // 3. REDIRECT TO WHATSAPP (After DB update is safe)
+        setIsUploading(false); // Stop loading
+
+        // 3. SHOW SUCCESS STATE (Manual Button to avoid Popup Blockers)
         if (publicReceiptUrl && transaction.customers?.phone) {
             const phone = transaction.customers.phone.replace(/\D/g, '');
-            if (phone) {
-                const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicReceiptUrl}`;
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            const message = `🧾 *RECIBO DE PAGO - EXPRESS CARWASH*\n\nGracias por su visita. Puede descargar su recibo aquí:\n${publicReceiptUrl}`;
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-                // Use window.open for better compatibility
-                window.open(url, '_blank');
-            }
+            setSuccessUrl(url); // Trigger Success View
+        } else {
+            onClose(); // Close if no receipt needed
         }
-
-        setIsUploading(false); // Stop loading
-        onClose(); // Close modal manually after everything is done
     };
+
+    // SUCCESS VIEW (Manual WhatsApp Trigger)
+    if (successUrl) {
+        return (
+            <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.8)', // Darker background
+                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
+            }}>
+                <div style={{
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    padding: '2rem',
+                    borderRadius: '0.5rem',
+                    width: '100%',
+                    maxWidth: '400px',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                }}>
+                    <div style={{ marginBottom: '1.5rem', color: '#10B981' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✅</div>
+                        <h2 style={{ margin: 0 }}>¡Pago Exitoso!</h2>
+                    </div>
+
+                    <p style={{ marginBottom: '2rem', color: 'var(--text-muted)' }}>
+                        El recibo se ha generado correctamente.
+                    </p>
+
+                    <a
+                        href={successUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            width: '100%',
+                            padding: '1rem',
+                            fontSize: '1.1rem',
+                            backgroundColor: '#25D366', // WhatsApp Green
+                            color: 'white',
+                            textDecoration: 'none',
+                            marginBottom: '1rem'
+                        }}
+                        onClick={() => setTimeout(onClose, 1000)} // Close modal shortly after clicking
+                    >
+                        <span>📲 Enviar por WhatsApp</span>
+                    </a>
+
+                    <button
+                        onClick={onClose}
+                        className="btn"
+                        style={{ width: '100%', backgroundColor: 'var(--bg-secondary)' }}
+                    >
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{
