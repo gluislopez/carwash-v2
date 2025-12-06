@@ -243,7 +243,7 @@ const Employees = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Empleados</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.117 FILTER FIX</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.215</span></p>
                 </div>
 
                 {/* SOLO ADMIN PUEDE CREAR EMPLEADOS */}
