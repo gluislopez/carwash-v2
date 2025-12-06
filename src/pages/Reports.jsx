@@ -62,9 +62,10 @@ const Reports = () => {
 
         const vehicle = vehiclesList.find(v => v.id == id);
         if (vehicle) {
-            return `${vehicle.brand || 'NoBrand'} ${vehicle.model || 'NoModel'}`;
+            const brand = vehicle.brand === 'Generico' ? '' : vehicle.brand;
+            return `${brand || ''} ${vehicle.model || ''}`.trim() || 'Sin Modelo';
         } else {
-            return `(ID: ${id} Not Found in ${vehiclesList.length} vehicles)`;
+            return `(ID: ${id} Not Found)`;
         }
     };
 
