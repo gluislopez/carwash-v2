@@ -35,7 +35,10 @@ const Employees = () => {
                 .from('transactions')
                 .select(`
                     *,
-                    transaction_assignments (employee_id),
+                    transaction_assignments (
+                        employee_id,
+                        employees (name)
+                    ),
                     customers (name),
                     vehicles (brand, model)
                 `)
@@ -244,7 +247,7 @@ const Employees = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Empleados</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.218</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.219</span></p>
                 </div>
 
                 {/* SOLO ADMIN PUEDE CREAR EMPLEADOS */}
@@ -439,6 +442,14 @@ const Employees = () => {
                                                 <div style={{ fontSize: '0.7rem', color: '#555' }}>
                                                     Comm: ${t.commission_amount} | Tip: ${t.tip} | Status: {t.status}
                                                 </div>
+                                                {t.transaction_assignments?.length > 1 && (
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.2rem' }}>
+                                                        Compartido con: {t.transaction_assignments
+                                                            .filter(a => a.employee_id !== selectedEmployee.id)
+                                                            .map(a => a.employees?.name || 'Otro')
+                                                            .join(', ')}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ color: 'var(--success)' }}>
