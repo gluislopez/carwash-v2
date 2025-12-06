@@ -174,7 +174,7 @@ const Dashboard = () => {
         const totalToPay = (parseFloat(transaction.price) + extrasTotal).toFixed(2);
         const serviceName = getServiceName(transaction.service_id);
 
-        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 **ATH Móvil:** 787-XXX-XXXX\n2. 💵 **Efectivo** al recoger.\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n¡Lo esperamos!`;
+        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 **ATH Móvil:** 787-857-8983\n2. 💵 **Efectivo** al recoger.\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n¡Lo esperamos!`;
         const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
         // Use location.href to avoid popup blockers
@@ -676,7 +676,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.227 PAYMENT MSG {new Date().toLocaleTimeString()}
+                            v4.228 PAYMENT MSG UPDATED {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
