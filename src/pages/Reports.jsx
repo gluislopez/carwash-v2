@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Calendar, DollarSign, Car, Users, Filter, X, Download } from 'lucide-react';
+import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw } from 'lucide-react';
 import { generateReportPDF } from '../utils/pdfGenerator';
 import useSupabase from '../hooks/useSupabase';
 
@@ -419,7 +419,7 @@ const Reports = () => {
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.220</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.222 ANALYTICS V1</span></p>
                 </div>
 
                 <button
@@ -604,36 +604,139 @@ const Reports = () => {
                 )}
             </div>
 
-            {/* FINANCIAL BREAKDOWN (DESGLOSE) */}
+            {/* OPERATIONAL INSIGHTS (Phase 2) */}
             {userRole === 'admin' && (
-                <div className="card" style={{ marginBottom: '2rem' }}>
-                    <h3 className="label" style={{ marginBottom: '1rem' }}>Desglose Financiero</h3>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                    <th style={{ padding: '1rem' }}>Fecha</th>
-                                    <th style={{ padding: '1rem' }}>Autos</th>
-                                    <th style={{ padding: '1rem', color: 'var(--success)' }}>Ingresos (+)</th>
-                                    <th style={{ padding: '1rem', color: 'var(--danger)' }}>Gastos (-)</th>
-                                    <th style={{ padding: '1rem' }}>Neto (=)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {breakdownData.map(row => (
-                                    <tr key={row.date} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <td style={{ padding: '1rem' }}>{row.date}</td>
-                                        <td style={{ padding: '1rem' }}>{row.count}</td>
-                                        <td style={{ padding: '1rem', color: 'var(--success)' }}>${row.income.toFixed(2)}</td>
-                                        <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.expenses.toFixed(2)}</td>
-                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.expenses).toFixed(2)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <div style={{ marginBottom: '2rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        Insights Operativos ⚡️
+                    </h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+
+                        {/* PEAK HOURS CARD */}
+                        <div className="card">
+                            <h3 className="label">Hora Pico (Más Tráfico)</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <Clock size={32} style={{ color: '#F59E0B' }} />
+                                <div>
+                                    {(() => {
+                                        const hourCounts = {};
+                                        filteredTransactions.forEach(t => {
+                                            const date = new Date(t.date);
+                                            const hour = date.getHours();
+                                            hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                                        });
+
+                                        let maxHour = null;
+                                        let maxCount = 0;
+                                        Object.entries(hourCounts).forEach(([hour, count]) => {
+                                            if (count > maxCount) {
+                                                maxCount = count;
+                                                maxHour = parseInt(hour);
+                                            }
+                                        });
+
+                                        if (maxHour !== null) {
+                                            const ampm = maxHour >= 12 ? 'PM' : 'AM';
+                                            const displayHour = maxHour % 12 || 12;
+                                            return (
+                                                <>
+                                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                        {displayHour}:00 {ampm}
+                                                    </p>
+                                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                                        {maxCount} autos registrados
+                                                    </p>
+                                                </>
+                                            );
+                                        }
+                                        return <p style={{ color: 'var(--text-muted)' }}>No hay suficientes datos</p>;
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* EFFICIENCY TIMER CARD */}
+                        <div className="card">
+                            <h3 className="label">Tiempo Promedio de Servicio</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <RefreshCw size={32} style={{ color: '#3B82F6' }} />
+                                <div>
+                                    {(() => {
+                                        const completedTxs = filteredTransactions.filter(t =>
+                                            (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') &&
+                                            t.finished_at && t.created_at
+                                        );
+
+                                        if (completedTxs.length === 0) {
+                                            return <p style={{ color: 'var(--text-muted)' }}>No hay datos de tiempo</p>;
+                                        }
+
+                                        const totalMinutes = completedTxs.reduce((sum, t) => {
+                                            const start = new Date(t.created_at);
+                                            const end = new Date(t.finished_at);
+                                            const diffMs = end - start;
+                                            return sum + (diffMs / (1000 * 60));
+                                        }, 0);
+
+                                        const avgMinutes = Math.round(totalMinutes / completedTxs.length);
+
+                                        // Color coding for efficiency
+                                        let color = 'var(--success)'; // < 30 mins
+                                        if (avgMinutes > 45) color = 'var(--danger)'; // > 45 mins
+                                        else if (avgMinutes > 30) color = 'var(--warning)'; // 30-45 mins
+
+                                        return (
+                                            <>
+                                                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>
+                                                    {avgMinutes} min
+                                                </p>
+                                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                                    Basado en {completedTxs.length} servicios
+                                                </p>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             )}
+
+
+            {/* FINANCIAL BREAKDOWN (DESGLOSE) */}
+            {
+                userRole === 'admin' && (
+                    <div className="card" style={{ marginBottom: '2rem' }}>
+                        <h3 className="label" style={{ marginBottom: '1rem' }}>Desglose Financiero</h3>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                                        <th style={{ padding: '1rem' }}>Fecha</th>
+                                        <th style={{ padding: '1rem' }}>Autos</th>
+                                        <th style={{ padding: '1rem', color: 'var(--success)' }}>Ingresos (+)</th>
+                                        <th style={{ padding: '1rem', color: 'var(--danger)' }}>Gastos (-)</th>
+                                        <th style={{ padding: '1rem' }}>Neto (=)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {breakdownData.map(row => (
+                                        <tr key={row.date} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                            <td style={{ padding: '1rem' }}>{row.date}</td>
+                                            <td style={{ padding: '1rem' }}>{row.count}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--success)' }}>${row.income.toFixed(2)}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.expenses.toFixed(2)}</td>
+                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.expenses).toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )
+            }
 
             {/* DETAILED TABLE */}
             <div className="card">
