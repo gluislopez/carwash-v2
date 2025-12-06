@@ -51,8 +51,9 @@ const Commissions = () => {
                 .select(`
                     *,
                     transaction_assignments (employee_id),
-                    customers (name, vehicle_plate, vehicle_model),
-                    services (name)
+                    customers (name),
+                    services (name),
+                    vehicles (brand, model, plate)
                 `)
                 .in('status', ['completed', 'paid'])
                 .order('created_at', { ascending: false });
@@ -302,10 +303,12 @@ const Commissions = () => {
                                         </span>
                                     </div>
                                     <div style={{ color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                        🚗 {t.customers?.vehicle_model || 'Modelo No Registrado'}
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginLeft: '0.5rem' }}>
-                                            ({t.customers?.vehicle_plate || 'Sin Placa'})
-                                        </span>
+                                        🚗 {(() => {
+                                            if (!t.vehicles) return 'Modelo No Registrado';
+                                            const brand = t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand;
+                                            return `${brand || ''} ${t.vehicles.model || ''}`.trim() || 'Modelo No Registrado';
+                                        })()}
+                                        {/* Removed plate display as requested, or can keep it if user wants both. User said "instead of plate show name and vehicle". Name is already shown above. So just vehicle here. */}
                                     </div>
                                     <div style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>
                                         {t.services?.name || 'Servicio'}
