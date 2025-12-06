@@ -57,8 +57,46 @@ const Layout = ({ children }) => {
         navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
     }
 
+    // SWIPE GESTURE LOGIC
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+
+    // Minimum swipe distance (in px)
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null); // Reset touch end
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        // Swipe Right (Open Menu) - Only if starting from left edge (first 50px)
+        if (isRightSwipe && touchStart < 50) {
+            setIsMobileMenuOpen(true);
+        }
+
+        // Swipe Left (Close Menu)
+        if (isLeftSwipe) {
+            setIsMobileMenuOpen(false);
+        }
+    };
+
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-dark)', color: 'var(--text-main)' }}>
+        <div
+            style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-dark)', color: 'var(--text-main)' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
             {/* Mobile Menu Button */}
             <button
                 className="mobile-menu-btn"
