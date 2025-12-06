@@ -36,7 +36,9 @@ const Employees = () => {
                 .select(`
                     *,
                     transaction_assignments (employee_id),
-                    customers (name, vehicle_plate)
+                    transaction_assignments (employee_id),
+                    customers (name),
+                    vehicles (brand, model)
                 `)
                 .in('status', ['completed', 'paid'])
                 .order('created_at', { ascending: false });
@@ -243,7 +245,7 @@ const Employees = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Empleados</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.215</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.217</span></p>
                 </div>
 
                 {/* SOLO ADMIN PUEDE CREAR EMPLEADOS */}
@@ -424,7 +426,13 @@ const Employees = () => {
                                     {stats.txs.map(t => (
                                         <li key={t.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
-                                                <div style={{ fontWeight: 'bold' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                <div style={{ fontWeight: 'bold' }}>
+                                                    {(() => {
+                                                        if (!t.vehicles) return 'Modelo No Registrado';
+                                                        const brand = t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand;
+                                                        return `${brand || ''} ${t.vehicles.model || ''}`.trim() || 'Modelo No Registrado';
+                                                    })()}
+                                                </div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                                     {new Date(t.date).toLocaleDateString()} - {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
