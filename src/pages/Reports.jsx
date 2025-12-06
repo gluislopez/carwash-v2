@@ -419,7 +419,7 @@ const Reports = () => {
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.222 ANALYTICS V1</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.224</span></p>
                 </div>
 
                 <button
