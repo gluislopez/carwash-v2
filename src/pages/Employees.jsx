@@ -359,9 +359,73 @@ const Employees = () => {
                                 <h2 style={{ margin: 0 }}>{selectedEmployee.name}</h2>
                                 <p style={{ color: 'var(--text-muted)', margin: 0 }}>Rendimiento y Pagos</p>
                             </div>
-                            <button onClick={() => setSelectedEmployee(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                <X size={24} />
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => {
+                                        import('jspdf').then(jsPDF => {
+                                            import('jspdf-autotable').then(autoTable => {
+                                                const doc = new jsPDF.default();
+
+                                                // Header
+                                                doc.setFontSize(18);
+                                                doc.text('Recibo de Nómina - CarWash SaaS', 14, 20);
+
+                                                doc.setFontSize(12);
+                                                doc.text(`Empleado: ${selectedEmployee.name}`, 14, 30);
+                                                doc.text(`Periodo: ${performanceFilter === 'today' ? 'Hoy' : performanceFilter === 'week' ? 'Esta Semana' : performanceFilter === 'month' ? 'Este Mes' : 'Todo'}`, 14, 36);
+                                                doc.text(`Fecha Generación: ${new Date().toLocaleDateString()}`, 14, 42);
+
+                                                // Summary Table
+                                                autoTable.default(doc, {
+                                                    startY: 50,
+                                                    head: [['Concepto', 'Monto']],
+                                                    body: [
+                                                        ['Comisiones', `$${stats.commission.toFixed(2)}`],
+                                                        ['Propinas', `$${stats.tips.toFixed(2)}`],
+                                                        ['Descuentos/Almuerzos', `-$${stats.expenses.toFixed(2)}`],
+                                                        ['TOTAL A PAGAR', `$${stats.net.toFixed(2)}`]
+                                                    ],
+                                                    theme: 'striped',
+                                                    headStyles: { fillColor: [99, 102, 241] }
+                                                });
+
+                                                // Transactions Detail
+                                                doc.text('Detalle de Servicios', 14, doc.lastAutoTable.finalY + 10);
+
+                                                const tableData = stats.txs.map(t => {
+                                                    const vehicle = t.vehicles ? `${t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand} ${t.vehicles.model}` : 'N/A';
+                                                    const shareCount = t.transaction_assignments?.length || 1;
+                                                    const myShare = ((parseFloat(t.commission_amount) + parseFloat(t.tip)) / shareCount).toFixed(2);
+                                                    return [
+                                                        new Date(t.date).toLocaleDateString(),
+                                                        vehicle,
+                                                        `$${t.commission_amount}`,
+                                                        `$${t.tip}`,
+                                                        `$${myShare}`
+                                                    ];
+                                                });
+
+                                                autoTable.default(doc, {
+                                                    startY: doc.lastAutoTable.finalY + 15,
+                                                    head: [['Fecha', 'Vehículo', 'Comm Total', 'Propina Total', 'Mi Parte']],
+                                                    body: tableData,
+                                                    theme: 'grid',
+                                                    styles: { fontSize: 8 }
+                                                });
+
+                                                doc.save(`Nomina_${selectedEmployee.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+                                            });
+                                        });
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                >
+                                    <DollarSign size={16} /> Descargar Recibo
+                                </button>
+                                <button onClick={() => setSelectedEmployee(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                    <X size={24} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Filters */}
