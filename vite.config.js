@@ -8,7 +8,7 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['icon.svg'],
+            includeAssets: ['logo.jpg'],
             manifest: {
                 name: 'Express CarWash System',
                 short_name: 'CarWash',
@@ -19,9 +19,9 @@ export default defineConfig({
                 orientation: 'portrait',
                 icons: [
                     {
-                        src: 'icon.svg',
-                        sizes: 'any',
-                        type: 'image/svg+xml',
+                        src: 'logo.jpg',
+                        sizes: '512x512',
+                        type: 'image/jpeg',
                         purpose: 'any maskable'
                     }
                 ]
