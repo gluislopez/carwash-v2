@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User } from 'lucide-react';
+import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User, Package } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
@@ -55,6 +55,11 @@ const Layout = ({ children }) => {
         navItems.push({ path: '/employees', label: 'Empleados', icon: <Users size={20} /> });
         navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
         navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
+    }
+
+    // Inventory for Admin and Manager
+    if (userRole === 'admin' || userRole === 'manager') {
+        navItems.push({ path: '/inventory', label: 'Inventario', icon: <Package size={20} /> });
     }
 
     // SWIPE GESTURE LOGIC
