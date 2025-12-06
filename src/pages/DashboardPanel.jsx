@@ -580,9 +580,6 @@ const Dashboard = () => {
                 const foundVehicle = vehicles.find(v => v.customer_id == newTransaction.customer_id);
                 if (foundVehicle) {
                     newTransaction.vehicle_id = foundVehicle.id;
-                    // alert(`DEBUG: Safety net found vehicle ${foundVehicle.id} for customer ${newTransaction.customer_id}`);
-                } else {
-                    alert(`DEBUG WARNING: Still cannot find vehicle for customer ${newTransaction.customer_id}. Vehicles loaded: ${vehicles.length}`);
                 }
             }
 
@@ -630,7 +627,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.212 SAFETY NET VEHICLE {new Date().toLocaleTimeString()}
+                            v4.213 CLEANUP {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
