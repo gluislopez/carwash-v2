@@ -48,10 +48,11 @@ const Customers = () => {
         phone: '',
         email: '',
         vehicle_plate: '',
-        vehicle_model: ''
+        vehicle_model: '',
+        points: 0
     });
 
-    const openModal = (customer = null) => {
+    const openModal = (customer) => {
         if (customer) {
             setEditingCustomer(customer);
             setFormData({
@@ -59,11 +60,12 @@ const Customers = () => {
                 phone: customer.phone || '',
                 email: customer.email || '',
                 vehicle_plate: customer.vehicle_plate || '',
-                vehicle_model: customer.vehicle_model || ''
+                vehicle_model: customer.vehicle_model || '',
+                points: customer.points || 0
             });
         } else {
             setEditingCustomer(null);
-            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '' });
+            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0 });
         }
         setIsModalOpen(true);
     };
@@ -156,16 +158,29 @@ const Customers = () => {
                             </div>
                             <div>
                                 <h3 style={{ fontWeight: 'bold' }}>{customer.name}</h3>
-                                <span style={{
-                                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                    color: 'var(--primary)',
-                                    padding: '0.1rem 0.5rem',
-                                    borderRadius: '1rem',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.8rem'
-                                }}>
-                                    {visitCounts[customer.id] || 0} Visitas
-                                </span>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <span style={{
+                                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                        color: 'var(--primary)',
+                                        padding: '0.1rem 0.5rem',
+                                        borderRadius: '1rem',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.8rem'
+                                    }}>
+                                        {visitCounts[customer.id] || 0} Visitas
+                                    </span>
+                                    <span style={{
+                                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                                        color: '#D97706',
+                                        padding: '0.1rem 0.5rem',
+                                        borderRadius: '1rem',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.8rem',
+                                        border: '1px solid rgba(255, 215, 0, 0.3)'
+                                    }}>
+                                        🌟 {customer.points || 0} Pts
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -201,11 +216,13 @@ const Customers = () => {
                         )}
                     </div>
                 ))}
-                {filteredCustomers.length === 0 && (
-                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        {searchTerm ? 'No se encontraron clientes.' : 'No hay clientes registrados.'}
-                    </div>
-                )}
+                {
+                    filteredCustomers.length === 0 && (
+                        <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            {searchTerm ? 'No se encontraron clientes.' : 'No hay clientes registrados.'}
+                        </div>
+                    )
+                }
             </div>
 
             {isModalOpen && (
@@ -270,6 +287,19 @@ const Customers = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Puntos (Solo Admin/Manager) */}
+                            {(userRole === 'admin' || userRole === 'manager') && (
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Puntos de Lealtad</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        value={formData.points}
+                                        onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 0 })}
+                                    />
+                                </div>
+                            )}
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                 <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>

@@ -158,6 +158,15 @@ const Dashboard = () => {
                 status: 'ready',
                 finished_at: new Date().toISOString()
             });
+
+            // [LOYALTY] Award Point
+            if (transaction.customer_id) {
+                const { data: customer } = await supabase.from('customers').select('points').eq('id', transaction.customer_id).single();
+                if (customer) {
+                    await supabase.from('customers').update({ points: (customer.points || 0) + 1 }).eq('id', transaction.customer_id);
+                }
+            }
+
             await refreshTransactions();
             setVerifyingTransaction(null); // Close modal
         } catch (error) {
@@ -174,7 +183,7 @@ const Dashboard = () => {
         const totalToPay = (parseFloat(transaction.price) + extrasTotal).toFixed(2);
         const serviceName = getServiceName(transaction.service_id);
 
-        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n¡Lo esperamos!`;
+        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n🌟 *¿Satisfecho con el servicio?*\nLe agradeceríamos mucho una reseña de 5 estrellas. ⭐⭐⭐⭐⭐\n\n¡Lo esperamos!`;
 
         // Use api.whatsapp.com for better compatibility
         const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
@@ -212,10 +221,14 @@ const Dashboard = () => {
     const [vipInfo, setVipInfo] = useState(null);
     const [lastService, setLastService] = useState(null);
 
+    const [canRedeemPoints, setCanRedeemPoints] = useState(false); // Loyalty State
+    const [isRedemption, setIsRedemption] = useState(false); // Loyalty State
+
     const handleCustomerSelect = (customerId) => {
         if (!customerId) {
             setVipInfo(null);
             setLastService(null);
+            setCanRedeemPoints(false);
             return;
         }
 
@@ -234,6 +247,14 @@ const Dashboard = () => {
             setLastService(lastTx);
         } else {
             setLastService(null);
+        }
+
+        // 3. Loyalty Points Check
+        const customer = customers.find(c => c.id == customerId);
+        if (customer && (customer.points || 0) >= 10) {
+            setCanRedeemPoints(true);
+        } else {
+            setCanRedeemPoints(false);
         }
     };
 
@@ -634,18 +655,30 @@ const Dashboard = () => {
                 }
             }
 
+            // [LOYALTY] Deduct Points
+            if (isRedemption) {
+                const { data: customer } = await supabase.from('customers').select('points').eq('id', formData.customerId).single();
+                if (customer) {
+                    await supabase.from('customers').update({ points: Math.max(0, (customer.points || 0) - 10) }).eq('id', formData.customerId);
+                }
+            }
+
             setIsSubmitting(true); // Disable button
             await createTransaction(newTransaction);
 
             setIsModalOpen(false);
+            setIsSubmitting(false);
+            setIsRedemption(false); // Reset Loyalty State
             setFormData({
                 customerId: '',
+                vehicleId: '',
                 serviceId: '',
                 employeeId: '',
                 selectedEmployees: [],
                 price: '',
                 commissionAmount: '',
-                serviceTime: new Date().toTimeString().slice(0, 5)
+                serviceTime: new Date().toTimeString().slice(0, 5),
+                extras: []
             });
             // await refreshTransactions(); // Remove explicit refresh if createTransaction updates state, or keep it but ensure no race condition.
             // Actually, useSupabase updates state. refreshTransactions fetches again.
@@ -678,7 +711,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.234 INVENTORY {new Date().toLocaleTimeString()}
+                            v4.235 LOYALTY {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1576,82 +1609,101 @@ const Dashboard = () => {
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
 
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Servicio Principal</label>
-                                    <select
-                                        className="input"
-                                        required
-                                        value={formData.serviceId}
-                                        onChange={handleServiceChange}
-                                    >
-                                        <option value="">Seleccionar Servicio...</option>
-                                        {services.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="label">Servicio Principal</label>
+                                            <select
+                                                className="input"
+                                                required
+                                                value={formData.serviceId}
+                                                onChange={handleServiceChange}
+                                            >
+                                                <option value="">Seleccionar Servicio...</option>
+                                                {services.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                                ))}
+                                            </select>
+                                        </div>
 
-                                {/* EXTRA SERVICE DROPDOWN (Identical to Main) */}
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Servicio Extra (Opcional)</label>
-                                    <select
-                                        className="input"
-                                        value=""
-                                        onChange={(e) => {
-                                            const sId = e.target.value;
-                                            if (!sId) return;
-                                            // Use loose comparison for ID to handle string/number mismatch
-                                            const s = services.find(srv => srv.id == sId);
-                                            if (s) {
-                                                // Add to extras list
-                                                const currentExtras = formData.extras || [];
-                                                const newExtraItem = { description: s.name, price: s.price };
-                                                const updatedExtras = [...currentExtras, newExtraItem];
-                                                const currentPrice = parseFloat(formData.price) || 0;
+                                        {/* EXTRA SERVICE DROPDOWN (Identical to Main) */}
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="label">Servicio Extra (Opcional)</label>
+                                            <select
+                                                className="input"
+                                                value=""
+                                                onChange={(e) => {
+                                                    const sId = e.target.value;
+                                                    if (!sId) return;
+                                                    // Use loose comparison for ID to handle string/number mismatch
+                                                    const s = services.find(srv => srv.id == sId);
+                                                    if (s) {
+                                                        // Add to extras list
+                                                        const currentExtras = formData.extras || [];
+                                                        const newExtraItem = { description: s.name, price: s.price };
+                                                        const updatedExtras = [...currentExtras, newExtraItem];
+                                                        const currentPrice = parseFloat(formData.price) || 0;
 
-                                                setFormData({
-                                                    ...formData,
-                                                    extras: updatedExtras,
-                                                    price: currentPrice + s.price
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <option value="">Seleccionar Extra...</option>
-                                        {services.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                                        setFormData({
+                                                            ...formData,
+                                                            extras: updatedExtras,
+                                                            price: currentPrice + s.price
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">Seleccionar Extra...</option>
+                                                {services.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                                ))}
+                                            </select>
+                                        </div>
 
-                                {/* LIST OF ADDED EXTRAS */}
-                                {formData.extras && formData.extras.length > 0 && (
-                                    <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                        <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Extras Agregados:</label>
-                                        {formData.extras.map((extra, index) => (
-                                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', fontSize: '0.9rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
-                                                <span>{extra.description} (${extra.price})</span>
-                                                <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                    <Trash2 size={14} />
-                                                </button>
+                                        {/* LIST OF ADDED EXTRAS */}
+                                        {formData.extras && formData.extras.length > 0 && (
+                                            <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
+                                                <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Extras Agregados:</label>
+                                                {formData.extras.map((extra, index) => (
+                                                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', fontSize: '0.9rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
+                                                        <span>{extra.description} (${extra.price})</span>
+                                                        <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                        )}
 
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Hora del Servicio</label>
-                                    <input
-                                        type="time"
-                                        className="input"
-                                        required
-                                        value={formData.serviceTime}
-                                        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
-                                    />
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <label className="label">Hora del Servicio</label>
+                                            <input
+                                                type="time"
+                                                className="input"
+                                                required
+                                                value={formData.serviceTime}
+                                                onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
+
+                                {/* LOYALTY REDEMPTION BUTTON */}
+                                {canRedeemPoints && (
+                                    <button
+                                        type="button"
+                                        className="btn"
+                                        onClick={() => {
+                                            setFormData({ ...formData, price: 0 });
+                                            setIsRedemption(true);
+                                            setCanRedeemPoints(false);
+                                            alert('¡Lavado Gratis aplicado! El precio se ha ajustado a $0.00');
+                                        }}
+                                        style={{ width: '100%', marginTop: '1rem', backgroundColor: '#F59E0B', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                                    >
+                                        🌟 Canjear Lavado Gratis (10 Pts)
+                                    </button>
+                                )}
 
                                 {/* TOTAL PRICE DISPLAY */}
                                 <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1957,65 +2009,67 @@ const Dashboard = () => {
 
 
             {/* VERIFICATION MODAL */}
-            {verifyingTransaction && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 4000
-                }} onClick={() => setVerifyingTransaction(null)}>
+            {
+                verifyingTransaction && (
                     <div style={{
-                        backgroundColor: 'var(--bg-card)',
-                        padding: '2rem',
-                        borderRadius: '0.5rem',
-                        width: '90%',
-                        maxWidth: '400px'
-                    }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Verificar antes de entregar</h2>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                            Confirma que todo esté listo para {verifyingTransaction.customers?.vehicle_plate}:
-                        </p>
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 4000
+                    }} onClick={() => setVerifyingTransaction(null)}>
+                        <div style={{
+                            backgroundColor: 'var(--bg-card)',
+                            padding: '2rem',
+                            borderRadius: '0.5rem',
+                            width: '90%',
+                            maxWidth: '400px'
+                        }} onClick={e => e.stopPropagation()}>
+                            <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Verificar antes de entregar</h2>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                                Confirma que todo esté listo para {verifyingTransaction.customers?.vehicle_plate}:
+                            </p>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-                            {[
-                                { key: 'cristales', label: 'Cristales' },
-                                { key: 'entrePuertas', label: 'Entre puertas' },
-                                { key: 'baul', label: 'Baúl' },
-                                { key: 'dash', label: 'Dash' },
-                                { key: 'portaVasos', label: 'Porta vasos' },
-                                { key: 'manchas', label: 'Manchas' }
-                            ].map(item => (
-                                <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '1.1rem' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={verificationChecks[item.key]}
-                                        onChange={(e) => setVerificationChecks({ ...verificationChecks, [item.key]: e.target.checked })}
-                                        style={{ width: '20px', height: '20px', accentColor: 'var(--primary)' }}
-                                    />
-                                    {item.label}
-                                </label>
-                            ))}
-                        </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                                {[
+                                    { key: 'cristales', label: 'Cristales' },
+                                    { key: 'entrePuertas', label: 'Entre puertas' },
+                                    { key: 'baul', label: 'Baúl' },
+                                    { key: 'dash', label: 'Dash' },
+                                    { key: 'portaVasos', label: 'Porta vasos' },
+                                    { key: 'manchas', label: 'Manchas' }
+                                ].map(item => (
+                                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={verificationChecks[item.key]}
+                                            onChange={(e) => setVerificationChecks({ ...verificationChecks, [item.key]: e.target.checked })}
+                                            style={{ width: '20px', height: '20px', accentColor: 'var(--primary)' }}
+                                        />
+                                        {item.label}
+                                    </label>
+                                ))}
+                            </div>
 
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button
-                                className="btn"
-                                style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
-                                onClick={() => setVerifyingTransaction(null)}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                className="btn btn-primary"
-                                style={{ flex: 1 }}
-                                disabled={!Object.values(verificationChecks).every(Boolean)}
-                                onClick={handleConfirmReady}
-                            >
-                                Confirmar y Enviar
-                            </button>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button
+                                    className="btn"
+                                    style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                    onClick={() => setVerifyingTransaction(null)}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ flex: 1 }}
+                                    disabled={!Object.values(verificationChecks).every(Boolean)}
+                                    onClick={handleConfirmReady}
+                                >
+                                    Confirmar y Enviar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div >
     );
 };
