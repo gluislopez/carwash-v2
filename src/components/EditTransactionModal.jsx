@@ -3,7 +3,7 @@ import { X, Save, Plus, Trash2, Loader2 } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
 
-const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate }) => {
+const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate, userRole }) => {
     if (!isOpen || !transaction) return null;
 
     const [extras, setExtras] = useState(transaction.extras || []);
@@ -75,6 +75,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         // if (formData.status === 'in_progress') newStatus = 'completed'; // REMOVED: Don't auto-complete in-progress
 
         const isCompleting = newStatus === 'paid' || newStatus === 'completed';
+
+        // PERMISSION CHECK: Only Admin or Manager can charge (complete/pay)
+        if (isCompleting && userRole !== 'admin' && userRole !== 'manager') {
+            alert("⛔️ ACCESO DENEGADO\n\nSolo los Gerentes o Administradores pueden procesar cobros.");
+            setIsUploading(false);
+            return;
+        }
 
         // 2. CLOUD PDF RECEIPT LOGIC (Only if completing)
         let publicReceiptUrl = null;

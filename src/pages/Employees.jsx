@@ -92,7 +92,8 @@ const Employees = () => {
                 position: formData.position,
                 phone: formData.phone,
                 email: formData.email,
-                user_id: finalUserId === '' ? null : finalUserId
+                user_id: finalUserId === '' ? null : finalUserId,
+                role: formData.position === 'Gerente' ? 'manager' : 'employee' // Auto-assign role
             };
 
             if (editingId) {
