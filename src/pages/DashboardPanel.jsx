@@ -200,6 +200,50 @@ const Dashboard = () => {
         serviceTime: new Date().toTimeString().slice(0, 5),
         extras: [] // Initialize extras
     });
+
+    // PRODUCTIVITY FEATURES STATE
+    const [vipInfo, setVipInfo] = useState(null);
+    const [lastService, setLastService] = useState(null);
+
+    const handleCustomerSelect = (customerId) => {
+        if (!customerId) {
+            setVipInfo(null);
+            setLastService(null);
+            return;
+        }
+
+        // 1. VIP Calculation
+        const customerTxs = transactions.filter(t => t.customer_id == customerId && t.status !== 'cancelled');
+        const visitCount = customerTxs.length;
+        setVipInfo({
+            count: visitCount,
+            isVip: visitCount >= 5 // VIP threshold
+        });
+
+        // 2. Last Service (Quick Reorder)
+        if (customerTxs.length > 0) {
+            // Transactions are already ordered by date desc
+            const lastTx = customerTxs[0];
+            setLastService(lastTx);
+        } else {
+            setLastService(null);
+        }
+    };
+
+    const applyLastService = () => {
+        if (!lastService) return;
+
+        // Find vehicle
+        const vehicle = vehicles.find(v => v.id == lastService.vehicle_id);
+
+        setFormData(prev => ({
+            ...prev,
+            serviceId: lastService.service_id,
+            vehicleId: lastService.vehicle_id || (vehicle ? vehicle.id : ''),
+            price: lastService.price, // Use last price or current service price? Better use last price as starting point
+            // We don't copy employees because that changes
+        }));
+    };
     const [activeTab, setActiveTab] = useState('main'); // 'main' | 'extras'
 
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
@@ -627,7 +671,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.220 FIX HISTORY {new Date().toLocaleTimeString()}
+                            v4.221 PRODUCTIVITY V1 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -1383,6 +1427,7 @@ const Dashboard = () => {
                                                                                     customerId: c.id,
                                                                                     vehicleId: custVehicle ? custVehicle.id : ''
                                                                                 });
+                                                                                handleCustomerSelect(c.id);
                                                                                 setShowCustomerSearch(false);
                                                                                 setCustomerSearch('');
                                                                             }}
@@ -1423,6 +1468,7 @@ const Dashboard = () => {
                                                                     customerId: cId,
                                                                     vehicleId: custVehicle ? custVehicle.id : ''
                                                                 });
+                                                                handleCustomerSelect(cId);
                                                             }}
                                                             style={{ flex: 1 }}
                                                         >
@@ -1499,13 +1545,6 @@ const Dashboard = () => {
                                                         placeholder="Placa"
                                                         value={newCustomer.vehicle_plate}
                                                         onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        className="input"
-                                                        placeholder="Modelo (Opcional)"
-                                                        value={newCustomer.vehicle_model}
-                                                        onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
                                                     />
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
