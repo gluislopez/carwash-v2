@@ -414,31 +414,35 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         )}
 
                         {/* Inputs para Nuevo Extra */}
+                        {/* Selector de Servicio Extra */}
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input
-                                type="text"
-                                placeholder="Descripción (ej. Cera)"
-                                className="input"
-                                style={{ flex: 2 }}
-                                value={newExtra.description}
-                                onChange={(e) => setNewExtra({ ...newExtra, description: e.target.value })}
-                            />
-                            <input
-                                type="number"
-                                placeholder="$"
+                            <select
                                 className="input"
                                 style={{ flex: 1 }}
-                                value={newExtra.price}
-                                onChange={(e) => setNewExtra({ ...newExtra, price: e.target.value })}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleAddExtra}
-                                className="btn"
-                                style={{ backgroundColor: '#10B981', padding: '0.5rem' }}
+                                value=""
+                                onChange={(e) => {
+                                    const sId = e.target.value;
+                                    if (!sId) return;
+                                    const s = services.find(srv => srv.id == sId);
+                                    if (s) {
+                                        // TRIGGER ADD LOGIC IMMEDIATELY (Similar to Dashboard)
+                                        // check if multiple employees
+                                        const extraToAdd = { description: s.name, price: parseFloat(s.price), commission: s.commission || 0 };
+
+                                        if (selectedEmployeeIds.length > 1) {
+                                            setPendingExtra(extraToAdd);
+                                            setShowAssignmentModal(true);
+                                        } else {
+                                            addExtraToState(extraToAdd, null);
+                                        }
+                                    }
+                                }}
                             >
-                                <Plus size={20} />
-                            </button>
+                                <option value="">Agregar Servicio Extra...</option>
+                                {services.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
