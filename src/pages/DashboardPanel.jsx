@@ -13,8 +13,11 @@ const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
     const [myEmployeeId, setMyEmployeeId] = useState(null); // Nuevo: ID del perfil de empleado
 
-    const [dateFilter, setDateFilter] = useState('today');
-    const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
+    const [dateFilter, setDateFilter] = useState('today'); // 'today', 'manual', 'range'
+    const [dateRange, setDateRange] = useState({
+        start: new Date().toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
 
     // REFACTOR: Store ID only, not the whole object
     const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
@@ -455,15 +458,30 @@ const Dashboard = () => {
     };
 
     // DATE FILTER LOGIC
-    const effectiveDate = dateFilter === 'today' ? getPRDateString(new Date()) : customDate;
+    // getPRDateString computes YYYY-MM-DD for Puerto Rico
 
-    // Filter transactions by the effective date OR if they are active (waiting/in_progress)
+    // Filter transactions
     const filteredTransactions = transactions.filter(t => {
-        const isToday = getPRDateString(t.date) === effectiveDate;
+        const txDateLocal = getPRDateString(t.date);
         const isActive = t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready';
-        return isToday || isActive;
+
+        if (dateFilter === 'today') {
+            const today = getPRDateString(new Date());
+            return txDateLocal === today || isActive;
+        } else {
+            // Manual Range
+            return txDateLocal >= dateRange.start && txDateLocal <= dateRange.end;
+        }
     });
-    const filteredExpenses = expenses.filter(e => getPRDateString(e.date) === effectiveDate && e.category === 'lunch');
+
+    const filteredExpenses = expenses.filter(e => {
+        const exDateLocal = getPRDateString(e.date);
+        if (dateFilter === 'today') {
+            return exDateLocal === getPRDateString(new Date()) && e.category === 'lunch';
+        } else {
+            return exDateLocal >= dateRange.start && exDateLocal <= dateRange.end && e.category === 'lunch';
+        }
+    });
 
     // Para empleados: Filtrar SOLO sus transacciones para los contadores
     const myTransactions = filteredTransactions.filter(t => {
@@ -782,7 +800,9 @@ const Dashboard = () => {
                         </span>
                     </div>
                 </div>
-                <p style={{ color: 'var(--text-muted)' }}>Resumen: {effectiveDate}</p>
+                <p style={{ color: 'var(--text-muted)' }}>
+                    Resumen: {dateFilter === 'today' ? 'Hoy' : `${dateRange.start} al ${dateRange.end}`}
+                </p>
             </div>
 
 
@@ -793,34 +813,53 @@ const Dashboard = () => {
                     style={{
                         backgroundColor: dateFilter === 'today' ? 'var(--primary)' : 'var(--bg-secondary)',
                         color: 'white',
-                        flex: '1 1 auto',
-                        justifyContent: 'center'
                     }}
                     onClick={() => setDateFilter('today')}
                 >
                     Hoy
                 </button>
+
                 <button
                     className="btn"
                     style={{
-                        backgroundColor: dateFilter === 'custom' ? 'var(--primary)' : 'var(--bg-secondary)',
+                        backgroundColor: dateFilter === 'manual' ? 'var(--primary)' : 'var(--bg-secondary)',
                         color: 'white',
-                        flex: '1 1 auto',
-                        justifyContent: 'center'
                     }}
-                    onClick={() => setDateFilter('custom')}
+                    onClick={() => setDateFilter('manual')}
                 >
-                    Historial
+                    Rango/Fecha
                 </button>
 
-                {dateFilter === 'custom' && (
-                    <input
-                        type="date"
-                        className="input"
-                        style={{ padding: '0.4rem', width: '100%', maxWidth: '200px' }}
-                        value={customDate}
-                        onChange={(e) => setCustomDate(e.target.value)}
-                    />
+                {dateFilter === 'manual' && (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '0.5rem' }}>
+                        <input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            style={{
+                                padding: '0.4rem',
+                                borderRadius: '0.25rem',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-input)',
+                                color: 'var(--text-primary)'
+                            }}
+                            title="Desde"
+                        />
+                        <span style={{ color: 'var(--text-muted)' }}>-</span>
+                        <input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            style={{
+                                padding: '0.4rem',
+                                borderRadius: '0.25rem',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-input)',
+                                color: 'var(--text-primary)'
+                            }}
+                            title="Hasta"
+                        />
+                    </div>
                 )}
 
                 <button
