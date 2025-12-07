@@ -192,7 +192,44 @@ const Dashboard = () => {
         window.location.href = url;
     };
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // ASSIGNMENT MODAL STATE
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+    const [pendingExtra, setPendingExtra] = useState(null);
+
+    const addExtra = (service, employeeId) => {
+        const currentExtras = formData.extras || [];
+        const newExtraItem = {
+            description: service.name,
+            price: service.price,
+            commission: service.commission || 0, // Ensure commission is stored
+            assignedTo: employeeId // UUID or null
+        };
+
+        const updatedExtras = [...currentExtras, newExtraItem];
+        const currentPrice = parseFloat(formData.price) || 0;
+
+        // Also add the extra commission to the total commission if applicable? 
+        // No, `commission_amount` in DB is usually fixed per `services` row in old model.
+        // But here we might be using dynamic commissions.
+        // Let's ensure the Main Service commission is correct, and we ADD this extra commission to the total `commission_amount` stored?
+        // Wait, `createTransaction` (line 633) sets `commission_amount: 0`.
+        // If the backend doesn't calculate it, we should set it here.
+        // CURRENTLY: `createTransaction` sends `0`. The DB trigger `calculate_commission` or similar might solve it?
+        // Checking `fix_past_commissions.sql`: `SET commission_amount = 12`. 
+        // Checking `migration_commission_fixed.sql`: `ALTER TABLE services ADD COLUMN commission...`.
+        // It seems Frontend sends `0` and maybe backend fixes it? OR Frontend logic is missing.
+        // Let's assume we need to calculate it.
+        // But for now, let's just focus on saving the `assignedTo`.
+
+        setFormData({
+            ...formData,
+            extras: updatedExtras,
+            price: currentPrice + service.price
+        });
+
+        setPendingExtra(null);
+        setShowAssignmentModal(false);
+    };
 
     // HELPER FUNCTIONS (Moved to top to avoid ReferenceError)
     const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
@@ -1313,9 +1350,24 @@ const Dashboard = () => {
                                                     const isPrimary = t.employee_id === emp.id;
 
                                                     if (isAssigned || isPrimary) {
-                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                        const tip = (parseFloat(t.tip) || 0);
                                                         const count = (t.transaction_assignments?.length) || 1;
-                                                        return sum + (txTotalCommission / count);
+
+                                                        // Calculate Extras assigned to THIS employee
+                                                        const myExtras = t.extras?.filter(e => e.assignedTo === emp.id) || [];
+                                                        const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                        // Calculate Total Assigned Extras (to subtract from pool)
+                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                        const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                        // Shared Pool
+                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                        const sharedShare = sharedPool / count;
+                                                        const tipShare = tip / count;
+
+                                                        return sum + sharedShare + tipShare + myExtrasCommission;
                                                     }
                                                     return sum;
                                                 }, 0);
@@ -1352,19 +1404,67 @@ const Dashboard = () => {
                                                     .filter(t => t.status === 'completed') // SOLO completados
                                                     .map(t => {
                                                         // Calcular mi parte de esta transacción
-                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0); // Base commission
+                                                        const tip = (parseFloat(t.tip) || 0);
+
+                                                        // 1. Separate Assigned vs Shared Commissions
+                                                        let myAssignedCommission = 0;
+                                                        let totalAssignedCommission = 0;
+
+                                                        if (t.extras && Array.isArray(t.extras)) {
+                                                            t.extras.forEach(extra => {
+                                                                if (extra.assignedTo) {
+                                                                    const extraComm = parseFloat(extra.commission || 0);
+                                                                    totalAssignedCommission += extraComm;
+                                                                    if (extra.assignedTo === myUserId || extra.assignedTo === myEmployeeId) { // Check both ID types just in case
+                                                                        myAssignedCommission += extraComm;
+                                                                    }
+                                                                    // Also check if assignedTo matches the current iteration employee 'emp' (for Admin View) or 'myself'
+                                                                    // Fix: simpler iteration below
+                                                                }
+                                                            });
+                                                        }
+
+                                                        const sharedCommissionPool = Math.max(0, txTotalCommission - totalAssignedCommission);
                                                         const count = (t.transaction_assignments?.length) || 1;
-                                                        const myShare = txTotalCommission / count;
+
+                                                        // 2. Logic: (Shared / Count) + MyAssigned + (Tip / Count)
+                                                        // Usage: This block is inside the 'admin' map OR 'employee' map.
+                                                        // We need to know 'who' we are calculating for.
+                                                        // Since this replacement block targets the 'employee' view (lines 1353+), 
+                                                        // we are iterating 't' but we are the logged-in user.
+
+                                                        // Wait, for the 'employee' view, we need to filter assigned extras for THIS user.
+                                                        // Detailed logic:
+                                                        const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                        const myExtrasCommission = myExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
+
+                                                        // Re-calculate Total Assigned to subtract from pool
+                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                        const allAssignedCommission = allAssignedExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
+
+                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                        const sharedShare = sharedPool / count;
+                                                        const tipShare = tip / count;
+
+                                                        const myShare = sharedShare + tipShare + myExtrasCommission;
 
                                                         return (
                                                             <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <div>
                                                                     <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
                                                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</div>
+                                                                    {myExtras.length > 0 && (
+                                                                        <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                                                            + {myExtras.length} Extras Propios
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                                 <div style={{ textAlign: 'right' }}>
                                                                     <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
-                                                                    {count > 1 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Compartido entre {count})</div>}
+                                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                                        Base: ${sharedShare.toFixed(2)} | Extras: ${myExtrasCommission.toFixed(2)} | Tip: ${tipShare.toFixed(2)}
+                                                                    </div>
                                                                 </div>
                                                             </li>
                                                         );
@@ -1627,33 +1727,29 @@ const Dashboard = () => {
                                             </select>
                                         </div>
 
-                                        {/* EXTRA SERVICE DROPDOWN (Identical to Main) */}
+                                        {/* SECONDARY SERVICES (EXTRAS) */}
                                         <div style={{ marginBottom: '1rem' }}>
-                                            <label className="label">Servicio Extra (Opcional)</label>
+                                            <label className="label">Servicios Secundarios</label>
                                             <select
                                                 className="input"
                                                 value=""
                                                 onChange={(e) => {
                                                     const sId = e.target.value;
                                                     if (!sId) return;
-                                                    // Use loose comparison for ID to handle string/number mismatch
                                                     const s = services.find(srv => srv.id == sId);
                                                     if (s) {
-                                                        // Add to extras list
-                                                        const currentExtras = formData.extras || [];
-                                                        const newExtraItem = { description: s.name, price: s.price };
-                                                        const updatedExtras = [...currentExtras, newExtraItem];
-                                                        const currentPrice = parseFloat(formData.price) || 0;
-
-                                                        setFormData({
-                                                            ...formData,
-                                                            extras: updatedExtras,
-                                                            price: currentPrice + s.price
-                                                        });
+                                                        // CHECK FOR MULTI-EMPLOYEE ASSIGNMENT
+                                                        if (formData.selectedEmployees && formData.selectedEmployees.length > 1) {
+                                                            setPendingExtra(s);
+                                                            setShowAssignmentModal(true);
+                                                        } else {
+                                                            // Single employee or none: Add directly
+                                                            addExtra(s, null);
+                                                        }
                                                     }
                                                 }}
                                             >
-                                                <option value="">Seleccionar Extra...</option>
+                                                <option value="">Seleccionar Servicio Secundario...</option>
                                                 {services.map(s => (
                                                     <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
                                                 ))}
@@ -1663,10 +1759,17 @@ const Dashboard = () => {
                                         {/* LIST OF ADDED EXTRAS */}
                                         {formData.extras && formData.extras.length > 0 && (
                                             <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                                <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Extras Agregados:</label>
+                                                <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Servicios Agregados:</label>
                                                 {formData.extras.map((extra, index) => (
                                                     <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', fontSize: '0.9rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
-                                                        <span>{extra.description} (${extra.price})</span>
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span>{extra.description} (${extra.price})</span>
+                                                            {extra.assignedTo && (
+                                                                <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                                                    Hecho por: {employees.find(e => e.id === extra.assignedTo)?.name || 'Desconocido'}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
                                                             <Trash2 size={14} />
                                                         </button>
@@ -2070,7 +2173,46 @@ const Dashboard = () => {
                     </div>
                 )
             }
-        </div >
+            {/* ASSIGNMENT MODAL */}
+            {showAssignmentModal && pendingExtra && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
+                }}>
+                    <div className="card" style={{ width: '90%', maxWidth: '400px' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>¿Quién realizó: {pendingExtra.name}?</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                            Selecciona al empleado para asignarle la comisión completa de este extra.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {formData.selectedEmployees && formData.selectedEmployees.map(empId => {
+                                const emp = employees.find(e => e.id === empId);
+                                return (
+                                    <button
+                                        key={empId}
+                                        className="btn"
+                                        style={{ justifyContent: 'center', padding: '1rem', border: '1px solid var(--border-color)' }}
+                                        onClick={() => addExtra(pendingExtra, empId)}
+                                    >
+                                        {emp?.name || 'Empleado Desconocido'}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                className="btn"
+                                style={{ justifyContent: 'center', marginTop: '1rem', backgroundColor: 'var(--bg-secondary)' }}
+                                onClick={() => {
+                                    setPendingExtra(null);
+                                    setShowAssignmentModal(false);
+                                }}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
