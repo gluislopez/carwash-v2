@@ -142,6 +142,16 @@ const Dashboard = () => {
         const transaction = verifyingTransaction;
         if (!transaction) return;
 
+        // CHECK FOR UNASSIGNED EXTRAS
+        const assignedCount = transaction.transaction_assignments?.length || 0;
+        const unassignedExtras = transaction.extras?.filter(e => !e.assignedTo) || [];
+
+        if (assignedCount > 1 && unassignedExtras.length > 0) {
+            setPendingExtra(unassignedExtras[0]);
+            setShowAssignmentModal(true);
+            return;
+        }
+
         if (!transaction.customers?.phone) {
             alert('Este cliente no tiene número de teléfono registrado.');
             return;
@@ -227,6 +237,25 @@ const Dashboard = () => {
             extras: updatedExtras,
             price: currentPrice + service.price
         });
+
+        setPendingExtra(null);
+        setShowAssignmentModal(false);
+    };
+
+    const assignExistingExtra = async (extra, empId) => {
+        const t = verifyingTransaction;
+        if (!t) return;
+
+        const newExtras = t.extras.map(e => {
+            if (e === extra || (e.description === extra.description && e.price === extra.price && !e.assignedTo)) {
+                return { ...e, assignedTo: empId };
+            }
+            return e;
+        });
+
+        await updateTransaction(t.id, { extras: newExtras });
+        await refreshTransactions();
+        setVerifyingTransaction({ ...t, extras: newExtras });
 
         setPendingExtra(null);
         setShowAssignmentModal(false);
@@ -2186,14 +2215,23 @@ const Dashboard = () => {
                             Selecciona al empleado para asignarle la comisión completa de este extra.
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {formData.selectedEmployees && formData.selectedEmployees.map(empId => {
+                            {(verifyingTransaction
+                                ? (verifyingTransaction.transaction_assignments?.map(ta => ta.employee_id) || [])
+                                : (formData.selectedEmployees || [])
+                            ).map(empId => {
                                 const emp = employees.find(e => e.id === empId);
                                 return (
                                     <button
                                         key={empId}
                                         className="btn"
                                         style={{ justifyContent: 'center', padding: '1rem', border: '1px solid var(--border-color)' }}
-                                        onClick={() => addExtra(pendingExtra, empId)}
+                                        onClick={() => {
+                                            if (verifyingTransaction) {
+                                                assignExistingExtra(pendingExtra, empId);
+                                            } else {
+                                                addExtra(pendingExtra, empId);
+                                            }
+                                        }}
                                     >
                                         {emp?.name || 'Empleado Desconocido'}
                                     </button>
