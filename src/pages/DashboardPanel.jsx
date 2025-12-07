@@ -642,8 +642,8 @@ const Dashboard = () => {
 
     const handleUpdateTransaction = async (id, updates) => {
         try {
-            // Si se está completando, guardar la hora de finalización
-            if (updates.status === 'completed') {
+            // Si se está completando o pagando, guardar la hora de finalización
+            if (updates.status === 'completed' || updates.status === 'paid') {
                 updates.finished_at = new Date().toISOString();
             }
 
