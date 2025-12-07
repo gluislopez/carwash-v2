@@ -83,6 +83,24 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         });
     };
 
+    // Auto-calculate commission when price/service/employees change
+    React.useEffect(() => {
+        if (!services || services.length === 0) return;
+
+        const service = services.find(s => s.id === formData.serviceId);
+        const baseCommission = service?.commission || 0;
+        const currentPrice = parseFloat(formData.price) || 0;
+
+        let finalCommission = calculateSharedCommission(currentPrice, selectedEmployeeIds.length, baseCommission);
+
+        // Add Extras
+        const extrasCommission = extras.reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0);
+        finalCommission += extrasCommission;
+
+        setFormData(prev => ({ ...prev, commissionAmount: finalCommission }));
+
+    }, [formData.price, formData.serviceId, selectedEmployeeIds, extras, services]);
+
     const handleSubmit = async () => {
         setIsUploading(true); // Start loading
 
