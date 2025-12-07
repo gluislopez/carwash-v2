@@ -788,9 +788,24 @@ const Reports = () => {
                                             `$${t.price.toFixed(2)}`
                                         ) : (
                                             (() => {
-                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                const tip = (parseFloat(t.tip) || 0);
                                                 const count = (t.transaction_assignments?.length) || 1;
-                                                return `$${(txTotalCommission / count).toFixed(2)}`;
+
+                                                // 1. Calculate Total Assigned Extras (to subtract from pool)
+                                                const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                // 2. Shared Pool (Base Commission - Assigned Extras)
+                                                const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                const sharedShare = sharedPool / count;
+                                                const tipShare = tip / count;
+
+                                                // 3. My Extras
+                                                const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
                                             })()
                                         )}
                                     </td>
