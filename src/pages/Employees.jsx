@@ -160,14 +160,15 @@ const Employees = () => {
     const calculateStats = () => {
         const { filteredTxs, filteredExps } = getFilteredData();
 
-        let totalCommission = 0;
+        let totalBaseCommission = 0;
+        let totalExtrasCommission = 0;
         let totalTips = 0;
 
         filteredTxs.forEach(t => {
             const count = (t.transaction_assignments?.length) || 1;
 
-            // 1. Identify Commissions
-            const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
+            // 1. Identify Commissions - USE LOOSE EQUALITY
+            const myExtras = t.extras?.filter(e => e.assignedTo == selectedEmployee.id) || [];
             const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
             const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
@@ -191,23 +192,26 @@ const Employees = () => {
                 sharedPool = Math.max(0, storedTotal - allAssignedCommission);
             }
 
-            const sharedShare = (sharedPool / count) || 0;
+            const sharedPart = (sharedPool / count) || 0;
             const tip = (parseFloat(t.tip) || 0);
             const tipShare = (tip / count) || 0;
 
-            const myTotalParams = sharedShare + myExtrasCommission + tipShare;
+            const myTotalParams = sharedPart + myExtrasCommission + tipShare;
             if (!isNaN(myTotalParams)) {
-                totalCommission += (sharedShare + myExtrasCommission);
+                totalBaseCommission += sharedPart;
+                totalExtrasCommission += myExtrasCommission;
                 totalTips += tipShare;
             }
         });
 
         const totalExpenses = filteredExps.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-        const netTotal = (totalCommission + totalTips) - totalExpenses;
+        const netTotal = (totalBaseCommission + totalExtrasCommission + totalTips) - totalExpenses;
 
         return {
             count: filteredTxs.length,
-            commission: totalCommission,
+            commission: totalBaseCommission + totalExtrasCommission, // Total Commission
+            commissionBase: totalBaseCommission,
+            commissionExtras: totalExtrasCommission,
             tips: totalTips,
             expenses: totalExpenses,
             net: netTotal,
