@@ -14,6 +14,7 @@ const Employees = () => {
     const [performanceFilter, setPerformanceFilter] = useState('today'); // 'today', 'week', 'month'
     const [transactions, setTransactions] = useState([]);
     const [expenses, setExpenses] = useState([]);
+    const [services, setServices] = useState([]); // Fetch Services for robust commission calc
     const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
@@ -53,6 +54,12 @@ const Employees = () => {
                 .select('*');
 
             if (exps) setExpenses(exps);
+
+            // Fetch Services
+            const { data: srvs } = await supabase
+                .from('services')
+                .select('*');
+            if (srvs) setServices(srvs);
         };
 
         getUserRole();
@@ -217,21 +224,34 @@ const Employees = () => {
         let totalTips = 0;
 
         filteredTxs.forEach(t => {
-            const comm = (parseFloat(t.commission_amount) || 0);
-            const tip = (parseFloat(t.tip) || 0);
             const count = (t.transaction_assignments?.length) || 1;
 
-            // Calculate Extras assigned to THIS employee
+            // 1. Identify Commissions
             const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
             const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-            // Calculate Total Assigned Extras (to subtract from pool)
             const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
             const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-            // Shared Pool
-            const sharedPool = Math.max(0, comm - allAssignedCommission);
+            const storedTotal = parseFloat(t.commission_amount) || 0;
+
+            // 2. Heuristic: Is it Old Data (Missing extras) or New Data (Includes extras)?
+            // We use the service base commission to guess.
+            const service = services.find(s => s.id === t.service_id);
+            const likelyBase = service ? parseFloat(service.commission) : 0;
+            const likelyTotal = likelyBase + allAssignedCommission;
+
+            let sharedPool = 0;
+            if (storedTotal < (likelyTotal - 0.1)) {
+                // OLD DATA: Stored is probably just the base. treat Stored as Shared Pool.
+                sharedPool = storedTotal;
+            } else {
+                // NEW DATA: Stored includes everything. Subtract extras to get Shared Pool.
+                sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+            }
+
             const sharedShare = sharedPool / count;
+            const tip = (parseFloat(t.tip) || 0);
             const tipShare = tip / count;
 
             totalCommission += (sharedShare + myExtrasCommission);
@@ -417,8 +437,18 @@ const Employees = () => {
                                                     const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
                                                     const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                    const comm = parseFloat(t.commission_amount) || 0;
-                                                    const sharedPool = Math.max(0, comm - allAssignedCommission);
+                                                    const storedTotal = parseFloat(t.commission_amount) || 0;
+
+                                                    const service = services.find(s => s.id === t.service_id);
+                                                    const likelyBase = service ? parseFloat(service.commission) : 0;
+                                                    const likelyTotal = likelyBase + allAssignedCommission;
+
+                                                    let sharedPool = 0;
+                                                    if (storedTotal < (likelyTotal - 0.1)) {
+                                                        sharedPool = storedTotal;
+                                                    } else {
+                                                        sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+                                                    }
 
                                                     const myShare = (sharedPool / count) + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
 
