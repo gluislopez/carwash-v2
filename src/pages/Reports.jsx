@@ -716,6 +716,12 @@ const Reports = () => {
                                         <small style={{ color: 'var(--text-muted)' }}>
                                             {new Date(t.date).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
                                         </small>
+                                        {t.finished_at && (
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--success)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)' }}></div>
+                                                {Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min
+                                            </div>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         {userRole === 'admin' ? (
