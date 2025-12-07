@@ -1,4 +1,4 @@
--- MIGRACIÓN PARA SOPORTE MULTI-EMPLEADO
+-- MIGRACIÓN PARA SOPORTE MULTI-EMPLEADO (CORREGIDA)
 
 -- 1. Crear tabla de asignaciones (Many-to-Many)
 CREATE TABLE IF NOT EXISTS transaction_assignments (
@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS transaction_assignments (
 );
 
 -- 2. Migrar datos existentes
--- Por cada transacción existente, crear una entrada en assignments usando el employee_id actual
 INSERT INTO transaction_assignments (transaction_id, employee_id, created_at)
 SELECT id, employee_id, created_at
 FROM transactions
@@ -25,16 +24,19 @@ ALTER TABLE transaction_assignments ENABLE ROW LEVEL SECURITY;
 -- 4. Políticas de Seguridad para transaction_assignments
 
 -- Admin ve todo
+DROP POLICY IF EXISTS "Admin ve todas las asignaciones" ON transaction_assignments;
 CREATE POLICY "Admin ve todas las asignaciones" ON transaction_assignments
 FOR SELECT TO authenticated
 USING (EXISTS (SELECT 1 FROM employees WHERE user_id = auth.uid() AND role = 'admin'));
 
 -- Empleados ven sus propias asignaciones
+DROP POLICY IF EXISTS "Empleados ven sus asignaciones" ON transaction_assignments;
 CREATE POLICY "Empleados ven sus asignaciones" ON transaction_assignments
 FOR SELECT TO authenticated
 USING (employee_id IN (SELECT id FROM employees WHERE user_id = auth.uid()));
 
 -- Permitir insertar asignaciones al crear ventas (Admin o Empleado asignado)
+DROP POLICY IF EXISTS "Crear asignaciones" ON transaction_assignments;
 CREATE POLICY "Crear asignaciones" ON transaction_assignments
 FOR INSERT TO authenticated
 WITH CHECK (true); -- La validación principal ocurre en la App y en transactions
@@ -43,6 +45,7 @@ WITH CHECK (true); -- La validación principal ocurre en la App y en transaction
 -- (Esto permite que un empleado vea la transacción si está en la tabla de asignaciones)
 
 DROP POLICY IF EXISTS "Ver propias ventas" ON transactions;
+DROP POLICY IF EXISTS "Ver ventas asignadas" ON transactions;
 
 CREATE POLICY "Ver ventas asignadas" ON transactions
 FOR SELECT TO authenticated
