@@ -235,28 +235,31 @@ const Employees = () => {
 
             const storedTotal = parseFloat(t.commission_amount) || 0;
 
-            // 2. Heuristic: Is it Old Data (Missing extras) or New Data (Includes extras)?
-            // We use the service base commission to guess.
-            const service = services.find(s => s.id == t.service_id); // LOOSE MATCH
-            const likelyBase = service ? parseFloat(service.commission) : 0;
-            const likelyTotal = likelyBase + allAssignedCommission;
-
+            // 2. Heuristic SAFEGUARDED
             let sharedPool = 0;
-            // Tolerance of 0.1 for float math
-            if (storedTotal < (likelyTotal - 0.1)) {
-                // OLD DATA
-                sharedPool = storedTotal;
+            const service = services.find(s => s.id == t.service_id);
+            const likelyBase = service ? (parseFloat(service.commission) || 0) : 0;
+
+            if (service) {
+                const likelyTotal = likelyBase + allAssignedCommission;
+                if (storedTotal < (likelyTotal - 0.1)) {
+                    sharedPool = storedTotal;
+                } else {
+                    sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+                }
             } else {
-                // NEW DATA
                 sharedPool = Math.max(0, storedTotal - allAssignedCommission);
             }
 
-            const sharedShare = sharedPool / count;
+            const sharedShare = (sharedPool / count) || 0;
             const tip = (parseFloat(t.tip) || 0);
-            const tipShare = tip / count;
+            const tipShare = (tip / count) || 0;
 
-            totalCommission += (sharedShare + myExtrasCommission);
-            totalTips += tipShare;
+            const myTotalParams = sharedShare + myExtrasCommission + tipShare;
+            if (!isNaN(myTotalParams)) {
+                totalCommission += (sharedShare + myExtrasCommission);
+                totalTips += tipShare;
+            }
         });
 
         const totalExpenses = filteredExps.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
@@ -440,25 +443,30 @@ const Employees = () => {
 
                                                     const storedTotal = parseFloat(t.commission_amount) || 0;
 
-                                                    const service = services.find(s => s.id === t.service_id);
-                                                    const likelyBase = service ? parseFloat(service.commission) : 0;
-                                                    const likelyTotal = likelyBase + allAssignedCommission;
+                                                    const service = services.find(s => s.id == t.service_id);
+                                                    const likelyBase = service ? (parseFloat(service.commission) || 0) : 0;
 
                                                     let sharedPool = 0;
-                                                    if (storedTotal < (likelyTotal - 0.1)) {
-                                                        sharedPool = storedTotal;
+                                                    if (service) {
+                                                        const likelyTotal = likelyBase + allAssignedCommission;
+                                                        if (storedTotal < (likelyTotal - 0.1)) {
+                                                            sharedPool = storedTotal;
+                                                        } else {
+                                                            sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+                                                        }
                                                     } else {
                                                         sharedPool = Math.max(0, storedTotal - allAssignedCommission);
                                                     }
 
-                                                    const myShare = (sharedPool / count) + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
+                                                    const sharedPart = (sharedPool / count) || 0;
+                                                    const myShare = sharedPart + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
 
                                                     return [
                                                         new Date(t.date).toLocaleDateString(),
                                                         vehicle,
                                                         `$${t.commission_amount}`,
                                                         `$${t.tip}`,
-                                                        `$${myShare.toFixed(2)}`
+                                                        `$${(isNaN(myShare) ? 0 : myShare).toFixed(2)}`
                                                     ];
                                                 });
 
@@ -576,6 +584,8 @@ const Employees = () => {
                                                 <div style={{ color: 'var(--success)' }}>
                                                     {(() => {
                                                         const count = t.transaction_assignments?.length || 1;
+
+                                                        // SAFELY EXTRACT EXTRAS
                                                         const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
                                                         const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
@@ -584,21 +594,35 @@ const Employees = () => {
 
                                                         const storedTotal = parseFloat(t.commission_amount) || 0;
 
-                                                        const service = services.find(s => s.id == t.service_id);
-                                                        const likelyBase = service ? parseFloat(service.commission) : 0;
-                                                        const likelyTotal = likelyBase + allAssignedCommission;
-
+                                                        // HEURISTIC WITH SAFEGUARDS
                                                         let sharedPool = 0;
                                                         let isOldData = false;
-                                                        if (storedTotal < (likelyTotal - 0.1)) {
-                                                            sharedPool = storedTotal;
-                                                            isOldData = true;
+
+                                                        const service = services.find(s => s.id == t.service_id);
+                                                        const likelyBase = service ? (parseFloat(service.commission) || 0) : 0;
+
+                                                        // If we have service info, we can guess. If not, fallback to simple subtraction.
+                                                        if (service) {
+                                                            const likelyTotal = likelyBase + allAssignedCommission;
+                                                            if (storedTotal < (likelyTotal - 0.1)) {
+                                                                // OLD DATA / MISSING EXTRAS IN TOTAL
+                                                                sharedPool = storedTotal;
+                                                                isOldData = true;
+                                                            } else {
+                                                                // NEW DATA / TOTAL INCLUDES EXTRAS
+                                                                sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+                                                            }
                                                         } else {
+                                                            // Fallback if service not found: Assume New Data logic (safer to not overpay?) 
+                                                            // OR assume storedTotal is the pool?
+                                                            // Let's assume StoredTotal - Assigned is fair if we don't know better.
                                                             sharedPool = Math.max(0, storedTotal - allAssignedCommission);
                                                         }
 
-                                                        const sharedPart = sharedPool / count;
+                                                        const sharedPart = (sharedPool / count) || 0; // Prevent NaN
                                                         const myShare = sharedPart + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
+
+                                                        if (isNaN(myShare)) return "$0.00";
 
                                                         return (
                                                             <span>
