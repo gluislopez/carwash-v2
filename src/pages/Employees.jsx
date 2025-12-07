@@ -567,7 +567,7 @@ const Employees = () => {
                                                         const storedTotal = parseFloat(t.commission_amount) || 0;
 
                                                         // 1. Calculate Extras
-                                                        const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
+                                                        const myExtras = t.extras?.filter(e => e.assignedTo == selectedEmployee.id) || [];
                                                         const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
                                                         const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
