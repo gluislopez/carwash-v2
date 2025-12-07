@@ -1755,6 +1755,13 @@ const Dashboard = () => {
                                                         value={newCustomer.vehicle_plate}
                                                         onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
                                                     />
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="Modelo (e.g. Toyota)"
+                                                        value={newCustomer.vehicle_model}
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
+                                                    />
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                     <button
