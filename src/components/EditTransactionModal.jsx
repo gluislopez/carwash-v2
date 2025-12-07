@@ -197,17 +197,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 if (insertError) throw insertError;
             }
 
-            // B. Recalculate Commission
-            // Logic: If $35 service & >1 employee => $12 total commission. Else standard.
-            const service = services.find(s => s.id === formData.serviceId);
-            const baseCommission = service?.commission || 0;
-            const currentPrice = parseFloat(formData.price);
-
-            let finalCommission = calculateSharedCommission(currentPrice, selectedEmployeeIds.length, baseCommission);
-
-            // ADD EXTRA COMMISSIONS
-            const extrasCommission = extras.reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0);
-            finalCommission += extrasCommission;
+            // B. Recalculate Commission -  NOW WE TRUST FORMDATA (Auto-calculated or Admin Edited)
+            const finalCommission = parseFloat(formData.commissionAmount) || 0;
 
             // 4. UPDATE TRANSACTION
             await onUpdate(transaction.id, {
@@ -215,10 +206,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 price: parseFloat(formData.price),
                 payment_method: formData.paymentMethod,
                 tip: parseFloat(formData.tip) || 0,
-                commission_amount: finalCommission, // Updated commission
+                commission_amount: finalCommission,
                 status: newStatus,
-                extras: extras, // Save the extras array
-                employee_id: selectedEmployeeIds[0] || null // Update primary employee (legacy)
+                extras: extras,
+                employee_id: selectedEmployeeIds[0] || null
             });
 
         } catch (error) {
@@ -480,10 +471,14 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             <input
                                 type="number"
                                 className="input"
-                                style={{ backgroundColor: 'var(--bg-secondary)', opacity: 0.7 }}
+                                style={{
+                                    backgroundColor: userRole === 'admin' ? 'var(--bg-input)' : 'var(--bg-secondary)',
+                                    opacity: userRole === 'admin' ? 1 : 0.7
+                                }}
                                 value={formData.commissionAmount}
-                                readOnly
-                                title="La comisión se recalcula al guardar"
+                                onChange={(e) => setFormData({ ...formData, commissionAmount: parseFloat(e.target.value) || 0 })}
+                                readOnly={userRole !== 'admin'}
+                                title={userRole === 'admin' ? "Editar Comisión" : "Solo Admin puede editar"}
                             />
                         </div>
                         <div>
