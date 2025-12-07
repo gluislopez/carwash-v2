@@ -184,6 +184,15 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             const baseCommission = service?.commission || 0;
             const currentPrice = parseFloat(formData.price);
 
+            console.log("DEBUG CALC:", {
+                serviceId: formData.serviceId,
+                baseCommission,
+                currentPrice,
+                empCount: selectedEmployeeIds.length,
+                empIds: selectedEmployeeIds,
+                condition: currentPrice >= 35 && selectedEmployeeIds.length > 1
+            });
+
             let finalCommission = baseCommission;
             // Check for the specific $35 condition (adjust if price logic changes)
             if (currentPrice >= 35 && selectedEmployeeIds.length > 1) {
