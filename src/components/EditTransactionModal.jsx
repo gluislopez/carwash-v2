@@ -186,7 +186,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             let finalCommission = baseCommission;
             // Check for the specific $35 condition (adjust if price logic changes)
-            if (currentPrice === 35 && selectedEmployeeIds.length > 1) {
+            if (currentPrice >= 35 && selectedEmployeeIds.length > 1) {
                 finalCommission = 12;
             }
 
