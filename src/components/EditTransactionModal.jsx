@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Save, Plus, Trash2, Loader2 } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
+import { calculateSharedCommission } from '../utils/commissionRules';
 
 const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate, userRole }) => {
     if (!isOpen || !transaction) return null;
@@ -184,20 +185,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             const baseCommission = service?.commission || 0;
             const currentPrice = parseFloat(formData.price);
 
-            console.log("DEBUG CALC:", {
-                serviceId: formData.serviceId,
-                baseCommission,
-                currentPrice,
-                empCount: selectedEmployeeIds.length,
-                empIds: selectedEmployeeIds,
-                condition: currentPrice >= 35 && selectedEmployeeIds.length > 1
-            });
-
-            let finalCommission = baseCommission;
-            // Check for the specific $35 condition (adjust if price logic changes)
-            if (currentPrice >= 35 && selectedEmployeeIds.length > 1) {
-                finalCommission = 12;
-            }
+            let finalCommission = calculateSharedCommission(currentPrice, selectedEmployeeIds.length, baseCommission);
 
             // ADD EXTRA COMMISSIONS
             const extrasCommission = extras.reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0);

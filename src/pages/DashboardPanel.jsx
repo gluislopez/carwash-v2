@@ -6,6 +6,7 @@ import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
 import EmployeeProductivityChart from '../components/EmployeeProductivityChart';
 import EditTransactionModal from '../components/EditTransactionModal';
+import { calculateSharedCommission } from '../utils/commissionRules';
 
 
 
@@ -391,14 +392,10 @@ const Dashboard = () => {
 
             // 2. Calculate Commission
             // Logic: If $35 service & >1 employee => $12 total commission. Else standard.
-            // We need to know the service commission.
             const service = services.find(s => s.id === tx.service_id);
             const baseCommission = service?.commission || 0;
 
-            let finalCommission = baseCommission;
-            if (tx.price >= 35 && selectedEmployeesForAssignment.length > 1) {
-                finalCommission = 12;
-            }
+            const finalCommission = calculateSharedCommission(tx.price, selectedEmployeesForAssignment.length, baseCommission);
 
             // 3. Update Transaction Status & Commission
             await updateTransaction(tx.id, {
@@ -796,7 +793,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.238.2 {new Date().toLocaleTimeString()}
+                            v4.238.3 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
