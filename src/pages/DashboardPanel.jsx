@@ -20,6 +20,7 @@ const Dashboard = () => {
     const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
     const [userRole, setUserRole] = useState(null); // Estado para el rol
     const [isRefreshing, setIsRefreshing] = useState(false); // Estado para el botón de refresh
+    const [isModalOpen, setIsModalOpen] = useState(false); // Estado para el modal de nueva transacción
 
     useEffect(() => {
         const getUser = async () => {
