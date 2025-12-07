@@ -704,7 +704,7 @@ const Dashboard = () => {
             service_id: formData.serviceId,
             employee_id: null, // No assigned yet
             price: basePrice,
-            commission_amount: 0, // Calculated at assignment/completion
+            commission_amount: (parseFloat(formData.commissionAmount) || 0) + (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0),
             tip: 0,
             payment_method: 'cash',
             extras: formData.extras || [],

@@ -190,6 +190,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 finalCommission = 12;
             }
 
+            // ADD EXTRA COMMISSIONS
+            const extrasCommission = extras.reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0);
+            finalCommission += extrasCommission;
+
             // 4. UPDATE TRANSACTION
             await onUpdate(transaction.id, {
                 service_id: formData.serviceId,
