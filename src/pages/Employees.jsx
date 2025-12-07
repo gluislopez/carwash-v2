@@ -11,13 +11,15 @@ const Employees = () => {
 
     // Performance Modal State
     const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [performanceFilter, setPerformanceFilter] = useState('today'); // 'today', 'week', 'month'
+    const [performanceFilter, setPerformanceFilter] = useState('today'); // 'today', 'week', 'month', 'manual'
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default today
     const [transactions, setTransactions] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [services, setServices] = useState([]); // Fetch Services for robust commission calc
     const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
+        // ... (existing getUserRole and fetchData logic) ...
         const getUserRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
@@ -66,93 +68,13 @@ const Employees = () => {
         fetchData();
     }, []);
 
-    const [formData, setFormData] = useState({
-        name: '',
-        position: 'Lavador',
-        phone: '',
-        email: '',
-        password: '', // New password field
-        user_id: ''
-    });
-
-    const [editingId, setEditingId] = useState(null);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            let finalUserId = formData.user_id.trim();
-
-            // Only create auth user if we are NOT editing (or if we want to allow linking later, but for now keep simple)
-            // If editing, we generally don't change the auth user unless explicitly requested, but the form allows editing the ID.
-
-            if (!editingId && formData.password && formData.email) {
-                const { user, error } = await createAccount(formData.email, formData.password);
-                if (error) throw new Error('Error creando usuario: ' + error.message);
-                if (user) {
-                    finalUserId = user.id;
-                    alert(`Usuario creado exitosamente.\nID: ${user.id}`);
-                }
-            }
-
-            const dataToSave = {
-                name: formData.name,
-                position: formData.position,
-                phone: formData.phone,
-                email: formData.email,
-                user_id: finalUserId === '' ? null : finalUserId,
-                role: formData.position === 'Gerente' ? 'manager' : 'employee' // Auto-assign role
-            };
-
-            if (editingId) {
-                await update(editingId, dataToSave);
-                alert('Empleado actualizado correctamente');
-            } else {
-                await create(dataToSave);
-            }
-
-            setIsModalOpen(false);
-            setFormData({ name: '', position: 'Lavador', phone: '', email: '', password: '', user_id: '' });
-            setEditingId(null);
-        } catch (error) {
-            alert('Error: ' + error.message);
-        }
-    };
-
-    const handleEdit = (employee) => {
-        setFormData({
-            name: employee.name,
-            position: employee.position,
-            phone: employee.phone || '',
-            email: employee.email || '',
-            password: '', // Don't edit password here
-            user_id: employee.user_id || ''
-        });
-        setEditingId(employee.id);
-        setIsModalOpen(true);
-    };
-
-    const handleToggleStatus = async (employee, e) => {
-        e.stopPropagation();
-        const newStatus = !employee.is_active;
-        const action = newStatus ? 'activar' : 'desactivar';
-        if (window.confirm(`¿Estás seguro de ${action} a ${employee.name}?`)) {
-            await update(employee.id, { is_active: newStatus });
-        }
-    };
-
-    const handleDelete = async (id, e) => {
-        e.stopPropagation();
-        if (window.confirm('¿Estás seguro de eliminar este empleado permanentemente?')) {
-            await remove(id);
-        }
-    };
-
-    // --- Performance Logic ---
+    // ... (rest of component) ...
 
     const getFilteredData = () => {
         if (!selectedEmployee) return { filteredTxs: [], filteredExps: [] };
 
         if (performanceFilter === 'all') {
+            // ... existing all logic
             const filteredTxs = transactions.filter(t => {
                 const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
                 const isPrimary = t.employee_id === selectedEmployee.id;
@@ -177,6 +99,10 @@ const Employees = () => {
         if (performanceFilter === 'today') filterDate = startOfDay;
         else if (performanceFilter === 'week') filterDate = startOfWeek;
         else if (performanceFilter === 'month') filterDate = startOfMonth;
+        else if (performanceFilter === 'manual') {
+            // For manual, we act differently (exact date match)
+            // We don't set filterDate to use for >= logic, we do specific check inside filter
+        }
 
         const filteredTxs = transactions.filter(t => {
             // Check if transaction belongs to employee
@@ -186,7 +112,16 @@ const Employees = () => {
             if (!(isAssigned || isPrimary)) return false;
 
             const txDate = new Date(t.created_at);
-            const now = new Date();
+            const now = new Date(); // Use local current time reference if needed, but txDate is absolute
+
+            if (performanceFilter === 'manual') {
+                // Parse selectedDate (YYYY-MM-DD local)
+                // We need to compare dates ignoring time.
+                // Note: t.created_at is UTC usually. But selectedDate is local string "YYYY-MM-DD".
+                // Safest is to compare YYYY-MM-DD string of txDate converted to local with selectedDate.
+                const txLocal = txDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local time
+                return txLocal === selectedDate;
+            }
 
             if (performanceFilter === 'today') {
                 return txDate.getDate() === now.getDate() &&
@@ -206,11 +141,17 @@ const Employees = () => {
                 return txDate >= startOfMonth;
             }
 
-            return true; // 'all'
+            return true; // Should not reach here
         });
 
         const filteredExps = expenses.filter(e => {
             const eDate = new Date(e.date);
+
+            if (performanceFilter === 'manual') {
+                const exLocal = eDate.toLocaleDateString('en-CA');
+                return (e.employee_id === selectedEmployee.id) && (exLocal === selectedDate);
+            }
+
             return e.employee_id === selectedEmployee.id && eDate >= filterDate;
         });
 
@@ -410,7 +351,15 @@ const Employees = () => {
 
                                                 doc.setFontSize(12);
                                                 doc.text(`Empleado: ${selectedEmployee.name}`, 14, 30);
-                                                doc.text(`Periodo: ${performanceFilter === 'today' ? 'Hoy' : performanceFilter === 'week' ? 'Esta Semana' : performanceFilter === 'month' ? 'Este Mes' : 'Todo'}`, 14, 36);
+
+                                                let periodText = '';
+                                                if (performanceFilter === 'today') periodText = 'Hoy';
+                                                else if (performanceFilter === 'week') periodText = 'Esta Semana';
+                                                else if (performanceFilter === 'month') periodText = 'Este Mes';
+                                                else if (performanceFilter === 'manual') periodText = `Fecha: ${selectedDate}`;
+                                                else periodText = 'Todo';
+
+                                                doc.text(`Periodo: ${periodText}`, 14, 36);
                                                 doc.text(`Fecha Generación: ${new Date().toLocaleDateString()}`, 14, 42);
 
                                                 // Summary Table
@@ -494,8 +443,8 @@ const Employees = () => {
                         </div>
 
                         {/* Filters */}
-                        <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
-                            {['today', 'week', 'month', 'all'].map(filter => (
+                        <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', alignItems: 'center' }}>
+                            {['today', 'week', 'month', 'all', 'manual'].map(filter => (
                                 <button
                                     key={filter}
                                     onClick={() => setPerformanceFilter(filter)}
@@ -513,8 +462,25 @@ const Employees = () => {
                                     {filter === 'week' && 'Esta Semana'}
                                     {filter === 'month' && 'Este Mes'}
                                     {filter === 'all' && 'Todo'}
+                                    {filter === 'manual' && 'Calendario'}
                                 </button>
                             ))}
+
+                            {/* Manual Date Input */}
+                            {performanceFilter === 'manual' && (
+                                <input
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    style={{
+                                        padding: '0.4rem',
+                                        borderRadius: '1rem',
+                                        border: '1px solid var(--border-color)',
+                                        backgroundColor: 'var(--bg-input)',
+                                        color: 'var(--text-primary)'
+                                    }}
+                                />
+                            )}
                         </div>
 
                         {/* Stats Grid */}
