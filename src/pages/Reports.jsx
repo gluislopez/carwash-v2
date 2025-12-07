@@ -56,17 +56,27 @@ const Reports = () => {
     const getCustomerName = (id) => customersList.find(c => c.id === id)?.name || 'Cliente Casual';
     const getServiceName = (id) => servicesList.find(s => s.id === id)?.name || 'Servicio Desconocido';
     const getEmployeeName = (id) => employeesList.find(e => e.id === id)?.name || 'Desconocido';
-    const getVehicleModel = (id) => {
-        if (!id) return '(No Vehicle ID - Null)';
-        if (!vehiclesList || vehiclesList.length === 0) return `(Loading Vehicles... ${vehiclesList?.length})`;
+    const getVehicleInfo = (t) => {
+        if (!vehiclesList) return '...';
 
-        const vehicle = vehiclesList.find(v => v.id == id);
-        if (vehicle) {
-            const brand = vehicle.brand === 'Generico' ? '' : vehicle.brand;
-            return `${brand || ''} ${vehicle.model || ''}`.trim() || 'Sin Modelo';
-        } else {
-            return `(ID: ${id} Not Found)`;
+        let vehicle = null;
+
+        // 1. Try by Direct ID
+        if (t.vehicle_id) {
+            vehicle = vehiclesList.find(v => v.id == t.vehicle_id);
         }
+
+        // 2. Fallback: Try by Customer ID
+        if (!vehicle && t.customer_id) {
+            vehicle = vehiclesList.find(v => v.customer_id == t.customer_id);
+        }
+
+        if (vehicle) {
+            const brand = vehicle.brand === 'Generico' || !vehicle.brand ? '' : vehicle.brand;
+            return `${brand} ${vehicle.model || ''}`.trim() || 'Sin Modelo';
+        }
+
+        return 'Modelo No Registrado';
     };
 
     // Date Helpers
@@ -250,6 +260,8 @@ const Reports = () => {
         .filter(e => e.category === 'lunch')
         .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
+    const netIncome = totalIncome - totalCommissions - totalLunches;
+
     // For Admin, also calculate Product Expenses
     const totalProductExpenses = filteredExpenses
         .filter(e => e.category === 'product')
@@ -395,168 +407,97 @@ const Reports = () => {
     };
 
     return (
-        <div className="reports-container">
-            <style>{`
-                @media print {
-                    .no-print { display: none !important; }
-                    .card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
-                    body { background: white; color: black; }
-                    .print-header { display: block !important; margin-bottom: 2rem; text-align: center; }
-                    /* Hide other cards if we only want the table, but user asked for "report". 
-                       Usually we keep the summary cards. */
-                }
-                .print-header { display: none; }
-            `}</style>
-
-            {/* PRINT HEADER (Logo & Title) */}
-            <div className="print-header">
-                <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', marginBottom: '1rem' }} />
-                <h1 style={{ fontSize: '2rem', margin: 0 }}>Express CarWash</h1>
-                <p style={{ color: '#666' }}>Reporte de Operaciones: {dateRange}</p>
-            </div>
-
-            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Análisis financiero y operativo <span style={{ fontSize: '0.7rem', backgroundColor: '#10B981', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.225 PAYROLL PDF</span></p>
+                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes y Finanzas</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones</p>
                 </div>
+            </div>
 
+            {/* DATE FILTERS */}
+            <div style={{ marginBottom: '2rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
-                    onClick={() => {
-                        try {
-                            const totalCash = filteredTransactions
-                                .filter(t => t.payment_method === 'cash')
-                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-
-                            const totalTransfer = filteredTransactions
-                                .filter(t => t.payment_method === 'transfer')
-                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-
-                            const stats = {
-                                count: totalCount,
-                                income: totalIncome,
-                                expenses: totalCommissions + totalProductExpenses,
-                                net: adminNet,
-                                totalCash,
-                                totalTransfer
-                            };
-                            // Map service IDs to names for the PDF
-                            const enrichedTransactions = filteredTransactions.map(t => {
-                                const customer = customersList.find(c => c.id === t.customer_id) || {};
-                                const serviceName = getServiceName(t.service_id);
-                                const extrasCount = t.extras ? t.extras.length : 0;
-                                const extrasText = extrasCount > 0 ? ` (+ ${extrasCount} extras)` : '';
-
-                                return {
-                                    ...t,
-                                    client_info: `${customer.name || 'Cliente'} \n(${customer.vehicle_model || 'Modelo N/A'})`,
-                                    service_info: `${serviceName}${extrasText}`,
-                                    vehicle_plate: customer.vehicle_plate || 'N/A'
-                                };
-                            });
-                            generateReportPDF(enrichedTransactions, dateRange, stats, userRole);
-                        } catch (error) {
-                            console.error("PDF Error:", error);
-                            alert("Error al generar PDF: " + error.message);
-                        }
-                    }}
-                    className="btn btn-primary"
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    className="btn"
+                    style={{ backgroundColor: dateRange === 'today' ? 'var(--primary)' : 'var(--bg-secondary)', color: 'white' }}
+                    onClick={() => setDateRange('today')}
                 >
-                    <Download size={20} />
-                    Descargar PDF
+                    Hoy
                 </button>
-                <div className="no-print" style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn" onClick={handleCopyToEmail} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
-                        Copiar para Email
-                    </button>
-                    <button className="btn btn-primary" onClick={handlePrint}>
-                        Imprimir / PDF
-                    </button>
-                </div>
-            </div>
-
-            {/* FILTERS */}
-            <div className="card no-print" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Filter size={20} color="var(--text-muted)" />
-                        <span style={{ fontWeight: 'bold' }}>Periodo:</span>
-                    </div>
-                    <select
+                <button
+                    className="btn"
+                    style={{ backgroundColor: dateRange === 'week' ? 'var(--primary)' : 'var(--bg-secondary)', color: 'white' }}
+                    onClick={() => setDateRange('week')}
+                >
+                    Esta Semana
+                </button>
+                <button
+                    className="btn"
+                    style={{ backgroundColor: dateRange === 'month' ? 'var(--primary)' : 'var(--bg-secondary)', color: 'white' }}
+                    onClick={() => setDateRange('month')}
+                >
+                    Este Mes
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
+                    <input
+                        type="date"
                         className="input"
-                        style={{ width: 'auto', padding: '0.4rem', fontSize: '0.9rem' }}
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value)}
-                    >
-                        <option value="today">Hoy</option>
-                        <option value="week">Esta Semana</option>
-                        <option value="month">Este Mes</option>
-                        <option value="custom">Personalizado</option>
-                    </select>
-
-                    {userRole === 'admin' && (
-                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
-                            <button
-                                onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'transfer' ? 'all' : 'transfer')}
-                                title={paymentMethodFilter === 'transfer' ? "Mostrar Todos" : "Filtrar solo ATH Móvil"}
-                                style={{
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                    padding: '0.3rem 0.8rem',
-                                    border: '1px solid #F59E0B',
-                                    borderRadius: '6px',
-                                    backgroundColor: paymentMethodFilter === 'transfer' ? '#F59E0B' : 'transparent',
-                                    color: paymentMethodFilter === 'transfer' ? 'white' : '#F59E0B',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>ATH MÓVIL</span>
-                                <span style={{ fontSize: '0.9rem' }}>${totalTransfer.toFixed(2)}</span>
-                            </button>
-
-                            <button
-                                onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'cash' ? 'all' : 'cash')}
-                                title={paymentMethodFilter === 'cash' ? "Mostrar Todos" : "Filtrar solo Efectivo"}
-                                style={{
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                    padding: '0.3rem 0.8rem',
-                                    border: '1px solid #10B981',
-                                    borderRadius: '6px',
-                                    backgroundColor: paymentMethodFilter === 'cash' ? '#10B981' : 'transparent',
-                                    color: paymentMethodFilter === 'cash' ? 'white' : '#10B981',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
-                                <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
-                            </button>
-                        </div>
-                    )}
-
-                    {dateRange === 'custom' && (
-                        <>
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ width: 'auto' }}
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                            />
-                            <span style={{ color: 'var(--text-muted)' }}>a</span>
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ width: 'auto' }}
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
-                        </>
-                    )}
+                        value={startDate}
+                        onChange={(e) => { setStartDate(e.target.value); setDateRange('custom'); }}
+                        style={{ padding: '0.5rem' }}
+                    />
+                    <span style={{ color: 'var(--text-muted)' }}>-</span>
+                    <input
+                        type="date"
+                        className="input"
+                        value={endDate}
+                        onChange={(e) => { setEndDate(e.target.value); setDateRange('custom'); }}
+                        style={{ padding: '0.5rem' }}
+                    />
                 </div>
             </div>
+
+            {userRole === 'admin' && (
+                <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                    <button
+                        onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'transfer' ? 'all' : 'transfer')}
+                        title={paymentMethodFilter === 'transfer' ? "Mostrar Todos" : "Filtrar solo ATH Móvil"}
+                        style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '0.3rem 0.8rem',
+                            border: '1px solid #F59E0B',
+                            borderRadius: '6px',
+                            backgroundColor: paymentMethodFilter === 'transfer' ? '#F59E0B' : 'transparent',
+                            color: paymentMethodFilter === 'transfer' ? 'white' : '#F59E0B',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>ATH MÓVIL</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalTransfer.toFixed(2)}</span>
+                    </button>
+
+                    <button
+                        onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'cash' ? 'all' : 'cash')}
+                        title={paymentMethodFilter === 'cash' ? "Mostrar Todos" : "Filtrar solo Efectivo"}
+                        style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '0.3rem 0.8rem',
+                            border: '1px solid #10B981',
+                            borderRadius: '6px',
+                            backgroundColor: paymentMethodFilter === 'cash' ? '#10B981' : 'transparent',
+                            color: paymentMethodFilter === 'cash' ? 'white' : '#10B981',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
+                    </button>
+                </div>
+            )}
+
+
 
             {/* STATS CARDS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -568,15 +509,17 @@ const Reports = () => {
                     </div>
                 </div>
 
-                {userRole === 'admin' && (
-                    <div className="card">
-                        <h3 className="label">Ingresos Totales</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <DollarSign size={32} className="text-success" />
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
+                {
+                    userRole === 'admin' && (
+                        <div className="card">
+                            <h3 className="label">Ingresos Totales</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <DollarSign size={32} className="text-success" />
+                                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 <div className="card">
                     <h3 className="label">{userRole === 'admin' ? 'Gastos (Comisiones + Compras)' : 'Mi Neto (Menos Almuerzos)'}</h3>
@@ -593,116 +536,120 @@ const Reports = () => {
                     )}
                 </div>
 
-                {userRole === 'admin' && (
-                    <div className="card">
-                        <h3 className="label">Ganancia Neta</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <DollarSign size={32} className="text-success" />
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${adminNet.toFixed(2)}</p>
+                {
+                    userRole === 'admin' && (
+                        <div className="card">
+                            <h3 className="label">Ganancia Neta</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <DollarSign size={32} className="text-success" />
+                                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${adminNet.toFixed(2)}</p>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )
+                }
+            </div >
 
             {/* OPERATIONAL INSIGHTS (Phase 2) */}
-            {userRole === 'admin' && (
-                <div style={{ marginBottom: '2rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                        Insights Operativos ⚡️
-                    </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+            {
+                userRole === 'admin' && (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            Insights Operativos ⚡️
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
 
-                        {/* PEAK HOURS CARD */}
-                        <div className="card">
-                            <h3 className="label">Hora Pico (Más Tráfico)</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <Clock size={32} style={{ color: '#F59E0B' }} />
-                                <div>
-                                    {(() => {
-                                        const hourCounts = {};
-                                        filteredTransactions.forEach(t => {
-                                            const date = new Date(t.date);
-                                            const hour = date.getHours();
-                                            hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-                                        });
+                            {/* PEAK HOURS CARD */}
+                            <div className="card">
+                                <h3 className="label">Hora Pico (Más Tráfico)</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <Clock size={32} style={{ color: '#F59E0B' }} />
+                                    <div>
+                                        {(() => {
+                                            const hourCounts = {};
+                                            filteredTransactions.forEach(t => {
+                                                const date = new Date(t.date);
+                                                const hour = date.getHours();
+                                                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                                            });
 
-                                        let maxHour = null;
-                                        let maxCount = 0;
-                                        Object.entries(hourCounts).forEach(([hour, count]) => {
-                                            if (count > maxCount) {
-                                                maxCount = count;
-                                                maxHour = parseInt(hour);
+                                            let maxHour = null;
+                                            let maxCount = 0;
+                                            Object.entries(hourCounts).forEach(([hour, count]) => {
+                                                if (count > maxCount) {
+                                                    maxCount = count;
+                                                    maxHour = parseInt(hour);
+                                                }
+                                            });
+
+                                            if (maxHour !== null) {
+                                                const ampm = maxHour >= 12 ? 'PM' : 'AM';
+                                                const displayHour = maxHour % 12 || 12;
+                                                return (
+                                                    <>
+                                                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                            {displayHour}:00 {ampm}
+                                                        </p>
+                                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                                            {maxCount} autos registrados
+                                                        </p>
+                                                    </>
+                                                );
                                             }
-                                        });
+                                            return <p style={{ color: 'var(--text-muted)' }}>No hay suficientes datos</p>;
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
 
-                                        if (maxHour !== null) {
-                                            const ampm = maxHour >= 12 ? 'PM' : 'AM';
-                                            const displayHour = maxHour % 12 || 12;
+                            {/* EFFICIENCY TIMER CARD */}
+                            <div className="card">
+                                <h3 className="label">Tiempo Promedio de Servicio</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <RefreshCw size={32} style={{ color: '#3B82F6' }} />
+                                    <div>
+                                        {(() => {
+                                            const completedTxs = filteredTransactions.filter(t =>
+                                                (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') &&
+                                                t.finished_at && t.created_at
+                                            );
+
+                                            if (completedTxs.length === 0) {
+                                                return <p style={{ color: 'var(--text-muted)' }}>No hay datos de tiempo</p>;
+                                            }
+
+                                            const totalMinutes = completedTxs.reduce((sum, t) => {
+                                                const start = new Date(t.created_at);
+                                                const end = new Date(t.finished_at);
+                                                const diffMs = end - start;
+                                                return sum + (diffMs / (1000 * 60));
+                                            }, 0);
+
+                                            const avgMinutes = Math.round(totalMinutes / completedTxs.length);
+
+                                            // Color coding for efficiency
+                                            let color = 'var(--success)'; // < 30 mins
+                                            if (avgMinutes > 45) color = 'var(--danger)'; // > 45 mins
+                                            else if (avgMinutes > 30) color = 'var(--warning)'; // 30-45 mins
+
                                             return (
                                                 <>
-                                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                                                        {displayHour}:00 {ampm}
+                                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>
+                                                        {avgMinutes} min
                                                     </p>
                                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                                        {maxCount} autos registrados
+                                                        Basado en {completedTxs.length} servicios
                                                     </p>
                                                 </>
                                             );
-                                        }
-                                        return <p style={{ color: 'var(--text-muted)' }}>No hay suficientes datos</p>;
-                                    })()}
+                                        })()}
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
-
-                        {/* EFFICIENCY TIMER CARD */}
-                        <div className="card">
-                            <h3 className="label">Tiempo Promedio de Servicio</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <RefreshCw size={32} style={{ color: '#3B82F6' }} />
-                                <div>
-                                    {(() => {
-                                        const completedTxs = filteredTransactions.filter(t =>
-                                            (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') &&
-                                            t.finished_at && t.created_at
-                                        );
-
-                                        if (completedTxs.length === 0) {
-                                            return <p style={{ color: 'var(--text-muted)' }}>No hay datos de tiempo</p>;
-                                        }
-
-                                        const totalMinutes = completedTxs.reduce((sum, t) => {
-                                            const start = new Date(t.created_at);
-                                            const end = new Date(t.finished_at);
-                                            const diffMs = end - start;
-                                            return sum + (diffMs / (1000 * 60));
-                                        }, 0);
-
-                                        const avgMinutes = Math.round(totalMinutes / completedTxs.length);
-
-                                        // Color coding for efficiency
-                                        let color = 'var(--success)'; // < 30 mins
-                                        if (avgMinutes > 45) color = 'var(--danger)'; // > 45 mins
-                                        else if (avgMinutes > 30) color = 'var(--warning)'; // 30-45 mins
-
-                                        return (
-                                            <>
-                                                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>
-                                                    {avgMinutes} min
-                                                </p>
-                                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                                    Basado en {completedTxs.length} servicios
-                                                </p>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
-                </div>
-            )}
+                )
+            }
 
 
             {/* FINANCIAL BREAKDOWN (DESGLOSE) */}
@@ -785,14 +732,14 @@ const Reports = () => {
                                                     {getCustomerName(t.customer_id)}
                                                 </button>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {getVehicleModel(t.vehicle_id)}
+                                                    {getVehicleInfo(t)}
                                                 </span>
                                             </div>
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                 <span>{getCustomerName(t.customer_id)}</span>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {getVehicleModel(t.vehicle_id)}
+                                                    {getVehicleInfo(t)}
                                                 </span>
                                             </div>
                                         )}
@@ -834,7 +781,7 @@ const Reports = () => {
                             ))}
                             {filteredTransactions.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                    <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                         No hay datos para este periodo
                                     </td>
                                 </tr>
