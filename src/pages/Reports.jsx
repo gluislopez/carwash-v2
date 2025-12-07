@@ -76,6 +76,14 @@ const Reports = () => {
             return `${brand} ${vehicle.model || ''}`.trim() || 'Sin Modelo';
         }
 
+        // 3. Fallback: Try by Customer ID (Customers Table - Legacy/QuickAdd)
+        if (t.customer_id && customersList) {
+            const customer = customersList.find(c => c.id == t.customer_id);
+            if (customer && (customer.vehicle_model || customer.vehicle_plate)) {
+                return `${customer.vehicle_model || ''} ${customer.vehicle_plate ? `(${customer.vehicle_plate})` : ''}`.trim();
+            }
+        }
+
         return 'Modelo No Registrado';
     };
 
