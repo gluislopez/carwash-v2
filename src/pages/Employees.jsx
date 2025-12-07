@@ -237,16 +237,17 @@ const Employees = () => {
 
             // 2. Heuristic: Is it Old Data (Missing extras) or New Data (Includes extras)?
             // We use the service base commission to guess.
-            const service = services.find(s => s.id === t.service_id);
+            const service = services.find(s => s.id == t.service_id); // LOOSE MATCH
             const likelyBase = service ? parseFloat(service.commission) : 0;
             const likelyTotal = likelyBase + allAssignedCommission;
 
             let sharedPool = 0;
+            // Tolerance of 0.1 for float math
             if (storedTotal < (likelyTotal - 0.1)) {
-                // OLD DATA: Stored is probably just the base. treat Stored as Shared Pool.
+                // OLD DATA
                 sharedPool = storedTotal;
             } else {
-                // NEW DATA: Stored includes everything. Subtract extras to get Shared Pool.
+                // NEW DATA
                 sharedPool = Math.max(0, storedTotal - allAssignedCommission);
             }
 
@@ -573,7 +574,7 @@ const Employees = () => {
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ color: 'var(--success)' }}>
-                                                    +${(() => {
+                                                    {(() => {
                                                         const count = t.transaction_assignments?.length || 1;
                                                         const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
                                                         const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
@@ -581,11 +582,34 @@ const Employees = () => {
                                                         const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
                                                         const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                        const comm = parseFloat(t.commission_amount) || 0;
-                                                        const sharedPool = Math.max(0, comm - allAssignedCommission);
+                                                        const storedTotal = parseFloat(t.commission_amount) || 0;
 
-                                                        const myShare = (sharedPool / count) + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
-                                                        return myShare.toFixed(2);
+                                                        const service = services.find(s => s.id == t.service_id);
+                                                        const likelyBase = service ? parseFloat(service.commission) : 0;
+                                                        const likelyTotal = likelyBase + allAssignedCommission;
+
+                                                        let sharedPool = 0;
+                                                        let isOldData = false;
+                                                        if (storedTotal < (likelyTotal - 0.1)) {
+                                                            sharedPool = storedTotal;
+                                                            isOldData = true;
+                                                        } else {
+                                                            sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+                                                        }
+
+                                                        const sharedPart = sharedPool / count;
+                                                        const myShare = sharedPart + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
+
+                                                        return (
+                                                            <span>
+                                                                ${myShare.toFixed(2)}
+                                                                {(myExtrasCommission > 0) && (
+                                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                                                        (Base: ${sharedPart.toFixed(1)} + Extra: ${myExtrasCommission.toFixed(1)})
+                                                                    </div>
+                                                                )}
+                                                            </span>
+                                                        );
                                                     })()}
                                                 </div>
                                             </div>
