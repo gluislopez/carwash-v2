@@ -9,10 +9,12 @@ const Employees = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [userRole, setUserRole] = useState(null);
 
-    // Performance Modal State
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [performanceFilter, setPerformanceFilter] = useState('today'); // 'today', 'week', 'month', 'manual'
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default today
+    const [dateRange, setDateRange] = useState({
+        start: new Date().toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
     const [transactions, setTransactions] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [services, setServices] = useState([]); // Fetch Services for robust commission calc
@@ -70,11 +72,12 @@ const Employees = () => {
 
     // ... (rest of component) ...
 
+    // --- Performance Logic ---
+
     const getFilteredData = () => {
         if (!selectedEmployee) return { filteredTxs: [], filteredExps: [] };
 
         if (performanceFilter === 'all') {
-            // ... existing all logic
             const filteredTxs = transactions.filter(t => {
                 const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
                 const isPrimary = t.employee_id === selectedEmployee.id;
@@ -87,32 +90,28 @@ const Employees = () => {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        // Start of Week (Sunday)
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
-
-        // Start of Month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
         let filterDate;
+        // Logic for presets
         if (performanceFilter === 'today') filterDate = startOfDay;
-        else if (performanceFilter === 'week') filterDate = startOfWeek;
-        else if (performanceFilter === 'month') filterDate = startOfMonth;
-        else if (performanceFilter === 'manual') {
-            // For manual, we act differently (exact date match)
-            // We don't set filterDate to use for >= logic, we do specific check inside filter
+        else if (performanceFilter === 'week') {
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - now.getDay());
+            startOfWeek.setHours(0, 0, 0, 0);
+            filterDate = startOfWeek;
+        }
+        else if (performanceFilter === 'month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            filterDate = startOfMonth;
         }
 
         const filteredTxs = transactions.filter(t => {
-            // Check if transaction belongs to employee
             const isAssigned = t.transaction_assignments?.some(a => a.employee_id === selectedEmployee.id);
-            const isPrimary = t.employee_id === selectedEmployee.id; // Legacy support
+            const isPrimary = t.employee_id === selectedEmployee.id;
 
             if (!(isAssigned || isPrimary)) return false;
 
             const txDate = new Date(t.created_at);
-            const now = new Date(); // Use local current time reference if needed, but txDate is absolute
+            const now = new Date();
 
             if (performanceFilter === 'manual') {
                 // Parse selectedDate (YYYY-MM-DD local)
@@ -120,7 +119,7 @@ const Employees = () => {
                 // Note: t.created_at is UTC usually. But selectedDate is local string "YYYY-MM-DD".
                 // Safest is to compare YYYY-MM-DD string of txDate converted to local with selectedDate.
                 const txLocal = txDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local time
-                return txLocal === selectedDate;
+                return txLocal >= dateRange.start && txLocal <= dateRange.end;
             }
 
             if (performanceFilter === 'today') {
@@ -149,7 +148,7 @@ const Employees = () => {
 
             if (performanceFilter === 'manual') {
                 const exLocal = eDate.toLocaleDateString('en-CA');
-                return (e.employee_id === selectedEmployee.id) && (exLocal === selectedDate);
+                return (e.employee_id === selectedEmployee.id) && (exLocal >= dateRange.start && exLocal <= dateRange.end);
             }
 
             return e.employee_id === selectedEmployee.id && eDate >= filterDate;
@@ -356,7 +355,7 @@ const Employees = () => {
                                                 if (performanceFilter === 'today') periodText = 'Hoy';
                                                 else if (performanceFilter === 'week') periodText = 'Esta Semana';
                                                 else if (performanceFilter === 'month') periodText = 'Este Mes';
-                                                else if (performanceFilter === 'manual') periodText = `Fecha: ${selectedDate}`;
+                                                else if (performanceFilter === 'manual') periodText = `Desde ${dateRange.start} hasta ${dateRange.end}`;
                                                 else periodText = 'Todo';
 
                                                 doc.text(`Periodo: ${periodText}`, 14, 36);
@@ -413,15 +412,16 @@ const Employees = () => {
                                                     return [
                                                         new Date(t.date).toLocaleDateString(),
                                                         vehicle,
-                                                        `$${t.commission_amount}`,
-                                                        `$${t.tip}`,
-                                                        `$${(isNaN(myShare) ? 0 : myShare).toFixed(2)}`
+                                                        `$${sharedPart.toFixed(2)}`, // Base
+                                                        `$${myExtrasCommission.toFixed(2)}`, // Extras
+                                                        `$${(parseFloat(t.tip) || 0).toFixed(2)}`, // Propina
+                                                        `$${(isNaN(myShare) ? 0 : myShare).toFixed(2)}` // Total
                                                     ];
                                                 });
 
                                                 autoTable.default(doc, {
                                                     startY: doc.lastAutoTable.finalY + 15,
-                                                    head: [['Fecha', 'Vehículo', 'Comm Total', 'Propina Total', 'Mi Parte']],
+                                                    head: [['Fecha', 'Vehículo', 'Base', 'Extras', 'Propina', 'Total']],
                                                     body: tableData,
                                                     theme: 'grid',
                                                     styles: { fontSize: 8 }
@@ -462,24 +462,41 @@ const Employees = () => {
                                     {filter === 'week' && 'Esta Semana'}
                                     {filter === 'month' && 'Este Mes'}
                                     {filter === 'all' && 'Todo'}
-                                    {filter === 'manual' && 'Calendario'}
+                                    {filter === 'manual' && 'Rango/Fecha'}
                                 </button>
                             ))}
 
                             {/* Manual Date Input */}
                             {performanceFilter === 'manual' && (
-                                <input
-                                    type="date"
-                                    value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
-                                    style={{
-                                        padding: '0.4rem',
-                                        borderRadius: '1rem',
-                                        border: '1px solid var(--border-color)',
-                                        backgroundColor: 'var(--bg-input)',
-                                        color: 'var(--text-primary)'
-                                    }}
-                                />
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <input
+                                        type="date"
+                                        value={dateRange.start}
+                                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                        style={{
+                                            padding: '0.4rem',
+                                            borderRadius: '0.5rem',
+                                            border: '1px solid var(--border-color)',
+                                            backgroundColor: 'var(--bg-input)',
+                                            color: 'var(--text-primary)'
+                                        }}
+                                        title="Desde"
+                                    />
+                                    <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                    <input
+                                        type="date"
+                                        value={dateRange.end}
+                                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                        style={{
+                                            padding: '0.4rem',
+                                            borderRadius: '0.5rem',
+                                            border: '1px solid var(--border-color)',
+                                            backgroundColor: 'var(--bg-input)',
+                                            color: 'var(--text-primary)'
+                                        }}
+                                        title="Hasta"
+                                    />
+                                </div>
                             )}
                         </div>
 
@@ -499,8 +516,12 @@ const Employees = () => {
                         <div style={{ padding: '0 1.5rem 1.5rem' }}>
                             <h4 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Desglose</h4>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span>Comisiones:</span>
-                                <span>${stats.commission.toFixed(2)}</span>
+                                <span>Comisiones Base:</span>
+                                <span>${(stats.net - stats.tips + stats.expenses - stats.commissionExtras || 0).toFixed(2)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span>Extras Asignados:</span>
+                                <span>${(stats.commissionExtras || 0).toFixed(2)}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                 <span>Propinas:</span>
@@ -530,62 +551,32 @@ const Employees = () => {
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                                     {new Date(t.date).toLocaleDateString()} - {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
-                                                {/* Debug Line */}
-                                                <div style={{ fontSize: '0.7rem', color: '#555' }}>
-                                                    Comm: ${t.commission_amount} | Tip: ${t.tip} | Status: {t.status}
+                                                {/* Details Line */}
+                                                <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '0.2rem' }}>
+                                                    {t.transaction_assignments?.length > 1 && (
+                                                        <span style={{ color: 'var(--primary)', marginRight: '0.5rem' }}>
+                                                            Compartido ({t.transaction_assignments.length})
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                {t.transaction_assignments?.length > 1 && (
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.2rem' }}>
-                                                        Compartido con: {t.transaction_assignments
-                                                            .filter(a => a.employee_id !== selectedEmployee.id)
-                                                            .map(a => {
-                                                                const emp = employees?.find(e => e.id === a.employee_id);
-                                                                return emp?.name || 'Otro';
-                                                            })
-                                                            .join(', ')}
-                                                    </div>
-                                                )}
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
-                                                <div style={{ color: 'var(--success)' }}>
+                                                <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>
                                                     {(() => {
                                                         const count = t.transaction_assignments?.length || 1;
+                                                        const storedTotal = parseFloat(t.commission_amount) || 0;
 
-                                                        // SAFELY EXTRACT EXTRAS
+                                                        // 1. Calculate Extras
                                                         const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
                                                         const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
                                                         const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
                                                         const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                        const storedTotal = parseFloat(t.commission_amount) || 0;
-
                                                         // HEURISTIC WITH SAFEGUARDS
-                                                        let sharedPool = 0;
-                                                        let isOldData = false;
+                                                        let sharedPool = Math.max(0, storedTotal - allAssignedCommission);
 
-                                                        const service = services.find(s => s.id == t.service_id);
-                                                        const likelyBase = service ? (parseFloat(service.commission) || 0) : 0;
-
-                                                        // If we have service info, we can guess. If not, fallback to simple subtraction.
-                                                        if (service) {
-                                                            const likelyTotal = likelyBase + allAssignedCommission;
-                                                            if (storedTotal < (likelyTotal - 0.1)) {
-                                                                // OLD DATA / MISSING EXTRAS IN TOTAL
-                                                                sharedPool = storedTotal;
-                                                                isOldData = true;
-                                                            } else {
-                                                                // NEW DATA / TOTAL INCLUDES EXTRAS
-                                                                sharedPool = Math.max(0, storedTotal - allAssignedCommission);
-                                                            }
-                                                        } else {
-                                                            // Fallback if service not found: Assume New Data logic (safer to not overpay?) 
-                                                            // OR assume storedTotal is the pool?
-                                                            // Let's assume StoredTotal - Assigned is fair if we don't know better.
-                                                            sharedPool = Math.max(0, storedTotal - allAssignedCommission);
-                                                        }
-
-                                                        const sharedPart = (sharedPool / count) || 0; // Prevent NaN
+                                                        const sharedPart = (sharedPool / count) || 0;
                                                         const myShare = sharedPart + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
 
                                                         if (isNaN(myShare)) return "$0.00";
