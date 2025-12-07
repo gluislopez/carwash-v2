@@ -1585,7 +1585,7 @@ const Dashboard = () => {
                                                             <input
                                                                 type="text"
                                                                 className="input"
-                                                                placeholder="🔍 Escribe nombre o placa..."
+                                                                placeholder="🔍 Escribe nombre, modelo o placa..."
                                                                 value={customerSearch}
                                                                 onChange={(e) => setCustomerSearch(e.target.value)}
                                                                 autoFocus
@@ -1623,6 +1623,7 @@ const Dashboard = () => {
                                                                 {customers
                                                                     .filter(c =>
                                                                         (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                                        (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
                                                                         (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())
                                                                     )
                                                                     .map(c => (
@@ -1652,10 +1653,13 @@ const Dashboard = () => {
                                                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                         >
                                                                             <span style={{ fontWeight: 'bold' }}>{c.name}</span>
-                                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{c.vehicle_plate}</span>
+                                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                                                                {c.vehicle_model ? `${c.vehicle_model} ` : ''}
+                                                                                ({c.vehicle_plate || 'Sin Placa'})
+                                                                            </span>
                                                                         </div>
                                                                     ))}
-                                                                {customers.filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
+                                                                {customers.filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
                                                                     <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                                                                         No se encontraron resultados
                                                                     </div>
@@ -1683,7 +1687,9 @@ const Dashboard = () => {
                                                         >
                                                             <option value="">Seleccionar Cliente...</option>
                                                             {customers.map(c => (
-                                                                <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
+                                                                <option key={c.id} value={c.id}>
+                                                                    {c.name} - {c.vehicle_model ? `${c.vehicle_model} ` : ''}({c.vehicle_plate})
+                                                                </option>
                                                             ))}
                                                         </select>
 
