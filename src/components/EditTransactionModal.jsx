@@ -22,17 +22,34 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     const [isUploading, setIsUploading] = useState(false); // Upload Loading State
     const [successUrl, setSuccessUrl] = useState(null); // Success View State
 
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+    const [pendingExtra, setPendingExtra] = useState(null);
+
+    const addExtraToState = (extra, empId) => {
+        const item = { ...extra, assignedTo: empId };
+        const updatedExtras = [...extras, item];
+        setExtras(updatedExtras);
+
+        // Auto-update total price
+        const currentTotal = parseFloat(formData.price) || 0;
+        setFormData({ ...formData, price: currentTotal + extra.price });
+
+        setNewExtra({ description: '', price: '' });
+        setPendingExtra(null);
+        setShowAssignmentModal(false);
+    };
+
     const handleAddExtra = () => {
         if (newExtra.description && newExtra.price) {
             const price = parseFloat(newExtra.price);
-            const updatedExtras = [...extras, { ...newExtra, price }];
-            setExtras(updatedExtras);
+            const extraToAdd = { ...newExtra, price };
 
-            // Auto-update total price
-            const currentTotal = parseFloat(formData.price) || 0;
-            setFormData({ ...formData, price: currentTotal + price });
-
-            setNewExtra({ description: '', price: '' });
+            if (selectedEmployeeIds.length > 1) {
+                setPendingExtra(extraToAdd);
+                setShowAssignmentModal(true);
+            } else {
+                addExtraToState(extraToAdd, null);
+            }
         }
     };
 
@@ -379,14 +396,20 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         {/* Lista de Extras */}
                         {extras.length > 0 && (
                             <div style={{ marginBottom: '1rem' }}>
-                                {extras.map((extra, index) => (
-                                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                                        <span>{extra.description} (${extra.price})</span>
-                                        <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
+                                {extras.map((extra, index) => {
+                                    const assignedEmp = employees.find(e => e.id === extra.assignedTo);
+                                    return (
+                                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                                            <span>
+                                                {extra.description} (${extra.price})
+                                                {assignedEmp && <span style={{ color: 'var(--primary)', fontWeight: 'bold', marginLeft: '0.5rem' }}>[{assignedEmp.name}]</span>}
+                                            </span>
+                                            <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -533,6 +556,46 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     </div>
                 </div>
             </div>
+
+            {/* ASSIGNMENT MODAL (Internal) */}
+            {showAssignmentModal && pendingExtra && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3200
+                }}>
+                    <div className="card" style={{ width: '90%', maxWidth: '350px', backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '0.5rem' }}>
+                        <h3 style={{ marginBottom: '1rem', marginTop: 0 }}>¿Quién realizó: {pendingExtra.description}?</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Selecciona al empleado para asignarle la comisión.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {selectedEmployeeIds.map(empId => {
+                                const emp = employees.find(e => e.id === empId);
+                                return (
+                                    <button
+                                        key={empId}
+                                        className="btn"
+                                        style={{ justifyContent: 'center', padding: '0.75rem', border: '1px solid var(--border-color)' }}
+                                        onClick={() => addExtraToState(pendingExtra, empId)}
+                                    >
+                                        {emp?.name || 'Empleado Desconocido'}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                className="btn"
+                                style={{ justifyContent: 'center', marginTop: '1rem', backgroundColor: 'var(--bg-secondary)' }}
+                                onClick={() => {
+                                    setPendingExtra(null);
+                                    setShowAssignmentModal(false);
+                                }}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
