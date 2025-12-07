@@ -221,8 +221,21 @@ const Employees = () => {
             const tip = (parseFloat(t.tip) || 0);
             const count = (t.transaction_assignments?.length) || 1;
 
-            totalCommission += (comm / count);
-            totalTips += (tip / count);
+            // Calculate Extras assigned to THIS employee
+            const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
+            const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+            // Calculate Total Assigned Extras (to subtract from pool)
+            const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+            const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+            // Shared Pool
+            const sharedPool = Math.max(0, comm - allAssignedCommission);
+            const sharedShare = sharedPool / count;
+            const tipShare = tip / count;
+
+            totalCommission += (sharedShare + myExtrasCommission);
+            totalTips += tipShare;
         });
 
         const totalExpenses = filteredExps.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
@@ -245,7 +258,7 @@ const Employees = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Empleados</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.220</span></p>
+                    <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo <span style={{ fontSize: '0.7rem', backgroundColor: '#3B82F6', color: 'white', padding: '2px 4px', borderRadius: '4px' }}>v4.237.0</span></p>
                 </div>
 
                 {/* SOLO ADMIN PUEDE CREAR EMPLEADOS */}
@@ -395,14 +408,26 @@ const Employees = () => {
 
                                                 const tableData = stats.txs.map(t => {
                                                     const vehicle = t.vehicles ? `${t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand} ${t.vehicles.model}` : 'N/A';
-                                                    const shareCount = t.transaction_assignments?.length || 1;
-                                                    const myShare = ((parseFloat(t.commission_amount) + parseFloat(t.tip)) / shareCount).toFixed(2);
+                                                    const count = t.transaction_assignments?.length || 1;
+
+                                                    // Logic: Shared Pool + My Extras
+                                                    const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
+                                                    const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                    const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                    const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                    const comm = parseFloat(t.commission_amount) || 0;
+                                                    const sharedPool = Math.max(0, comm - allAssignedCommission);
+
+                                                    const myShare = (sharedPool / count) + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
+
                                                     return [
                                                         new Date(t.date).toLocaleDateString(),
                                                         vehicle,
                                                         `$${t.commission_amount}`,
                                                         `$${t.tip}`,
-                                                        `$${myShare}`
+                                                        `$${myShare.toFixed(2)}`
                                                     ];
                                                 });
 
@@ -518,7 +543,20 @@ const Employees = () => {
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ color: 'var(--success)' }}>
-                                                    +${((parseFloat(t.commission_amount) + parseFloat(t.tip)) / (t.transaction_assignments?.length || 1)).toFixed(2)}
+                                                    +${(() => {
+                                                        const count = t.transaction_assignments?.length || 1;
+                                                        const myExtras = t.extras?.filter(e => e.assignedTo === selectedEmployee.id) || [];
+                                                        const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                        const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                        const comm = parseFloat(t.commission_amount) || 0;
+                                                        const sharedPool = Math.max(0, comm - allAssignedCommission);
+
+                                                        const myShare = (sharedPool / count) + myExtrasCommission + ((parseFloat(t.tip) || 0) / count);
+                                                        return myShare.toFixed(2);
+                                                    })()}
                                                 </div>
                                             </div>
                                         </li>
