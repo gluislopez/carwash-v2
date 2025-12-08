@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw } from 'lucide-react';
-import { generateReportPDF } from '../utils/pdfGenerator';
+import { getEmployeeName, getServiceName, getCustomerName, getVehicleInfo } from '../utils/relationshipHelpers';
+import { formatDuration } from '../utils/formatUtils';
+import autoTable from 'jspdf-autotable';
 import useSupabase from '../hooks/useSupabase';
 
 const Reports = () => {
@@ -52,40 +54,6 @@ const Reports = () => {
     const { data: servicesList } = useSupabase('services');
     const { data: employeesList } = useSupabase('employees');
     const { data: vehiclesList } = useSupabase('vehicles');
-
-    const getCustomerName = (id) => customersList.find(c => c.id === id)?.name || 'Cliente Casual';
-    const getServiceName = (id) => servicesList.find(s => s.id === id)?.name || 'Servicio Desconocido';
-    const getEmployeeName = (id) => employeesList.find(e => e.id === id)?.name || 'Desconocido';
-    const getVehicleInfo = (t) => {
-        if (!vehiclesList) return '...';
-
-        let vehicle = null;
-
-        // 1. Try by Direct ID
-        if (t.vehicle_id) {
-            vehicle = vehiclesList.find(v => v.id == t.vehicle_id);
-        }
-
-        // 2. Fallback: Try by Customer ID
-        if (!vehicle && t.customer_id) {
-            vehicle = vehiclesList.find(v => v.customer_id == t.customer_id);
-        }
-
-        if (vehicle) {
-            const brand = vehicle.brand === 'Generico' || !vehicle.brand ? '' : vehicle.brand;
-            return `${brand} ${vehicle.model || ''}`.trim() || 'Sin Modelo';
-        }
-
-        // 3. Fallback: Try by Customer ID (Customers Table - Legacy/QuickAdd)
-        if (t.customer_id && customersList) {
-            const customer = customersList.find(c => c.id == t.customer_id);
-            if (customer && (customer.vehicle_model || customer.vehicle_plate)) {
-                return `${customer.vehicle_model || ''} ${customer.vehicle_plate ? `(${customer.vehicle_plate})` : ''}`.trim();
-            }
-        }
-
-        return 'Modelo No Registrado';
-    };
 
     // Date Helpers
     const getPRDateString = (dateInput) => {
@@ -642,7 +610,7 @@ const Reports = () => {
                                             return (
                                                 <>
                                                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color }}>
-                                                        {avgMinutes} min
+                                                        {formatDuration(avgMinutes)}
                                                     </p>
                                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                                         Basado en {completedTxs.length} servicios
@@ -738,23 +706,23 @@ const Reports = () => {
                                                         padding: 0
                                                     }}
                                                 >
-                                                    {getCustomerName(t.customer_id)}
+                                                    {getCustomerName(t.customer_id, customersList)}
                                                 </button>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {getVehicleInfo(t)}
+                                                    {getVehicleInfo(t, vehiclesList, customersList)}
                                                 </span>
                                             </div>
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span>{getCustomerName(t.customer_id)}</span>
+                                                <span>{getCustomerName(t.customer_id, customersList)}</span>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {getVehicleInfo(t)}
+                                                    {getVehicleInfo(t, vehiclesList, customersList)}
                                                 </span>
                                             </div>
                                         )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        {getServiceName(t.service_id)}
+                                        {getServiceName(t.service_id, servicesList)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
@@ -765,11 +733,7 @@ const Reports = () => {
                                                         if (!t.finished_at) return '--';
                                                         const diffMs = new Date(t.finished_at) - new Date(t.started_at || t.created_at);
                                                         const totalMins = Math.round(diffMs / 60000);
-                                                        const hrs = Math.floor(totalMins / 60);
-                                                        const mins = totalMins % 60;
-
-                                                        if (hrs > 0) return `${hrs}h ${mins}m`;
-                                                        return `${mins}m`;
+                                                        return formatDuration(totalMins);
                                                     })()}
                                                 </span>
                                             </div>
