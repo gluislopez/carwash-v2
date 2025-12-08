@@ -761,9 +761,16 @@ const Reports = () => {
                                         {(t.status === 'completed' || t.status === 'paid') ? (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                                    {t.finished_at
-                                                        ? `${Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min`
-                                                        : '--'}
+                                                    {(() => {
+                                                        if (!t.finished_at) return '--';
+                                                        const diffMs = new Date(t.finished_at) - new Date(t.started_at || t.created_at);
+                                                        const totalMins = Math.round(diffMs / 60000);
+                                                        const hrs = Math.floor(totalMins / 60);
+                                                        const mins = totalMins % 60;
+
+                                                        if (hrs > 0) return `${hrs}h ${mins}m`;
+                                                        return `${mins}m`;
+                                                    })()}
                                                 </span>
                                             </div>
                                         ) : (
