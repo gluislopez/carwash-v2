@@ -703,6 +703,7 @@ const Reports = () => {
                                 <th style={{ padding: '1rem' }}>Fecha</th>
                                 <th style={{ padding: '1rem' }}>Cliente</th>
                                 <th style={{ padding: '1rem' }}>Servicio</th>
+                                <th style={{ padding: '1rem' }}>Duración</th>
                                 <th style={{ padding: '1rem' }}>Empleados</th>
                                 <th style={{ padding: '1rem' }}>Método</th>
                                 <th style={{ padding: '1rem' }}>{userRole === 'admin' ? 'Total Venta' : 'Mi Comisión'}</th>
@@ -716,15 +717,6 @@ const Reports = () => {
                                         <small style={{ color: 'var(--text-muted)' }}>
                                             {new Date(t.date).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
                                         </small>
-                                        {(t.status === 'completed' || t.status === 'paid') && (
-                                            <div style={{ fontSize: '0.75rem', color: t.finished_at ? 'var(--success)' : 'var(--text-muted)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: t.finished_at ? 'var(--success)' : 'var(--text-muted)' }}></div>
-                                                {t.finished_at
-                                                    ? `${Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min`
-                                                    : '-- min'
-                                                }
-                                            </div>
-                                        )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         {userRole === 'admin' ? (
@@ -764,6 +756,19 @@ const Reports = () => {
                                     <td style={{ padding: '1rem' }}>
                                         {getServiceName(t.service_id)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {(t.status === 'completed' || t.status === 'paid') ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                                    {t.finished_at
+                                                        ? `${Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min`
+                                                        : '--'}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>En Curso</span>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         {t.transaction_assignments && t.transaction_assignments.length > 0
