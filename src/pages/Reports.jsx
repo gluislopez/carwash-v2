@@ -743,8 +743,8 @@ const Reports = () => {
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         {t.transaction_assignments && t.transaction_assignments.length > 0
-                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                            : getEmployeeName(t.employee_id)
+                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id, employeesList)).join(', ')
+                                            : getEmployeeName(t.employee_id, employeesList)
                                         }
                                     </td>
                                     <td style={{ padding: '1rem' }}>
