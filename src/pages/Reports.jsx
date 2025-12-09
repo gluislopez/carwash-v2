@@ -3,6 +3,7 @@ import { supabase } from '../supabase';
 import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw } from 'lucide-react';
 import { getEmployeeName, getServiceName, getCustomerName, getVehicleInfo } from '../utils/relationshipHelpers';
 import { formatDuration } from '../utils/formatUtils';
+import { formatToFraction } from '../utils/fractionUtils';
 import autoTable from 'jspdf-autotable';
 import useSupabase from '../hooks/useSupabase';
 
@@ -213,7 +214,13 @@ const Reports = () => {
     const filteredExpenses = getFilteredExpenses();
 
     // Stats Calculation
-    const totalCount = filteredTransactions.length;
+    const totalCount = filteredTransactions.length; // Raw count for some uses if needed
+
+    const fractionalCount = filteredTransactions.reduce((sum, t) => {
+        const count = t.transaction_assignments?.length || 1;
+        return sum + (1 / count);
+    }, 0);
+
     const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
@@ -394,7 +401,7 @@ const Reports = () => {
                     <tfoot style="background-color: #f8fafc; font-weight: bold;">
                         <tr>
                             <td style="border: 1px solid #e5e7eb; padding: 12px;">TOTALES</td>
-                            <td style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">${totalCount}</td>
+                            <td style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">${formatToFraction(fractionalCount)}</td>
                             <td style="text-align: right; color: #10b981; border: 1px solid #e5e7eb; padding: 12px;">$${totalIncome.toFixed(2)}</td>
                             <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${totalCommissions.toFixed(2)}</td>
                             <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${(totalIncome - totalCommissions).toFixed(2)}</td>
@@ -412,7 +419,7 @@ const Reports = () => {
 
         // Copy HTML to clipboard
         const blob = new Blob([htmlContent], { type: 'text/html' });
-        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${totalCount}\nNeto: $${(totalIncome - totalCommissions).toFixed(2)}`;
+        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${formatToFraction(fractionalCount)}\nNeto: $${(totalIncome - totalCommissions).toFixed(2)}`;
         const textBlob = new Blob([plainText], { type: 'text/plain' });
 
         const item = new ClipboardItem({
@@ -533,7 +540,7 @@ const Reports = () => {
                     <h3 className="label">Total Autos</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{totalCount}</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatToFraction(fractionalCount)}</p>
                     </div>
                 </div>
 
@@ -776,6 +783,11 @@ const Reports = () => {
                                     <td style={{ padding: '1rem' }}>
                                         {getServiceName(t.service_id, servicesList)}
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
+                                        {(t.transaction_assignments?.length || 1) > 1 && (
+                                            <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                                (1/{t.transaction_assignments.length})
+                                            </span>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         {(t.status === 'completed' || t.status === 'paid' || t.status === 'ready') ? (
