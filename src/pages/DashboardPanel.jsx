@@ -25,7 +25,7 @@ const Dashboard = () => {
     // Notes State
     const [dailyNotes, setDailyNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
-    const [showNotes, setShowNotes] = useState(true); // Default OPEN
+    const [showNotes, setShowNotes] = useState(false); // Default CLOSED
 
     useEffect(() => {
         const fetchNotes = async () => {
@@ -881,8 +881,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#ef4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #ef4444' }}>
-                            v4.242.13-DEBUG {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
+                            v4.242.14 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -912,23 +912,39 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {/* DAILY NOTES SECTION */}
-            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', border: '2px solid #ef4444', marginBottom: '1rem' }}>
-                <div
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            {/* DAILY NOTES BUTTON & SECTION */}
+            <div style={{ marginBottom: '1rem' }}>
+                <button
                     onClick={() => setShowNotes(!showNotes)}
+                    className="btn"
+                    style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.9rem'
+                    }}
                 >
-                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--text-main)' }}>
-                        📝 Notas del Día (DEBUG MODE)
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: 'var(--primary)', padding: '2px 6px', borderRadius: '10px' }}>
+                    <span>📝 Notas del Día</span>
+                    {dailyNotes.length > 0 && (
+                        <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1px 6px', borderRadius: '10px' }}>
                             {dailyNotes.length}
                         </span>
-                    </h3>
-                    <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-                </div>
+                    )}
+                    <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
+                </button>
 
                 {showNotes && (
-                    <div style={{ marginTop: '1rem' }}>
+                    <div style={{
+                        marginTop: '0.5rem',
+                        padding: '1rem',
+                        backgroundColor: 'var(--bg-secondary)',
+                        borderRadius: '0.5rem',
+                        border: '1px solid var(--border-color)',
+                        animation: 'fadeIn 0.2s'
+                    }}>
                         {dailyNotes.length > 0 ? (
                             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
                                 {dailyNotes.map(note => (
@@ -941,7 +957,7 @@ const Dashboard = () => {
                                 ))}
                             </ul>
                         ) : (
-                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>No hay notas hoy.</p>
+                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem', marginBottom: '1rem' }}>No hay notas hoy.</p>
                         )}
 
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
