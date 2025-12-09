@@ -25,7 +25,7 @@ const Dashboard = () => {
     // Notes State
     const [dailyNotes, setDailyNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
-    const [showNotes, setShowNotes] = useState(false);
+    const [showNotes, setShowNotes] = useState(true); // Default OPEN
 
     useEffect(() => {
         const fetchNotes = async () => {
@@ -881,8 +881,8 @@ const Dashboard = () => {
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.242.12 {new Date().toLocaleTimeString()}
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#ef4444', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #ef4444' }}>
+                            v4.242.13-DEBUG {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -913,13 +913,13 @@ const Dashboard = () => {
             </div>
 
             {/* DAILY NOTES SECTION */}
-            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', border: '2px solid #ef4444', marginBottom: '1rem' }}>
                 <div
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                     onClick={() => setShowNotes(!showNotes)}
                 >
-                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                        📝 Notas del Día
+                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--text-main)' }}>
+                        📝 Notas del Día (DEBUG MODE)
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: 'var(--primary)', padding: '2px 6px', borderRadius: '10px' }}>
                             {dailyNotes.length}
                         </span>
