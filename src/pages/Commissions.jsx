@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, User, Calendar, X } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
+import { formatToFraction } from '../utils/fractionUtils';
 
 const Commissions = () => {
     const { data: employees } = useSupabase('employees');
@@ -136,6 +137,7 @@ const Commissions = () => {
 
         let totalCommission = 0;
         let totalTips = 0;
+        let fractionalCount = 0;
 
         filteredTxs.forEach(t => {
             const comm = (parseFloat(t.commission_amount) || 0);
@@ -144,6 +146,7 @@ const Commissions = () => {
 
             totalCommission += (comm / count);
             totalTips += (tip / count);
+            fractionalCount += (1 / count);
         });
 
         const totalExpenses = filteredExps.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
@@ -151,6 +154,7 @@ const Commissions = () => {
 
         return {
             count: filteredTxs.length,
+            fractionalCount,
             commission: totalCommission,
             tips: totalTips,
             expenses: totalExpenses,
@@ -254,7 +258,7 @@ const Commissions = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card" style={{ textAlign: 'center' }}>
                     <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Autos Lavados</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.count}</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{formatToFraction(stats.fractionalCount)}</div>
                 </div>
                 <div className="card" style={{ textAlign: 'center' }}>
                     <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Comisiones</div>
@@ -278,7 +282,7 @@ const Commissions = () => {
             {/* History List */}
             <div className="card">
                 <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-                    Historial de Servicios ({stats.txs.length})
+                    Historial de Servicios ({formatToFraction(stats.fractionalCount)})
                 </h3>
                 {stats.txs.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No hay registros en este periodo.</p>
@@ -312,6 +316,11 @@ const Commissions = () => {
                                     </div>
                                     <div style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>
                                         {t.services?.name || 'Servicio'}
+                                        {(t.transaction_assignments?.length || 1) > 1 && (
+                                            <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                                (1/{t.transaction_assignments.length})
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 
