@@ -922,12 +922,13 @@ const Dashboard = () => {
                         border: '1px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.9rem'
+                        gap: '0.4rem',
+                        padding: '0.3rem 0.6rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer'
                     }}
                 >
-                    <span>📝 Notas del Día</span>
+                    <span>📝 Notas</span>
                     {dailyNotes.length > 0 && (
                         <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1px 6px', borderRadius: '10px' }}>
                             {dailyNotes.length}
