@@ -1,12 +1,43 @@
+// Singleton AudioContext state
+let audioCtx = null;
+
+const getAudioContext = () => {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            audioCtx = new AudioContext();
+        }
+    }
+    return audioCtx;
+};
+
+/**
+ * Call this on a USER CLICK to unlock audio on iOS.
+ */
+export const unlockAudio = async () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+    }
+    // Play silent buffer to force unlock
+    if (ctx) {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        console.log("Audio unlocked/resumed");
+    }
+};
+
 /**
  * Plays a pleasant "Ding" sound for new services.
  */
 export const playNewServiceSound = () => {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
 
-        const ctx = new AudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -33,10 +64,8 @@ export const playNewServiceSound = () => {
  */
 export const playAlertSound = () => {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-
-        const ctx = new AudioContext();
+        const ctx = getAudioContext();
+        if (!ctx) return;
 
         const beep = (startTime) => {
             const osc = ctx.createOscillator();

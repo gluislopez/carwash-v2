@@ -7,7 +7,7 @@ import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
 import EmployeeProductivityChart from '../components/EmployeeProductivityChart';
 import EditTransactionModal from '../components/EditTransactionModal';
 import { calculateSharedCommission } from '../utils/commissionRules';
-import { playNewServiceSound, playAlertSound } from '../utils/soundUtils';
+import { playNewServiceSound, playAlertSound, unlockAudio } from '../utils/soundUtils';
 
 
 
@@ -843,13 +843,37 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.242.6 {new Date().toLocaleTimeString()}
+                            v4.242.7 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
                 <p style={{ color: 'var(--text-muted)' }}>
                     Resumen: {dateFilter === 'today' ? 'Hoy' : `${dateRange.start} al ${dateRange.end}`}
                 </p>
+
+                {/* AUDIO UNLOCK FOR IOS */}
+                {userRole === 'admin' && (
+                    <button
+                        className="btn"
+                        onClick={async () => {
+                            await unlockAudio();
+                            alert("🔊 Audio activado. Debería escuchar un sonido ahora.");
+                        }}
+                        style={{
+                            backgroundColor: 'var(--warning)',
+                            color: 'black',
+                            fontWeight: 'bold',
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            alignSelf: 'flex-start',
+                            padding: '0.3rem 0.8rem'
+                        }}
+                    >
+                        🔔 Activar Sonido (iPhone)
+                    </button>
+                )}
             </div>
 
 
