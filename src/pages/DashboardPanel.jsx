@@ -9,6 +9,7 @@ import EditTransactionModal from '../components/EditTransactionModal';
 import { calculateSharedCommission } from '../utils/commissionRules';
 import { playNewServiceSound, playAlertSound, unlockAudio } from '../utils/soundUtils';
 import { formatDuration } from '../utils/formatUtils';
+import { formatToFraction } from '../utils/fractionUtils';
 
 
 
@@ -873,6 +874,14 @@ const Dashboard = () => {
         }
     };
 
+    // --- FRACTIONAL COUNT CALCULATION ---
+    const fractionalCount = statsTransactions
+        .filter(t => t.status === 'completed' || t.status === 'paid')
+        .reduce((sum, t) => {
+            const assignmentCount = t.transaction_assignments?.length || 1;
+            return sum + (1 / assignmentCount);
+        }, 0);
+
     console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
         <div>
@@ -1090,7 +1099,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                            {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length}
+                            {formatToFraction(fractionalCount)}
                         </p>
                     </div>
                 </div>
@@ -2391,7 +2400,7 @@ const Dashboard = () => {
                     <EmployeeProductivityChart transactions={transactions} employees={employees} />
                 ) : (
                     <ProductivityBar
-                        dailyCount={dailyProductivityCount}
+                        dailyCount={fractionalCount}
                         dailyTarget={dailyTarget}
                         totalXp={totalXp}
                         isEditable={userRole === 'admin'}

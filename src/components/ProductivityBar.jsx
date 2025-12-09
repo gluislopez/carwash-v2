@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Zap, Crown, Medal, Pencil } from 'lucide-react';
 import { supabase } from '../supabase';
+import { formatToFraction } from '../utils/fractionUtils';
 
 const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = false, onEditTarget }) => {
     const [levels, setLevels] = useState([]);
@@ -102,7 +103,7 @@ const ProductivityBar = ({ dailyCount, dailyTarget = 10, totalXp, isEditable = f
                 <div style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
                         <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: progressPercent >= 100 ? 'var(--success)' : 'var(--text-main)' }}>
-                            {dailyCount}/{dailyTarget}
+                            {formatToFraction(dailyCount)}/{dailyTarget}
                         </p>
                         {isEditable && (
                             <button
