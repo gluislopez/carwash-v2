@@ -38,12 +38,7 @@ const Reports = () => {
     }, []);
 
     // Fetch all transactions with assignments
-    const { data: allTransactions, loading, data: customers, data: services, data: employees } = useSupabase('transactions', `
-        *,
-        transaction_assignments (
-            employee_id
-        )
-    `);
+    const { data: allTransactions, loading } = useSupabase('transactions', '*, transaction_assignments(*), extras(*)');
 
     const { data: expenses } = useSupabase('expenses');
 
