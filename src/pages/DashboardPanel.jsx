@@ -8,6 +8,7 @@ import EmployeeProductivityChart from '../components/EmployeeProductivityChart';
 import EditTransactionModal from '../components/EditTransactionModal';
 import { calculateSharedCommission } from '../utils/commissionRules';
 import { playNewServiceSound, playAlertSound, unlockAudio } from '../utils/soundUtils';
+import { formatDuration } from '../utils/formatUtils';
 
 
 
@@ -858,7 +859,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.242.9 {new Date().toLocaleTimeString()}
+                            v4.242.10 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
@@ -2061,11 +2062,11 @@ const Dashboard = () => {
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <div>
-                                    <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                    <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
                                     <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                                         🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                         <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
                                         <span>•</span>
                                         <span style={{
@@ -2076,6 +2077,33 @@ const Dashboard = () => {
                                         }}>
                                             {getPaymentMethodLabel(t.payment_method)}
                                         </span>
+                                    </div>
+
+                                    {/* TIMING DETAILS (Users Request) */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
+                                        {(() => {
+                                            const created = new Date(t.created_at);
+                                            const started = t.started_at ? new Date(t.started_at) : created;
+                                            const finished = t.finished_at ? new Date(t.finished_at) : null;
+
+                                            // Wait Time (Created -> Started)
+                                            const waitMins = Math.max(0, Math.round((started - created) / 60000));
+
+                                            // Process Time (Started -> Finished)
+                                            const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
+
+                                            return (
+                                                <>
+                                                    <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
+                                                    <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
+                                                    {finished && (
+                                                        <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
+                                                            ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
@@ -2113,7 +2141,7 @@ const Dashboard = () => {
                             </div>
 
                             {/* ACTIONS FOR HISTORY ITEMS */}
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                            < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
                                 <button
                                     className="btn"
                                     onClick={() => handleRevertToReady(t)}
@@ -2153,13 +2181,16 @@ const Dashboard = () => {
                             </div>
 
                         </div>
-                    ))}
-                {statsTransactions.length === 0 && (
-                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
-                        No hay ventas registradas hoy
-                    </div>
-                )}
-            </div>
+                    ))
+                }
+                {
+                    statsTransactions.length === 0 && (
+                        <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
+                            No hay ventas registradas hoy
+                        </div>
+                    )
+                }
+            </div >
 
             {/* TRANSACTION DETAIL MODAL */}
             {
@@ -2342,54 +2373,56 @@ const Dashboard = () => {
                 )
             }
             {/* ASSIGNMENT MODAL */}
-            {showAssignmentModal && pendingExtra && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
-                }}>
-                    <div className="card" style={{ width: '90%', maxWidth: '400px' }}>
-                        <h3 style={{ marginBottom: '1rem' }}>¿Quién realizó: {pendingExtra.name}?</h3>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                            Selecciona al empleado para asignarle la comisión completa de este extra.
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {(verifyingTransaction
-                                ? (verifyingTransaction.transaction_assignments?.map(ta => ta.employee_id) || [])
-                                : (formData.selectedEmployees || [])
-                            ).map(empId => {
-                                const emp = employees.find(e => e.id === empId);
-                                return (
-                                    <button
-                                        key={empId}
-                                        className="btn"
-                                        style={{ justifyContent: 'center', padding: '1rem', border: '1px solid var(--border-color)' }}
-                                        onClick={() => {
-                                            if (verifyingTransaction) {
-                                                assignExistingExtra(pendingExtra, empId);
-                                            } else {
-                                                addExtra(pendingExtra, empId);
-                                            }
-                                        }}
-                                    >
-                                        {emp?.name || 'Empleado Desconocido'}
-                                    </button>
-                                );
-                            })}
-                            <button
-                                className="btn"
-                                style={{ justifyContent: 'center', marginTop: '1rem', backgroundColor: 'var(--bg-secondary)' }}
-                                onClick={() => {
-                                    setPendingExtra(null);
-                                    setShowAssignmentModal(false);
-                                }}
-                            >
-                                Cancelar
-                            </button>
+            {
+                showAssignmentModal && pendingExtra && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
+                    }}>
+                        <div className="card" style={{ width: '90%', maxWidth: '400px' }}>
+                            <h3 style={{ marginBottom: '1rem' }}>¿Quién realizó: {pendingExtra.name}?</h3>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                                Selecciona al empleado para asignarle la comisión completa de este extra.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {(verifyingTransaction
+                                    ? (verifyingTransaction.transaction_assignments?.map(ta => ta.employee_id) || [])
+                                    : (formData.selectedEmployees || [])
+                                ).map(empId => {
+                                    const emp = employees.find(e => e.id === empId);
+                                    return (
+                                        <button
+                                            key={empId}
+                                            className="btn"
+                                            style={{ justifyContent: 'center', padding: '1rem', border: '1px solid var(--border-color)' }}
+                                            onClick={() => {
+                                                if (verifyingTransaction) {
+                                                    assignExistingExtra(pendingExtra, empId);
+                                                } else {
+                                                    addExtra(pendingExtra, empId);
+                                                }
+                                            }}
+                                        >
+                                            {emp?.name || 'Empleado Desconocido'}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    className="btn"
+                                    style={{ justifyContent: 'center', marginTop: '1rem', backgroundColor: 'var(--bg-secondary)' }}
+                                    onClick={() => {
+                                        setPendingExtra(null);
+                                        setShowAssignmentModal(false);
+                                    }}
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
