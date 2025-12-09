@@ -877,7 +877,7 @@ const Dashboard = () => {
     return (
         <div>
             {/* HEADER */}
-            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
@@ -887,59 +887,63 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* AUDIO UNLOCK FOR IOS */}
-                {userRole === 'admin' && (
+                {/* BUTTONS ROW (Audio + Notes) */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+
+                    {/* AUDIO UNLOCK */}
+                    {userRole === 'admin' && (
+                        <button
+                            className="btn"
+                            onClick={async () => {
+                                await unlockAudio();
+                                alert("🔊 Audio activado.");
+                            }}
+                            style={{
+                                backgroundColor: 'var(--warning)',
+                                color: 'black',
+                                fontWeight: 'bold',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                padding: '0.3rem 0.6rem',
+                                border: 'none',
+                                borderRadius: '0.25rem'
+                            }}
+                        >
+                            🔔 Sonido
+                        </button>
+                    )}
+
+                    {/* NOTES TOGGLE */}
                     <button
+                        onClick={() => setShowNotes(!showNotes)}
                         className="btn"
-                        onClick={async () => {
-                            await unlockAudio();
-                            alert("🔊 Audio activado. Debería escuchar un sonido ahora.");
-                        }}
                         style={{
-                            backgroundColor: 'var(--warning)',
-                            color: 'black',
-                            fontWeight: 'bold',
-                            fontSize: '0.8rem',
+                            backgroundColor: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.4rem',
-                            alignSelf: 'flex-start',
-                            padding: '0.3rem 0.8rem'
+                            padding: '0.3rem 0.6rem',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            borderRadius: '0.25rem'
                         }}
                     >
-                        🔔 Activar Sonido (iPhone)
+                        <span>📝 Notas</span>
+                        {dailyNotes.length > 0 && (
+                            <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--primary)', color: 'white', padding: '0px 4px', borderRadius: '4px' }}>
+                                {dailyNotes.length}
+                            </span>
+                        )}
+                        <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
                     </button>
-                )}
-            </div>
-
-            {/* DAILY NOTES BUTTON & SECTION */}
-            <div style={{ marginBottom: '1rem' }}>
-                <button
-                    onClick={() => setShowNotes(!showNotes)}
-                    className="btn"
-                    style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        padding: '0.3rem 0.6rem',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer'
-                    }}
-                >
-                    <span>📝 Notas</span>
-                    {dailyNotes.length > 0 && (
-                        <span style={{ fontSize: '0.75rem', backgroundColor: 'var(--primary)', color: 'white', padding: '1px 6px', borderRadius: '10px' }}>
-                            {dailyNotes.length}
-                        </span>
-                    )}
-                    <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
-                </button>
+                </div>
 
                 {showNotes && (
                     <div style={{
-                        marginTop: '0.5rem',
+                        marginBottom: '1rem', // Moved margin here
                         padding: '1rem',
                         backgroundColor: 'var(--bg-secondary)',
                         borderRadius: '0.5rem',
