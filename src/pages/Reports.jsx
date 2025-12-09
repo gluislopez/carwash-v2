@@ -721,7 +721,7 @@ const Reports = () => {
                                         {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        {(t.status === 'completed' || t.status === 'paid') ? (
+                                        {(t.status === 'completed' || t.status === 'paid' || t.status === 'ready') ? (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
                                                     {(() => {
