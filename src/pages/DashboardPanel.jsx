@@ -22,6 +22,47 @@ const Dashboard = () => {
         end: new Date().toISOString().split('T')[0]
     });
 
+    // Notes State
+    const [dailyNotes, setDailyNotes] = useState([]);
+    const [newNote, setNewNote] = useState('');
+    const [showNotes, setShowNotes] = useState(false);
+
+    useEffect(() => {
+        const fetchNotes = async () => {
+            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+            const { data } = await supabase
+                .from('daily_notes')
+                .select('*')
+                .eq('date', today)
+                .order('created_at', { ascending: true });
+            if (data) setDailyNotes(data);
+        };
+        fetchNotes();
+
+        // Realtime subscription for notes
+        const channel = supabase
+            .channel('daily_notes_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_notes' }, () => {
+                fetchNotes();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    const handleAddNote = async () => {
+        if (!newNote.trim()) return;
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+
+        const { error } = await supabase.from('daily_notes').insert([
+            { content: newNote, date: today }
+        ]);
+
+        if (!error) setNewNote('');
+    };
+
     // REFACTOR: Store ID only, not the whole object
     const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
     const [userRole, setUserRole] = useState(null); // Estado para el rol
@@ -46,26 +87,7 @@ const Dashboard = () => {
                     console.error("Error fetching employee:", error);
                 }
 
-                // AUTO-LINKING: Si no tiene usuario asignado, buscar por email
-                // Fetch transactions with assignments
-                // NOTE: This block seems to be intended for debugging purposes,
-                // but the main transaction data is already fetched via useSupabase.
-                // If you intend to manage transactions state here, you'll need a `useState` for it.
-                // For now, it's inserted as requested, assuming `setTransactions` would be defined elsewhere
-                // or this is a temporary debug block.
-                const { data: transactionsData, error: transactionsError } = await supabase
-                    .from('transactions')
-                    .select(`
-    *,
-    transaction_assignments(
-        employee_id
-    )
-        `)
-                    .order('date', { ascending: false });
-
-                if (transactionsError) throw transactionsError;
-                // setTransactions(transactionsData || []); // This line would require a useState for transactions in this scope.
-
+                // AUTO-LINKING: Logic for unlinked employees
                 if (!employee && user.email) {
                     const { data: unlinkedEmployee } = await supabase
                         .from('employees')
@@ -854,18 +876,16 @@ const Dashboard = () => {
     console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
         <div>
+            {/* HEADER */}
             <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.242.11 {new Date().toLocaleTimeString()}
+                            v4.242.12 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
-                <p style={{ color: 'var(--text-muted)' }}>
-                    Resumen: {dateFilter === 'today' ? 'Hoy' : `${dateRange.start} al ${dateRange.end}`}
-                </p>
 
                 {/* AUDIO UNLOCK FOR IOS */}
                 {userRole === 'admin' && (

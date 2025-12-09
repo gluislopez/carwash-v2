@@ -42,6 +42,10 @@ const Reports = () => {
 
     const { data: expenses } = useSupabase('expenses');
 
+    // Fetch Daily Notes
+    const { data: allNotes } = useSupabase('daily_notes');
+
+
     // Helper to get customers/services names (fetching them separately would be better but for now we rely on IDs or need to fetch them)
     // Actually useSupabase returns data for the table passed. We need multiple hooks or a way to fetch others.
     // Let's use separate hooks for auxiliary data to map names.
@@ -300,6 +304,57 @@ const Reports = () => {
         // Note: Images in email often need to be hosted publicly. 
         // For now we will use the text header, but if they have a public URL we could use it.
         // We will add a nice header block.
+
+        // Get notes for the period
+        const periodNotes = allNotes ? allNotes.filter(n => {
+            const nDateStr = getPRDateString(n.date);
+            // Reuse filter logic logic if possible or just filter by range
+            // We need filteredTransactions logic access
+            if (dateRange === 'today') return nDateStr === getPRDateString(new Date());
+            // For simplicity in this block we can approximate or duplicate logic:
+            // Let's assume startDate/endDate are set for custom, or calculate based on dateRange.
+            // Actually, `getFilteredTransactions` logic is local.
+            // Better to calculate range first.
+            // But for now let's just show ALL notes if range is custom or today.
+            return true; // Simplify for now, or improve logic
+        }).filter(n => {
+            // Apply strict filter
+            const nDateStr = getPRDateString(n.date);
+            const today = new Date();
+            let start = new Date();
+            let end = new Date();
+
+            if (dateRange === 'today') {
+                return nDateStr === getPRDateString(today);
+            } else if (dateRange === 'week') {
+                const day = today.getDay();
+                const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                start.setDate(diff);
+                end.setDate(start.getDate() + 6);
+            } else if (dateRange === 'month') {
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            } else if (dateRange === 'custom') {
+                if (!startDate || !endDate) return false;
+                start = new Date(startDate);
+                end = new Date(endDate);
+            }
+            return nDateStr >= getPRDateString(start) && nDateStr <= getPRDateString(end);
+        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) : [];
+
+        const notesHtml = periodNotes.length > 0 ? `
+            <div style="margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <h3 style="color: #1e40af; margin-bottom: 10px;">📝 Bitácora / Notas</h3>
+                <ul style="list-style: none; padding: 0;">
+                    ${periodNotes.map(n => `
+                        <li style="margin-bottom: 8px; padding: 8px; background: #f3f4f6; border-radius: 4px;">
+                            <strong style="color: #4b5563;">${new Date(n.date).toLocaleDateString()}:</strong> ${n.content}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        ` : '';
+
         const htmlContent = `
             <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto;">
                 <div style="text-align: center; padding: 20px; border-bottom: 2px solid #2563eb; margin-bottom: 20px;">
@@ -347,6 +402,8 @@ const Reports = () => {
                     </tfoot>
                 </table>
                 
+                ${notesHtml}
+
                 <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af;">
                     <p>Generado automáticamente por CarWash SaaS</p>
                 </div>
