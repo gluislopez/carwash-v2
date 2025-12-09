@@ -912,6 +912,56 @@ const Dashboard = () => {
                 )}
             </div>
 
+            {/* DAILY NOTES SECTION */}
+            <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                <div
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                    onClick={() => setShowNotes(!showNotes)}
+                >
+                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                        📝 Notas del Día
+                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: 'var(--primary)', padding: '2px 6px', borderRadius: '10px' }}>
+                            {dailyNotes.length}
+                        </span>
+                    </h3>
+                    <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </div>
+
+                {showNotes && (
+                    <div style={{ marginTop: '1rem' }}>
+                        {dailyNotes.length > 0 ? (
+                            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                                {dailyNotes.map(note => (
+                                    <li key={note.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.9rem' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: '0.5rem' }}>
+                                            {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                        {note.content}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>No hay notas hoy.</p>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="Escribir nota..."
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
+                                style={{ flex: 1 }}
+                            />
+                            <button className="btn btn-primary" onClick={handleAddNote} disabled={!newNote.trim()}>
+                                <Send size={16} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
 
             {/* DATE FILTER CONTROLS */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1rem', alignItems: 'center' }}>
