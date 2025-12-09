@@ -1654,7 +1654,9 @@ const Dashboard = () => {
                                     ) : (
                                         // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
                                         <div>
-                                            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Mis Trabajos de Hoy</h4>
+                                            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+                                                Mis Trabajos de Hoy ({formatToFraction(fractionalCount)})
+                                            </h4>
                                             <ul style={{ listStyle: 'none', padding: 0 }}>
                                                 {statsTransactions
                                                     .filter(t => t.status === 'completed') // SOLO completados
@@ -1709,7 +1711,14 @@ const Dashboard = () => {
                                                             <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <div>
                                                                     <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</div>
+                                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                        {getServiceName(t.service_id)}
+                                                                        {count > 1 && (
+                                                                            <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold' }}>
+                                                                                (1/{count})
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     {myExtras.length > 0 && (
                                                                         <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
                                                                             + {myExtras.length} Extras Propios
