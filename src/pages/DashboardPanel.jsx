@@ -689,9 +689,24 @@ const Dashboard = () => {
 
     const handleUpdateTransaction = async (id, updates) => {
         try {
-            // Si se está completando o pagando, guardar la hora de finalización
-            if (updates.status === 'completed' || updates.status === 'paid') {
-                updates.finished_at = new Date().toISOString();
+            // Find current transaction state
+            const currentTx = transactions.find(t => t.id === id);
+            const isFinishing = ['ready', 'completed', 'paid'].includes(updates.status);
+
+            // Logic: Set finished_at ONLY if it's finishing AND we don't have a time yet
+            // (or if we want to overwrite 'ready' with 'completed' time? No, usually Ready time is the wash end)
+            if (isFinishing) {
+                // If the update explicitly provides finished_at, use it (from handleConfirmReady)
+                if (updates.finished_at) {
+                    // Do nothing, it's already set in updates
+                } else if (currentTx?.finished_at) {
+                    // If it already finished (e.g. was Ready), KEEP the original time
+                    // Do not overwrite with new time unless explicitly requested
+                    updates.finished_at = currentTx.finished_at;
+                } else {
+                    // First time finishing? Set current time
+                    updates.finished_at = new Date().toISOString();
+                }
             }
 
             await updateTransaction(id, updates);
@@ -843,7 +858,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.242.8 {new Date().toLocaleTimeString()}
+                            v4.242.9 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
