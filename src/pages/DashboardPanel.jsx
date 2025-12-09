@@ -1637,10 +1637,29 @@ const Dashboard = () => {
 
                                                 if (empCommission === 0 && empLunches === 0) return null;
 
+                                                // Calculate fractional car count for this employee
+                                                const empFractionalCount = statsTransactions
+                                                    .filter(t => t.status === 'completed' || t.status === 'paid')
+                                                    .reduce((sum, t) => {
+                                                        const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                                        const isPrimary = t.employee_id === emp.id;
+
+                                                        if (isAssigned || isPrimary) {
+                                                            const count = t.transaction_assignments?.length || 1;
+                                                            return sum + (1 / count);
+                                                        }
+                                                        return sum;
+                                                    }, 0);
+
                                                 return (
                                                     <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                                                            <span>{emp.name}</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <span>{emp.name}</span>
+                                                                <span style={{ fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--primary)' }}>
+                                                                    {formatToFraction(empFractionalCount)} Autos
+                                                                </span>
+                                                            </div>
                                                             <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
