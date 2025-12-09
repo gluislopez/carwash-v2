@@ -1099,7 +1099,10 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                            {formatToFraction(fractionalCount)}
+                            {userRole === 'admin'
+                                ? statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length
+                                : formatToFraction(fractionalCount)
+                            }
                         </p>
                     </div>
                 </div>

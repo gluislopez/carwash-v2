@@ -400,9 +400,11 @@ const Reports = () => {
                     </tbody>
                     <tfoot style="background-color: #f8fafc; font-weight: bold;">
                         <tr>
-                            <td style="border: 1px solid #e5e7eb; padding: 12px;">TOTALES</td>
-                            <td style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">${formatToFraction(fractionalCount)}</td>
-                            <td style="text-align: right; color: #10b981; border: 1px solid #e5e7eb; padding: 12px;">$${totalIncome.toFixed(2)}</td>
+                            <td style={{ border: '1px solid #e5e7eb', padding: '12px' }}>TOTALES</td>
+                            <td style={{ textAlign: 'center', border: '1px solid #e5e7eb', padding: '12px' }}>
+                                ${userRole === 'admin' ? totalCount : formatToFraction(fractionalCount)}
+                            </td>
+                            <td style={{ textAlign: 'right', color: '#10b981', border: '1px solid #e5e7eb', padding: '12px' }}>$${totalIncome.toFixed(2)}</td>
                             <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${totalCommissions.toFixed(2)}</td>
                             <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${(totalIncome - totalCommissions).toFixed(2)}</td>
                         </tr>
@@ -419,7 +421,8 @@ const Reports = () => {
 
         // Copy HTML to clipboard
         const blob = new Blob([htmlContent], { type: 'text/html' });
-        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${formatToFraction(fractionalCount)}\nNeto: $${(totalIncome - totalCommissions).toFixed(2)}`;
+        const countDisplay = userRole === 'admin' ? totalCount : formatToFraction(fractionalCount);
+        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${countDisplay}\nNeto: $${(totalIncome - totalCommissions).toFixed(2)}`;
         const textBlob = new Blob([plainText], { type: 'text/plain' });
 
         const item = new ClipboardItem({
@@ -540,7 +543,9 @@ const Reports = () => {
                     <h3 className="label">Total Autos</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{formatToFraction(fractionalCount)}</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                            {userRole === 'admin' ? totalCount : formatToFraction(fractionalCount)}
+                        </p>
                     </div>
                 </div>
 
