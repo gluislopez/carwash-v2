@@ -48,7 +48,8 @@ export const playNewServiceSound = () => {
         osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
         osc.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.1); // C6
 
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        // Increased volume for mobile (0.1 -> 0.5)
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
 
         osc.start();
@@ -77,7 +78,8 @@ export const playAlertSound = () => {
             osc.type = 'square';
             osc.frequency.setValueAtTime(440, startTime); // A4
 
-            gain.gain.setValueAtTime(0.05, startTime);
+            // Increased volume for mobile (0.05 -> 0.3) - Square wave is loud
+            gain.gain.setValueAtTime(0.3, startTime);
             gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
 
             osc.start(startTime);
