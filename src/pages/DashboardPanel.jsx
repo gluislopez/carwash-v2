@@ -7,6 +7,7 @@ import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
 import EmployeeProductivityChart from '../components/EmployeeProductivityChart';
 import EditTransactionModal from '../components/EditTransactionModal';
 import { calculateSharedCommission } from '../utils/commissionRules';
+import { playNewServiceSound, playAlertSound } from '../utils/soundUtils';
 
 
 
@@ -25,6 +26,57 @@ const Dashboard = () => {
     const [userRole, setUserRole] = useState(null); // Estado para el rol
     const [isRefreshing, setIsRefreshing] = useState(false); // Estado para el botón de refresh
     const [isModalOpen, setIsModalOpen] = useState(false); // Estado para el modal de nueva transacción
+    const [alertedTransactions, setAlertedTransactions] = useState(new Set()); // Para evitar alertas repetidas
+
+    // --- NOTIFICATIONS LOGIC ---
+    useEffect(() => {
+        if (!userRole || userRole !== 'admin') return;
+
+        // 1. REALTIME LISTENER FOR NEW SERVICES
+        const channel = supabase
+            .channel('public:transactions')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
+                console.log('New transaction received:', payload);
+                playNewServiceSound();
+                refreshTransactions(); // Auto-refresh list
+            })
+            .subscribe();
+
+        // 2. INTERVAL FOR LONG-RUNNING SERVICES (> 1 HR)
+        const intervalId = setInterval(() => {
+            const now = new Date();
+            const oneHourMs = 60 * 60 * 1000;
+
+            const longRunning = statsTransactions.filter(t => {
+                if (t.status !== 'in_progress') return false;
+                const startTime = new Date(t.started_at || t.created_at);
+                return (now - startTime) > oneHourMs;
+            });
+
+            let newAlerts = false;
+            longRunning.forEach(t => {
+                if (!alertedTransactions.has(t.id)) {
+                    playAlertSound();
+                    alert(`⚠️ ALERTA: El vehículo ${t.customers?.vehicle_plate || '???'} lleva más de 1 hora.`);
+
+                    setAlertedTransactions(prev => {
+                        const newSet = new Set(prev);
+                        newSet.add(t.id);
+                        return newSet;
+                    });
+                    newAlerts = true;
+                }
+            });
+
+        }, 60000); // Check every minute
+
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(intervalId);
+        };
+    }, [userRole, statsTransactions, alertedTransactions]); // Re-run if list changes or alerts change (optimized?)
+    // Note: statsTransactions dependency on interval is heavy but needed for closure unless we use ref.
+    // Ideally we should move logic or use functional updates, but this is simple enough for V1.
 
     useEffect(() => {
         const getUser = async () => {
@@ -793,7 +845,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                         <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
                         <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.242.4 {new Date().toLocaleTimeString()}
+                            v4.242.5 {new Date().toLocaleTimeString()}
                         </span>
                     </div>
                 </div>
