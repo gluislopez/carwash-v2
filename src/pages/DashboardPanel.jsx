@@ -10,6 +10,8 @@ import { calculateSharedCommission } from '../utils/commissionRules';
 import { playNewServiceSound, playAlertSound, unlockAudio } from '../utils/soundUtils';
 import { formatDuration } from '../utils/formatUtils';
 import { formatToFraction } from '../utils/fractionUtils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 
@@ -942,68 +944,95 @@ const Dashboard = () => {
                         <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
                     </button>
 
-                    {/* WHATSAPP SELF-REPORT BUTTON */}
+                    {/* WHATSAPP SELF-REPORT BUTTON (PDF) */}
                     {userRole === 'admin' && (
                         <button
                             className="btn"
-                            onClick={() => {
-                                // 1. Calculate Stats (Duplicate logic to ensure fresh data or use existing state vars)
-                                // We use existing state vars 'totalIncome', 'totalCommissions', 'statsTransactions'
-                                const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                            onClick={async () => {
+                                try {
+                                    // 1. Gather Data
+                                    const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-                                const count = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
+                                    const count = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
+                                    const income = statsTransactions
+                                        .filter(t => (t.status === 'completed' || t.status === 'paid'))
+                                        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
-                                const incomeCash = statsTransactions
-                                    .filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash')
-                                    .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+                                    const expensesTotal = expenses
+                                        .filter(e => {
+                                            const eDate = getPRDateString(e.date);
+                                            const today = getPRDateString(new Date());
+                                            return eDate === today;
+                                        })
+                                        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
-                                const incomeTransfer = statsTransactions
-                                    .filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer')
-                                    .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+                                    const netProfit = income - totalCommissions - expensesTotal; // Simplified logic, ensure totalCommissions is correct in scope
 
-                                // Expenses Calculation (Needs to match Reports logic mostly)
-                                const totalProductExpenses = expenses
-                                    .filter(e => {
-                                        const eDate = getPRDateString(e.date);
-                                        const today = getPRDateString(new Date());
-                                        return eDate === today && e.category === 'product';
-                                    })
-                                    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+                                    // 2. Generate PDF
+                                    const doc = new jsPDF();
 
-                                const totalLunchExpenses = expenses
-                                    .filter(e => {
-                                        const eDate = getPRDateString(e.date);
-                                        const today = getPRDateString(new Date());
-                                        return eDate === today && e.category === 'lunch';
-                                    })
-                                    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+                                    // Header
+                                    doc.setFillColor(37, 99, 235); // Blue
+                                    doc.rect(0, 0, 210, 40, 'F');
+                                    doc.setTextColor(255, 255, 255);
+                                    doc.setFontSize(22);
+                                    doc.text("Reporte Diario Operativo", 105, 20, { align: 'center' });
+                                    doc.setFontSize(12);
+                                    doc.text(todayDate.toUpperCase(), 105, 30, { align: 'center' });
 
-                                const grandTotalExpenses = totalCommissions + totalProductExpenses + totalLunchExpenses;
-                                const netProfit = totalIncome - grandTotalExpenses;
+                                    // SUMMARY TABLE
+                                    autoTable(doc, {
+                                        startY: 50,
+                                        head: [['Concepto', 'Valor']],
+                                        body: [
+                                            ['Autos Lavados', count.toString()],
+                                            ['Ingresos Totales', `$${income.toFixed(2)}`],
+                                            ['Gastos (Inc. Comisiones)', `$${(totalCommissions + expensesTotal).toFixed(2)}`],
+                                            ['GANANCIA NETA', `$${netProfit.toFixed(2)}`]
+                                        ],
+                                        theme: 'grid',
+                                        headStyles: { fillColor: [37, 99, 235] },
+                                        columnStyles: {
+                                            0: { fontStyle: 'bold' },
+                                            1: { halign: 'right' }
+                                        }
+                                    });
 
-                                // Format Notes
-                                const notesText = dailyNotes.map(n => `- ${n.content}`).join('\n');
+                                    // NOTES
+                                    if (dailyNotes.length > 0) {
+                                        const notesBody = dailyNotes.map(n => [
+                                            new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                            n.content
+                                        ]);
 
-                                const message = `📅 *Reporte Diario - ${todayDate}*
-                                
-🚗 *Autos Lavados:* ${count}
+                                        doc.text("Bitácora / Notas", 14, doc.lastAutoTable.finalY + 15);
+                                        autoTable(doc, {
+                                            startY: doc.lastAutoTable.finalY + 20,
+                                            head: [['Hora', 'Nota']],
+                                            body: notesBody,
+                                            theme: 'striped'
+                                        });
+                                    }
 
-💰 *Ingresos Totales:* $${totalIncome.toFixed(2)}
-   💵 Efectivo: $${incomeCash.toFixed(2)}
-   📱 ATH Móvil: $${incomeTransfer.toFixed(2)}
+                                    // 3. Share or Download
+                                    const pdfBlob = doc.output('blob');
+                                    const file = new File([pdfBlob], `Reporte_${getPRDateString(new Date())}.pdf`, { type: 'application/pdf' });
 
-📉 *Gastos Totales:* $${grandTotalExpenses.toFixed(2)}
-   👨‍🔧 Comisiones y Propinas: $${totalCommissions.toFixed(2)}
-   🍔 Almuerzos: $${totalLunchExpenses.toFixed(2)}
-   🧼 Compras: $${totalProductExpenses.toFixed(2)}
+                                    if (navigator.share) {
+                                        await navigator.share({
+                                            files: [file],
+                                            title: 'Reporte Diario',
+                                            text: `Reporte del ${todayDate}`
+                                        });
+                                    } else {
+                                        doc.save(`Reporte_${getPRDateString(new Date())}.pdf`);
+                                        alert("PDF Descargado. Envíalo manualmente por WhatsApp.");
+                                    }
 
-💵 *GANANCIA NETA:* $${netProfit.toFixed(2)}
-
-📝 *Notas del Día:*
-${notesText || 'Sin notas.'}`;
-
-                                const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
-                                window.open(whatsappUrl, '_blank');
+                                } catch (error) {
+                                    console.error("Error generating PDF:", error);
+                                    alert("Error: " + error.message);
+                                }
                             }}
                             style={{
                                 backgroundColor: '#25D366', // WhatsApp Green
@@ -1020,7 +1049,7 @@ ${notesText || 'Sin notas.'}`;
                             }}
                         >
                             <MessageCircle size={16} />
-                            <span>Enviar Reporte</span>
+                            <span>Enviar PDF</span>
                         </button>
                     )}
                 </div>
