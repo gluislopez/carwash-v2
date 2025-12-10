@@ -953,20 +953,44 @@ const Dashboard = () => {
                                     // 1. Gather Data
                                     const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-                                    const count = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
-                                    const income = statsTransactions
-                                        .filter(t => (t.status === 'completed' || t.status === 'paid'))
+                                    const completedTxs = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid');
+                                    const count = completedTxs.length;
+
+                                    const incomeCash = completedTxs
+                                        .filter(t => t.payment_method === 'cash')
                                         .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
 
-                                    const expensesTotal = expenses
+                                    const incomeTransfer = completedTxs
+                                        .filter(t => t.payment_method === 'transfer')
+                                        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+
+                                    const totalIncome = incomeCash + incomeTransfer;
+
+                                    const totalTips = completedTxs.reduce((sum, t) => sum + (parseFloat(t.tip) || 0), 0);
+                                    const totalCommissions = completedTxs.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0), 0);
+
+                                    const expensesProduct = expenses
                                         .filter(e => {
                                             const eDate = getPRDateString(e.date);
                                             const today = getPRDateString(new Date());
-                                            return eDate === today;
+                                            return eDate === today && e.category === 'product';
                                         })
                                         .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
-                                    const netProfit = income - totalCommissions - expensesTotal; // Simplified logic, ensure totalCommissions is correct in scope
+                                    const expensesLunch = expenses
+                                        .filter(e => {
+                                            const eDate = getPRDateString(e.date);
+                                            const today = getPRDateString(new Date());
+                                            return eDate === today && e.category === 'lunch';
+                                        })
+                                        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                    const totalExpenses = totalCommissions + totalTips + expensesProduct + expensesLunch;
+                                    const netProfit = totalIncome - totalExpenses; // Note: Tips are expense if excluded from income, but usually income includes tips? Check t.price vs t.tip logic. 
+                                    // Normally price is base price. Tip is extra. 
+                                    // If totalIncome = sum(price), then tips are not in income. 
+                                    // But we pay tips out. So tips are flow-through. 
+                                    // Let's assume Net = Income - (Commissions + Tips + Expenses).
 
                                     // 2. Generate PDF
                                     const doc = new jsPDF();
@@ -976,18 +1000,27 @@ const Dashboard = () => {
                                     doc.rect(0, 0, 210, 40, 'F');
                                     doc.setTextColor(255, 255, 255);
                                     doc.setFontSize(22);
-                                    doc.text("Reporte Diario Operativo", 105, 20, { align: 'center' });
+                                    doc.text("Reporte Diario Detallado", 105, 20, { align: 'center' });
                                     doc.setFontSize(12);
                                     doc.text(todayDate.toUpperCase(), 105, 30, { align: 'center' });
 
-                                    // SUMMARY TABLE
+                                    // 2.1 FINANZAS
                                     autoTable(doc, {
                                         startY: 50,
-                                        head: [['Concepto', 'Valor']],
+                                        head: [['Concepto', 'Monto']],
                                         body: [
                                             ['Autos Lavados', count.toString()],
-                                            ['Ingresos Totales', `$${income.toFixed(2)}`],
-                                            ['Gastos (Inc. Comisiones)', `$${(totalCommissions + expensesTotal).toFixed(2)}`],
+                                            ['', ''], // Spacer
+                                            ['Ingresos (Efecivo)', `$${incomeCash.toFixed(2)}`],
+                                            ['Ingresos (ATH Móvil)', `$${incomeTransfer.toFixed(2)}`],
+                                            ['INGRESOS TOTALES', `$${totalIncome.toFixed(2)}`],
+                                            ['', ''], // Spacer
+                                            ['Comisiones Pagadas', `$${totalCommissions.toFixed(2)}`],
+                                            ['Propinas Pagadas', `$${totalTips.toFixed(2)}`],
+                                            ['Almuerzos (Gastos)', `$${expensesLunch.toFixed(2)}`],
+                                            ['Compras (Gastos)', `$${expensesProduct.toFixed(2)}`],
+                                            ['GASTOS TOTALES', `$${totalExpenses.toFixed(2)}`],
+                                            ['', ''], // Spacer
                                             ['GANANCIA NETA', `$${netProfit.toFixed(2)}`]
                                         ],
                                         theme: 'grid',
@@ -998,19 +1031,71 @@ const Dashboard = () => {
                                         }
                                     });
 
-                                    // NOTES
+                                    // 2.2 EMPLEADOS (Comisiones)
+                                    // Calculate per employee
+                                    const empStats = {};
+                                    completedTxs.forEach(t => {
+                                        const assignments = t.transaction_assignments?.length > 0 ? t.transaction_assignments : [{ employee_id: t.employee_id }];
+                                        const count = assignments.length;
+                                        const shareComm = (parseFloat(t.commission_amount) || 0) / count;
+                                        const shareTip = (parseFloat(t.tip) || 0) / count;
+
+                                        assignments.forEach(a => {
+                                            const eid = a.employee_id;
+                                            if (!empStats[eid]) empStats[eid] = { comm: 0, tips: 0 };
+                                            empStats[eid].comm += shareComm;
+                                            empStats[eid].tips += shareTip;
+                                        });
+                                    });
+
+                                    const empBody = Object.entries(empStats).map(([eid, stats]) => {
+                                        const emp = employees.find(e => e.id === eid);
+                                        const name = emp ? `${emp.first_name} ${emp.last_name}` : 'Desconocido';
+                                        return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
+                                    });
+
+                                    doc.text("Desglose por Empleado", 14, doc.lastAutoTable.finalY + 15);
+                                    autoTable(doc, {
+                                        startY: doc.lastAutoTable.finalY + 20,
+                                        head: [['Empleado', 'Comisión', 'Propina', 'Total']],
+                                        body: empBody,
+                                        theme: 'striped',
+                                        headStyles: { fillColor: [16, 185, 129] } // Green
+                                    });
+
+                                    // 2.3 DETALLE DE AUTOS
+                                    const txBody = completedTxs.map(t => {
+                                        const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                        const serviceName = services.find(s => s.id === t.service_id)?.name || 'Servicio';
+                                        const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                        const vehicleStr = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Auto');
+                                        const price = `$${parseFloat(t.price).toFixed(2)}`;
+                                        return [time, vehicleStr, serviceName, price];
+                                    });
+
+                                    doc.text("Historial de Autos", 14, doc.lastAutoTable.finalY + 15);
+                                    autoTable(doc, {
+                                        startY: doc.lastAutoTable.finalY + 20,
+                                        head: [['Hora', 'Vehículo', 'Servicio', 'Precio']],
+                                        body: txBody,
+                                        theme: 'striped',
+                                        headStyles: { fillColor: [75, 85, 99] } // Gray
+                                    });
+
+                                    // 2.4 NOTES
                                     if (dailyNotes.length > 0) {
                                         const notesBody = dailyNotes.map(n => [
                                             new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                                             n.content
                                         ]);
 
-                                        doc.text("Bitácora / Notas", 14, doc.lastAutoTable.finalY + 15);
+                                        doc.addPage(); // Start notes on new page if needed, or check Y
+                                        doc.text("Bitácora / Notas", 14, 20);
                                         autoTable(doc, {
-                                            startY: doc.lastAutoTable.finalY + 20,
+                                            startY: 30,
                                             head: [['Hora', 'Nota']],
                                             body: notesBody,
-                                            theme: 'striped'
+                                            theme: 'plain'
                                         });
                                     }
 
@@ -1021,8 +1106,8 @@ const Dashboard = () => {
                                     if (navigator.share) {
                                         await navigator.share({
                                             files: [file],
-                                            title: 'Reporte Diario',
-                                            text: `Reporte del ${todayDate}`
+                                            title: 'Reporte Diario Completo',
+                                            text: `Reporte detallado del ${todayDate}`
                                         });
                                     } else {
                                         doc.save(`Reporte_${getPRDateString(new Date())}.pdf`);
@@ -1049,7 +1134,7 @@ const Dashboard = () => {
                             }}
                         >
                             <MessageCircle size={16} />
-                            <span>Enviar PDF</span>
+                            <span>Enviar PDF Detallado</span>
                         </button>
                     )}
                 </div>
