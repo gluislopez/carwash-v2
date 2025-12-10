@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -896,9 +896,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* BUTTONS ROW (Audio + Notes) */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-
                     {/* AUDIO UNLOCK */}
                     {userRole === 'admin' && (
                         <button
@@ -940,14 +938,91 @@ const Dashboard = () => {
                             borderRadius: '0.25rem'
                         }}
                     >
-                        <span>📝 Notas</span>
-                        {dailyNotes.length > 0 && (
-                            <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--primary)', color: 'white', padding: '0px 4px', borderRadius: '4px' }}>
-                                {dailyNotes.length}
-                            </span>
-                        )}
+                        <span>📝 Notas ({dailyNotes.length})</span>
                         <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
                     </button>
+
+                    {/* WHATSAPP SELF-REPORT BUTTON */}
+                    {userRole === 'admin' && (
+                        <button
+                            className="btn"
+                            onClick={() => {
+                                // 1. Calculate Stats (Duplicate logic to ensure fresh data or use existing state vars)
+                                // We use existing state vars 'totalIncome', 'totalCommissions', 'statsTransactions'
+                                const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                                const count = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
+
+                                const incomeCash = statsTransactions
+                                    .filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash')
+                                    .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+
+                                const incomeTransfer = statsTransactions
+                                    .filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer')
+                                    .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+
+                                // Expenses Calculation (Needs to match Reports logic mostly)
+                                const totalProductExpenses = expenses
+                                    .filter(e => {
+                                        const eDate = getPRDateString(e.date);
+                                        const today = getPRDateString(new Date());
+                                        return eDate === today && e.category === 'product';
+                                    })
+                                    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                const totalLunchExpenses = expenses
+                                    .filter(e => {
+                                        const eDate = getPRDateString(e.date);
+                                        const today = getPRDateString(new Date());
+                                        return eDate === today && e.category === 'lunch';
+                                    })
+                                    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                const grandTotalExpenses = totalCommissions + totalProductExpenses + totalLunchExpenses;
+                                const netProfit = totalIncome - grandTotalExpenses;
+
+                                // Format Notes
+                                const notesText = dailyNotes.map(n => `- ${n.content}`).join('\n');
+
+                                const message = `📅 *Reporte Diario - ${todayDate}*
+                                
+🚗 *Autos Lavados:* ${count}
+
+💰 *Ingresos Totales:* $${totalIncome.toFixed(2)}
+   💵 Efectivo: $${incomeCash.toFixed(2)}
+   📱 ATH Móvil: $${incomeTransfer.toFixed(2)}
+
+📉 *Gastos Totales:* $${grandTotalExpenses.toFixed(2)}
+   👨‍🔧 Comisiones y Propinas: $${totalCommissions.toFixed(2)}
+   🍔 Almuerzos: $${totalLunchExpenses.toFixed(2)}
+   🧼 Compras: $${totalProductExpenses.toFixed(2)}
+
+💵 *GANANCIA NETA:* $${netProfit.toFixed(2)}
+
+📝 *Notas del Día:*
+${notesText || 'Sin notas.'}`;
+
+                                const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
+                                window.open(whatsappUrl, '_blank');
+                            }}
+                            style={{
+                                backgroundColor: '#25D366', // WhatsApp Green
+                                color: 'white',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.3rem 0.6rem',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                borderRadius: '0.25rem',
+                                marginLeft: 'auto'
+                            }}
+                        >
+                            <MessageCircle size={16} />
+                            <span>Enviar Reporte</span>
+                        </button>
+                    )}
                 </div>
 
                 {showNotes && (
