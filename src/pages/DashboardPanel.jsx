@@ -1060,7 +1060,7 @@ const Dashboard = () => {
 
                                     const empBody = Object.entries(empStats).map(([eid, stats]) => {
                                         const emp = employeesList.find(e => String(e.id) === String(eid));
-                                        const name = emp ? `${emp.first_name} ${emp.last_name || ''}`.trim() : `ID: ${eid}`; // Fallback to ID if not found
+                                        const name = emp ? (emp.name || emp.first_name || `Emple. ${eid}`) : `ID: ${eid}`; // Use 'name' as primary, fallback to old fields
                                         return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
                                     });
 
