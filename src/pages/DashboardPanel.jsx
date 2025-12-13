@@ -1639,7 +1639,14 @@ const Dashboard = () => {
                                                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                                                 .map(t => {
                                                     const vehicle = vehicles.find(v => v.id === t.vehicle_id);
-                                                    const vehicleDisplayName = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Modelo N/A');
+                                                    let vehicleDisplayName = 'Modelo N/A';
+
+                                                    if (vehicle) {
+                                                        const brand = vehicle.brand === 'Generico' || vehicle.brand === 'Generic' ? '' : vehicle.brand;
+                                                        vehicleDisplayName = `${brand} ${vehicle.model}`.trim();
+                                                    } else if (t.customers?.vehicle_model) {
+                                                        vehicleDisplayName = t.customers.vehicle_model;
+                                                    }
 
                                                     // Calculate Wash Time (Current - Started)
                                                     const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at); // Fallback to created_at if started_at missing
