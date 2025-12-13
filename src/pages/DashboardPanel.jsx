@@ -1708,264 +1708,272 @@ const Dashboard = () => {
                                             {statsTransactions
                                                 .filter(t => t.status === 'ready')
                                                 .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
-                                                .map(t => (
-                                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                            <div>
-                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
-                                                                <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
-                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                .map(t => {
+                                                    const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                                    const vehicleModel = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Modelo N/A');
+                                                    return (
+                                                        <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
+                                                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
+                                                                    <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
 
-                                                                {t.finished_at && (
-                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                                                                        <div>Llegada: {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                                                        <div>Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)} min</div>
-                                                                        <div>Lavado: {Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min</div>
-                                                                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min</div>
-                                                                    </div>
-                                                                )}
+                                                                    {t.finished_at && (
+                                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                                                            <div>Llegada: {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                            <div>Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)} min</div>
+                                                                            <div>Lavado: {Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min</div>
+                                                                            <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min</div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                    <button
+                                                                        className="btn"
+                                                                        onClick={() => handlePayment(t)}
+                                                                        style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                    >
+                                                                        <DollarSign size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Pagar</span>
+                                                                    </button>
+
+                                                                    <button
+                                                                        className="btn"
+                                                                        onClick={() => handleRevertToInProgress(t)}
+                                                                        title="Devolver a En Proceso"
+                                                                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                                    >
+                                                                        <RefreshCw size={14} /> <span>En Proceso</span>
+                                                                    </button>
+
+                                                                    <button
+                                                                        onClick={() => setEditingTransactionId(t.id)}
+                                                                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                    >
+                                                                        <Edit2 size={14} /> Editar
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                                                                <button
-                                                                    className="btn"
-                                                                    onClick={() => handlePayment(t)}
-                                                                    style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                                                >
-                                                                    <DollarSign size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Pagar</span>
-                                                                </button>
-
-                                                                {/* REVERT BUTTON */}
-                                                                <button
-                                                                    className="btn"
-                                                                    onClick={() => handleRevertToInProgress(t)}
-                                                                    title="Devolver a En Proceso"
-                                                                    style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                                                >
-                                                                    <RefreshCw size={14} /> <span>En Proceso</span>
-                                                                </button>
-
-                                                                <button
-                                                                    onClick={() => setEditingTransactionId(t.id)}
-                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                                >
-                                                                    <Edit2 size={14} /> Editar
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </li>
-                                                ))}
+                                                        </li>
+                                                    );
+                                                })}
                                         </ul>
                                     )}
                                 </div>
                             )}
 
-                            {activeDetailModal === 'income' && (
-                                <div>
-                                    <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span>Efectivo:</span>
-                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span>Tarjeta:</span>
-                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span>Ath Móvil:</span>
-                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
-                                        </div>
-                                        <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
-                                            <span>Total:</span>
-                                            <span>${totalIncome.toFixed(2)}</span>
+                            {
+                                activeDetailModal === 'income' && (
+                                    <div>
+                                        <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span>Efectivo:</span>
+                                                <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span>Tarjeta:</span>
+                                                <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>Ath Móvil:</span>
+                                                <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                            </div>
+                                            <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
+                                                <span>Total:</span>
+                                                <span>${totalIncome.toFixed(2)}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )
+                            }
 
-                            {activeDetailModal === 'commissions' && (
-                                <div>
-                                    {userRole === 'admin' ? (
-                                        // VISTA DE ADMIN: LISTA DE EMPLEADOS
-                                        <ul style={{ listStyle: 'none', padding: 0 }}>
-                                            {employees.map(emp => {
-                                                // Calculate commission for this employee
-                                                const empCommission = statsTransactions.reduce((sum, t) => {
-                                                    // SOLO contar si está completado
-                                                    if (t.status !== 'completed') return sum;
+                            {
+                                activeDetailModal === 'commissions' && (
+                                    <div>
+                                        {userRole === 'admin' ? (
+                                            // VISTA DE ADMIN: LISTA DE EMPLEADOS
+                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                {employees.map(emp => {
+                                                    // Calculate commission for this employee
+                                                    const empCommission = statsTransactions.reduce((sum, t) => {
+                                                        // SOLO contar si está completado
+                                                        if (t.status !== 'completed') return sum;
 
-                                                    const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
-                                                    const isPrimary = t.employee_id === emp.id;
-
-                                                    if (isAssigned || isPrimary) {
-                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0);
-                                                        const tip = (parseFloat(t.tip) || 0);
-                                                        const count = (t.transaction_assignments?.length) || 1;
-
-                                                        // Calculate Extras assigned to THIS employee
-                                                        const myExtras = t.extras?.filter(e => e.assignedTo === emp.id) || [];
-                                                        const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
-
-                                                        // Calculate Total Assigned Extras (to subtract from pool)
-                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                        const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
-
-                                                        // Shared Pool
-                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                        const sharedShare = sharedPool / count;
-                                                        const tipShare = tip / count;
-
-                                                        return sum + sharedShare + tipShare + myExtrasCommission;
-                                                    }
-                                                    return sum;
-                                                }, 0);
-
-                                                // Calculate lunches
-                                                const empLunches = filteredExpenses
-                                                    .filter(e => e.employee_id === emp.id)
-                                                    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
-                                                const empNet = empCommission - empLunches;
-
-                                                if (empCommission === 0 && empLunches === 0) return null;
-
-                                                // Calculate fractional car count for this employee
-                                                const empFractionalCount = statsTransactions
-                                                    .filter(t => t.status === 'completed' || t.status === 'paid')
-                                                    .reduce((sum, t) => {
                                                         const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
                                                         const isPrimary = t.employee_id === emp.id;
 
                                                         if (isAssigned || isPrimary) {
-                                                            const count = t.transaction_assignments?.length || 1;
-                                                            return sum + (1 / count);
+                                                            const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                            const tip = (parseFloat(t.tip) || 0);
+                                                            const count = (t.transaction_assignments?.length) || 1;
+
+                                                            // Calculate Extras assigned to THIS employee
+                                                            const myExtras = t.extras?.filter(e => e.assignedTo === emp.id) || [];
+                                                            const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                            // Calculate Total Assigned Extras (to subtract from pool)
+                                                            const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                            const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                            // Shared Pool
+                                                            const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                            const sharedShare = sharedPool / count;
+                                                            const tipShare = tip / count;
+
+                                                            return sum + sharedShare + tipShare + myExtrasCommission;
                                                         }
                                                         return sum;
                                                     }, 0);
 
-                                                return (
-                                                    <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <span>{emp.name}</span>
-                                                                <span style={{ fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--primary)' }}>
-                                                                    {formatToFraction(empFractionalCount)} Autos
-                                                                </span>
+                                                    // Calculate lunches
+                                                    const empLunches = filteredExpenses
+                                                        .filter(e => e.employee_id === emp.id)
+                                                        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                                    const empNet = empCommission - empLunches;
+
+                                                    if (empCommission === 0 && empLunches === 0) return null;
+
+                                                    // Calculate fractional car count for this employee
+                                                    const empFractionalCount = statsTransactions
+                                                        .filter(t => t.status === 'completed' || t.status === 'paid')
+                                                        .reduce((sum, t) => {
+                                                            const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                                            const isPrimary = t.employee_id === emp.id;
+
+                                                            if (isAssigned || isPrimary) {
+                                                                const count = t.transaction_assignments?.length || 1;
+                                                                return sum + (1 / count);
+                                                            }
+                                                            return sum;
+                                                        }, 0);
+
+                                                    return (
+                                                        <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <span>{emp.name}</span>
+                                                                    <span style={{ fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--primary)' }}>
+                                                                        {formatToFraction(empFractionalCount)} Autos
+                                                                    </span>
+                                                                </div>
+                                                                <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
                                                             </div>
-                                                            <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
-                                                        </div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                            <span>Comisión: ${empCommission.toFixed(2)}</span>
-                                                            <span>Almuerzos: -${empLunches.toFixed(2)}</span>
-                                                        </div>
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    ) : (
-                                        // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
-                                        <div>
-                                            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
-                                                Mis Trabajos de Hoy ({formatToFraction(fractionalCount)})
-                                            </h4>
-                                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                {statsTransactions
-                                                    .filter(t => t.status === 'completed') // SOLO completados
-                                                    .map(t => {
-                                                        // Calcular mi parte de esta transacción
-                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0); // Base commission
-                                                        const tip = (parseFloat(t.tip) || 0);
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                <span>Comisión: ${empCommission.toFixed(2)}</span>
+                                                                <span>Almuerzos: -${empLunches.toFixed(2)}</span>
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        ) : (
+                                            // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
+                                            <div>
+                                                <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+                                                    Mis Trabajos de Hoy ({formatToFraction(fractionalCount)})
+                                                </h4>
+                                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                    {statsTransactions
+                                                        .filter(t => t.status === 'completed') // SOLO completados
+                                                        .map(t => {
+                                                            // Calcular mi parte de esta transacción
+                                                            const txTotalCommission = (parseFloat(t.commission_amount) || 0); // Base commission
+                                                            const tip = (parseFloat(t.tip) || 0);
 
-                                                        // 1. Separate Assigned vs Shared Commissions
-                                                        let myAssignedCommission = 0;
-                                                        let totalAssignedCommission = 0;
+                                                            // 1. Separate Assigned vs Shared Commissions
+                                                            let myAssignedCommission = 0;
+                                                            let totalAssignedCommission = 0;
 
-                                                        if (t.extras && Array.isArray(t.extras)) {
-                                                            t.extras.forEach(extra => {
-                                                                if (extra.assignedTo) {
-                                                                    const extraComm = parseFloat(extra.commission || 0);
-                                                                    totalAssignedCommission += extraComm;
-                                                                    if (extra.assignedTo === myUserId || extra.assignedTo === myEmployeeId) { // Check both ID types just in case
-                                                                        myAssignedCommission += extraComm;
+                                                            if (t.extras && Array.isArray(t.extras)) {
+                                                                t.extras.forEach(extra => {
+                                                                    if (extra.assignedTo) {
+                                                                        const extraComm = parseFloat(extra.commission || 0);
+                                                                        totalAssignedCommission += extraComm;
+                                                                        if (extra.assignedTo === myUserId || extra.assignedTo === myEmployeeId) { // Check both ID types just in case
+                                                                            myAssignedCommission += extraComm;
+                                                                        }
+                                                                        // Also check if assignedTo matches the current iteration employee 'emp' (for Admin View) or 'myself'
+                                                                        // Fix: simpler iteration below
                                                                     }
-                                                                    // Also check if assignedTo matches the current iteration employee 'emp' (for Admin View) or 'myself'
-                                                                    // Fix: simpler iteration below
-                                                                }
-                                                            });
-                                                        }
+                                                                });
+                                                            }
 
-                                                        const sharedCommissionPool = Math.max(0, txTotalCommission - totalAssignedCommission);
-                                                        const count = (t.transaction_assignments?.length) || 1;
+                                                            const sharedCommissionPool = Math.max(0, txTotalCommission - totalAssignedCommission);
+                                                            const count = (t.transaction_assignments?.length) || 1;
 
-                                                        // 2. Logic: (Shared / Count) + MyAssigned + (Tip / Count)
-                                                        // Usage: This block is inside the 'admin' map OR 'employee' map.
-                                                        // We need to know 'who' we are calculating for.
-                                                        // Since this replacement block targets the 'employee' view (lines 1353+), 
-                                                        // we are iterating 't' but we are the logged-in user.
+                                                            // 2. Logic: (Shared / Count) + MyAssigned + (Tip / Count)
+                                                            // Usage: This block is inside the 'admin' map OR 'employee' map.
+                                                            // We need to know 'who' we are calculating for.
+                                                            // Since this replacement block targets the 'employee' view (lines 1353+), 
+                                                            // we are iterating 't' but we are the logged-in user.
 
-                                                        // Wait, for the 'employee' view, we need to filter assigned extras for THIS user.
-                                                        // Detailed logic:
-                                                        const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
-                                                        const myExtrasCommission = myExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
+                                                            // Wait, for the 'employee' view, we need to filter assigned extras for THIS user.
+                                                            // Detailed logic:
+                                                            const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                            const myExtrasCommission = myExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
 
-                                                        // Re-calculate Total Assigned to subtract from pool
-                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                        const allAssignedCommission = allAssignedExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
+                                                            // Re-calculate Total Assigned to subtract from pool
+                                                            const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                            const allAssignedCommission = allAssignedExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
 
-                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                        const sharedShare = sharedPool / count;
-                                                        const tipShare = tip / count;
+                                                            const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                            const sharedShare = sharedPool / count;
+                                                            const tipShare = tip / count;
 
-                                                        const myShare = sharedShare + tipShare + myExtrasCommission;
+                                                            const myShare = sharedShare + tipShare + myExtrasCommission;
 
-                                                        return (
-                                                            <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <div>
-                                                                    <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                                        {getServiceName(t.service_id)}
-                                                                        {count > 1 && (
-                                                                            <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold' }}>
-                                                                                (1/{count})
-                                                                            </span>
+                                                            return (
+                                                                <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <div>
+                                                                        <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                            {getServiceName(t.service_id)}
+                                                                            {count > 1 && (
+                                                                                <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold' }}>
+                                                                                    (1/{count})
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {myExtras.length > 0 && (
+                                                                            <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                                                                + {myExtras.length} Extras Propios
+                                                                            </div>
                                                                         )}
                                                                     </div>
-                                                                    {myExtras.length > 0 && (
-                                                                        <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
-                                                                            + {myExtras.length} Extras Propios
+                                                                    <div style={{ textAlign: 'right' }}>
+                                                                        <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
+                                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                                            Base: ${sharedShare.toFixed(2)} | Extras: ${myExtrasCommission.toFixed(2)} | Tip: ${tipShare.toFixed(2)}
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                                <div style={{ textAlign: 'right' }}>
-                                                                    <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
-                                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                                                        Base: ${sharedShare.toFixed(2)} | Extras: ${myExtrasCommission.toFixed(2)} | Tip: ${tipShare.toFixed(2)}
                                                                     </div>
-                                                                </div>
-                                                            </li>
-                                                        );
-                                                    })}
-                                            </ul>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                </ul>
 
-                                            {totalLunches > 0 && (
-                                                <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', fontWeight: 'bold' }}>
-                                                        <span>Descuento Almuerzos</span>
-                                                        <span>-${totalLunches.toFixed(2)}</span>
+                                                {totalLunches > 0 && (
+                                                    <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', fontWeight: 'bold' }}>
+                                                            <span>Descuento Almuerzos</span>
+                                                            <span>-${totalLunches.toFixed(2)}</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
 
-                                            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '2px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                                                <span>Total Neto</span>
-                                                <span style={{ color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</span>
+                                                <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '2px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
+                                                    <span>Total Neto</span>
+                                                    <span style={{ color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+                        </div >
+                    </div >
                 )
             }
 
