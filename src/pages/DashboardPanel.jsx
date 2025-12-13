@@ -1591,38 +1591,53 @@ const Dashboard = () => {
                                         <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
                                     ) : (
                                         <ul style={{ listStyle: 'none', padding: 0 }}>
-                                            {statsTransactions.filter(t => t.status === 'waiting').map(t => (
-                                                <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                        <div>
-                                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
-                                                            <div style={{ color: 'var(--text-muted)' }}>{t.customers?.name}</div>
-                                                            <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
-                                                            <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
-                                                                Llegada: {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {statsTransactions.filter(t => t.status === 'waiting').map(t => {
+                                                const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                                let vehicleDisplayName = 'Modelo N/A';
+
+                                                if (vehicle) {
+                                                    const brand = vehicle.brand === 'Generico' || vehicle.brand === 'Generic' ? '' : vehicle.brand;
+                                                    vehicleDisplayName = `${brand} ${vehicle.model}`.trim();
+                                                } else if (t.customers?.vehicle_model) {
+                                                    vehicleDisplayName = t.customers.vehicle_model;
+                                                }
+
+                                                return (
+                                                    <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                            <div>
+                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
+                                                                <div style={{ color: 'var(--text-muted)' }}>
+                                                                    {t.customers?.name}
+                                                                    {t.customers?.vehicle_plate && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.customers.vehicle_plate})</span>}
+                                                                </div>
+                                                                <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                                <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                    Llegada: {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.8rem', color: '#F59E0B', marginTop: '0.2rem', fontWeight: 'bold' }}>
+                                                                    Espera: {Math.round((new Date() - new Date(t.created_at)) / 60000)} min
+                                                                </div>
                                                             </div>
-                                                            <div style={{ fontSize: '0.8rem', color: '#F59E0B', marginTop: '0.2rem', fontWeight: 'bold' }}>
-                                                                Espera: {Math.round((new Date() - new Date(t.created_at)) / 60000)} min
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    onClick={() => handleStartService(t.id)}
+                                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                >
+                                                                    <Play size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Comenzar</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingTransactionId(t.id)}
+                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
+                                                                >
+                                                                    <Edit2 size={14} /> Editar
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                            <button
-                                                                className="btn btn-primary"
-                                                                onClick={() => handleStartService(t.id)}
-                                                                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                                            >
-                                                                <Play size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Comenzar</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setEditingTransactionId(t.id)}
-                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
-                                                            >
-                                                                <Edit2 size={14} /> Editar
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            ))}
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     )}
                                 </div>
