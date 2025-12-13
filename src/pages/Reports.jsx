@@ -732,6 +732,7 @@ const Reports = () => {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                                <th style={{ padding: '1rem' }}>#</th>
                                 <th style={{ padding: '1rem' }}>Fecha</th>
                                 <th style={{ padding: '1rem' }}>Cliente</th>
                                 <th style={{ padding: '1rem' }}>Servicio</th>
@@ -742,8 +743,9 @@ const Reports = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTransactions.map(t => (
+                            {filteredTransactions.map((t, index) => (
                                 <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{filteredTransactions.length - index}</td>
                                     <td style={{ padding: '1rem' }}>
                                         {new Date(t.date).toLocaleDateString('es-PR')} <br />
                                         <small style={{ color: 'var(--text-muted)' }}>
