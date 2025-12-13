@@ -20,6 +20,7 @@ const Employees = () => {
     const [services, setServices] = useState([]); // Fetch Services for robust commission calc
     const [fetchError, setFetchError] = useState(null);
     const [editingId, setEditingId] = useState(null);
+    const [selectedTxDetails, setSelectedTxDetails] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         position: 'Lavador',
@@ -618,7 +619,12 @@ const Employees = () => {
                             {stats.txs.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No hay actividad en este periodo.</p> : (
                                 <ul style={{ listStyle: 'none', padding: 0 }}>
                                     {stats.txs.map(t => (
-                                        <li key={t.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <li
+                                            key={t.id}
+                                            onClick={() => setSelectedTxDetails(t)}
+                                            style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                                            className="hover:bg-white/5 transition-colors"
+                                        >
                                             <div>
                                                 <div style={{ fontWeight: 'bold' }}>
                                                     {(() => {
@@ -776,6 +782,96 @@ const Employees = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* COMMISSION DETAILS MODAL */}
+            {selectedTxDetails && selectedEmployee && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2100
+                }} onClick={() => setSelectedTxDetails(null)}>
+                    <div className="card" style={{ width: '90%', maxWidth: '400px', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setSelectedTxDetails(null)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            Detalle de Comisión
+                        </h3>
+
+                        {(() => {
+                            const t = selectedTxDetails;
+                            const count = t.transaction_assignments?.length || 1;
+                            const storedTotal = parseFloat(t.commission_amount) || 0;
+
+                            // 1. Extras
+                            const myExtras = t.extras?.filter(e => e.assignedTo == selectedEmployee.id) || [];
+                            const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                            const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                            const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                            // 2. Shared Pool
+                            let sharedPool = Math.max(0, storedTotal - allAssignedCommission);
+                            const sharedPart = (sharedPool / count) || 0;
+
+                            // 3. Tips
+                            const tip = parseFloat(t.tip) || 0;
+                            const tipShare = tip / count;
+
+                            const total = sharedPart + myExtrasCommission + tipShare;
+
+                            return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div>
+                                        <label className="label">Vehículo / Servicio</label>
+                                        <div style={{ fontWeight: 'bold' }}>
+                                            {(t.vehicles?.brand && t.vehicles?.brand !== 'Generico') ? `${t.vehicles.brand} ${t.vehicles.model}` : (t.customers?.vehicle_model || 'Modelo N/A')}
+                                        </div>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                            {new Date(t.date).toLocaleDateString()} - {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>Comisión Base {count > 1 ? `(1/${count})` : ''}:</span>
+                                            <span style={{ fontWeight: 'bold' }}>${sharedPart.toFixed(2)}</span>
+                                        </div>
+
+                                        {myExtras.length > 0 && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: '0.5rem', marginLeft: '0.5rem', fontSize: '0.9rem' }}>
+                                                {myExtras.map((e, idx) => (
+                                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                                                        <span>+ {e.label}</span>
+                                                        <span>${parseFloat(e.commission).toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.2rem' }}>
+                                                    <span>Total Extras:</span>
+                                                    <span>${myExtrasCommission.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>Propina {count > 1 ? `(1/${count})` : ''}:</span>
+                                            <span style={{ fontWeight: 'bold' }}>${tipShare.toFixed(2)}</span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', marginTop: '0.5rem', fontSize: '1.2rem' }}>
+                                            <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>Total Recibido:</span>
+                                            <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>${total.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             )}
