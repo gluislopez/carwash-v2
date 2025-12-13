@@ -17,6 +17,7 @@ const Reports = () => {
     const [userRole, setUserRole] = useState(null);
     const [paymentMethodFilter, setPaymentMethodFilter] = useState('all'); // 'all', 'cash', 'transfer'
     const [editingTransactionId, setEditingTransactionId] = useState(null);
+    const [activeModal, setActiveModal] = useState(null); // 'commissions', 'expenses'
 
     // Fetch user info
     useEffect(() => {
@@ -584,7 +585,13 @@ const Reports = () => {
 
                 {userRole === 'admin' ? (
                     <>
-                        <div className="card">
+                        <div
+                            className="card"
+                            onClick={() => setActiveModal('commissions')}
+                            style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
                             <h3 className="label">Comisiones (Nómina)</h3>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <Users size={32} className="text-warning" />
@@ -592,14 +599,26 @@ const Reports = () => {
                                     ${(totalCommissions - totalLunches).toFixed(2)}
                                 </p>
                             </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'right' }}>
+                                Ver detalle &rarr;
+                            </div>
                         </div>
-                        <div className="card">
+                        <div
+                            className="card"
+                            onClick={() => setActiveModal('expenses')}
+                            style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
                             <h3 className="label">Gastos / Compras</h3>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <DollarSign size={32} className="text-danger" />
                                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>
                                     ${(totalProductExpenses + totalLunches).toFixed(2)}
                                 </p>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'right' }}>
+                                Ver detalle &rarr;
                             </div>
                         </div>
                     </>
@@ -1006,6 +1025,147 @@ const Reports = () => {
                     </div>
                 )
             }
+            {/* MODALS FOR REPORT DETAILS */}
+            {activeModal === 'commissions' && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2100
+                }} onClick={() => setActiveModal(null)}>
+                    <div className="card" style={{ width: '90%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setActiveModal(null)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+                        <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            Desglose de Nómina
+                        </h3>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                                    <th style={{ padding: '0.5rem' }}>Empleado</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Bruto</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--danger)' }}>Almuerzos</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>A Pagar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(() => {
+                                    const totalsByEmp = {};
+                                    // 1. Calc Gross Commissions (Base + Extras + Tips)
+                                    filteredTransactions.forEach(t => {
+                                        const count = t.transaction_assignments?.length || 1;
+                                        // Base
+                                        // Heuristic Re-Calc (Simplified)
+                                        // For report breakdown we can use stored 'assignedTo' for extras but shared part is tricky without service base price known perfectly here.
+                                        // BUT for 'totalCommissions' we used a simple sum.
+                                        // For accurate breakdown per employee we need to iterate assignments.
+
+                                        // Let's use simpler approach:
+                                        // Total Commission for TX
+                                        const totalTxComm = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+
+                                        // Split Logic
+                                        // Any assigned Extra goes to specific person.
+                                        const assignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                        const assignedExtrasSum = assignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                        const sharedPool = Math.max(0, parseFloat(t.commission_amount) - assignedExtrasSum); // Only base commission is shared, tips are usually shared?
+                                        // Wait, tip logic in Employees.jsx splits tips evenly.
+                                        // Commission logic: storedTotal - allAssignedExtras = SharedBase.
+
+                                        const tip = parseFloat(t.tip) || 0;
+                                        const sharedBasePerPerson = sharedPool / count;
+                                        const tipPerPerson = tip / count;
+
+                                        t.transaction_assignments?.forEach(a => {
+                                            if (!totalsByEmp[a.employee_id]) totalsByEmp[a.employee_id] = { gross: 0, lunch: 0 };
+                                            totalsByEmp[a.employee_id].gross += (sharedBasePerPerson + tipPerPerson);
+                                        });
+
+                                        // Add Extras
+                                        assignedExtras.forEach(e => {
+                                            if (!totalsByEmp[e.assignedTo]) totalsByEmp[e.assignedTo] = { gross: 0, lunch: 0 };
+                                            totalsByEmp[e.assignedTo].gross += (parseFloat(e.commission) || 0);
+                                        });
+                                    });
+
+                                    // 2. Add Lunches
+                                    filteredExpenses.forEach(e => {
+                                        if (e.category === 'lunch' && e.employee_id) {
+                                            if (!totalsByEmp[e.employee_id]) totalsByEmp[e.employee_id] = { gross: 0, lunch: 0 };
+                                            totalsByEmp[e.employee_id].lunch += (parseFloat(e.amount) || 0);
+                                        }
+                                    });
+
+                                    return Object.entries(totalsByEmp).map(([empId, stats]) => (
+                                        <tr key={empId} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                            <td style={{ padding: '0.5rem' }}>{getEmployeeName(empId, employeesList)}</td>
+                                            <td style={{ padding: '0.5rem', textAlign: 'right' }}>${stats.gross.toFixed(2)}</td>
+                                            <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--danger)' }}>-${stats.lunch.toFixed(2)}</td>
+                                            <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>${(stats.gross - stats.lunch).toFixed(2)}</td>
+                                        </tr>
+                                    ));
+                                })()}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {activeModal === 'expenses' && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2100
+                }} onClick={() => setActiveModal(null)}>
+                    <div className="card" style={{ width: '90%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setActiveModal(null)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+                        <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            Detalle de Gastos
+                        </h3>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                                    <th style={{ padding: '0.5rem' }}>Fecha</th>
+                                    <th style={{ padding: '0.5rem' }}>Concepto</th>
+                                    <th style={{ padding: '0.5rem' }}>Tipo</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredExpenses
+                                    .filter(e => e.category === 'product' || e.category === 'lunch')
+                                    .map(e => (
+                                        <tr key={e.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                            <td style={{ padding: '0.5rem' }}>{new Date(e.date).toLocaleDateString()}</td>
+                                            <td style={{ padding: '0.5rem' }}>
+                                                {e.category === 'lunch'
+                                                    ? `Almuerzo: ${getEmployeeName(e.employee_id, employeesList)}`
+                                                    : (e.description || 'Compra General')}
+                                            </td>
+                                            <td style={{ padding: '0.5rem' }}>
+                                                <span style={{
+                                                    backgroundColor: e.category === 'lunch' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                                    color: e.category === 'lunch' ? 'var(--danger)' : 'var(--warning)',
+                                                    padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem'
+                                                }}>
+                                                    {e.category === 'lunch' ? 'Almuerzo' : 'Producto'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '0.5rem', textAlign: 'right' }}>${parseFloat(e.amount).toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
