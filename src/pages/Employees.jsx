@@ -50,7 +50,7 @@ const Employees = () => {
                 .select(`
                     *,
                     transaction_assignments (employee_id),
-                    customers (name),
+                    customers (name, vehicle_model, vehicle_plate),
                     vehicles (brand, model)
                 `)
                 .in('status', ['completed', 'paid'])
@@ -456,7 +456,9 @@ const Employees = () => {
                                                 doc.text('Detalle de Servicios', 14, doc.lastAutoTable.finalY + 10);
 
                                                 const tableData = stats.txs.map(t => {
-                                                    const vehicle = t.vehicles ? `${t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand} ${t.vehicles.model}` : 'N/A';
+                                                    const vehicle = (t.vehicles?.brand && t.vehicles?.brand !== 'Generico')
+                                                        ? `${t.vehicles.brand} ${t.vehicles.model}`
+                                                        : (t.customers?.vehicle_model || 'Modelo No Registrado');
                                                     const count = t.transaction_assignments?.length || 1;
 
                                                     // Logic: Shared Pool + My Extras
@@ -620,9 +622,10 @@ const Employees = () => {
                                             <div>
                                                 <div style={{ fontWeight: 'bold' }}>
                                                     {(() => {
-                                                        if (!t.vehicles) return 'Modelo No Registrado';
-                                                        const brand = t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand;
-                                                        return `${brand || ''} ${t.vehicles.model || ''}`.trim() || 'Modelo No Registrado';
+                                                        if (t.vehicles?.brand && t.vehicles?.brand !== 'Generico') {
+                                                            return `${t.vehicles.brand} ${t.vehicles.model}`;
+                                                        }
+                                                        return t.customers?.vehicle_model || 'Modelo No Registrado';
                                                     })()}
                                                 </div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
