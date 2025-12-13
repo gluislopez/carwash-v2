@@ -19,6 +19,15 @@ const Employees = () => {
     const [expenses, setExpenses] = useState([]);
     const [services, setServices] = useState([]); // Fetch Services for robust commission calc
     const [fetchError, setFetchError] = useState(null);
+    const [editingId, setEditingId] = useState(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        position: 'Lavador',
+        phone: '',
+        email: '',
+        password: '',
+        user_id: ''
+    });
 
     useEffect(() => {
         // ... (existing getUserRole and fetchData logic) ...
@@ -70,7 +79,71 @@ const Employees = () => {
         fetchData();
     }, []);
 
-    // ... (rest of component) ...
+    // --- Handlers ---
+
+    const handleEdit = (employee) => {
+        setEditingId(employee.id);
+        setFormData({
+            name: employee.name || '',
+            position: employee.position || 'Lavador',
+            phone: employee.phone || '',
+            email: employee.email || '',
+            password: '',
+            user_id: employee.user_id || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id, e) => {
+        e.stopPropagation();
+        if (window.confirm('¿Estás seguro de que quieres eliminar este empleado?')) {
+            await remove(id);
+        }
+    };
+
+    const handleToggleStatus = async (employee, e) => {
+        e.stopPropagation();
+        await update(employee.id, { is_active: !employee.is_active });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            let userIdToSave = formData.user_id;
+
+            // Create Auth Account if password provided
+            if (formData.password && formData.password.length >= 6) {
+                const { user, error } = await createAccount(formData.email, formData.password);
+                if (error) throw error;
+                if (user) {
+                    userIdToSave = user.id;
+                    setFormData(prev => ({ ...prev, user_id: user.id }));
+                }
+            }
+
+            const payload = {
+                name: formData.name,
+                position: formData.position,
+                phone: formData.phone,
+                email: formData.email,
+                user_id: userIdToSave
+            };
+
+            if (editingId) {
+                await update(editingId, payload);
+            } else {
+                await create(payload);
+            }
+
+            setIsModalOpen(false);
+            setFormData({ name: '', position: 'Lavador', phone: '', email: '', password: '', user_id: '' });
+            setEditingId(null);
+            alert('Empleado guardado correctamente.');
+        } catch (error) {
+            console.error('Error saving employee:', error);
+            alert('Error al guardar: ' + error.message);
+        }
+    };
 
     // --- Performance Logic ---
 
