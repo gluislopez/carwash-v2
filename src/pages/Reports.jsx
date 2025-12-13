@@ -274,7 +274,7 @@ const Reports = () => {
         filteredTransactions.forEach(t => {
             const dateKey = getPRDateString(t.date);
             if (!groups[dateKey]) {
-                groups[dateKey] = { date: dateKey, count: 0, income: 0, expenses: 0 };
+                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
             }
 
             const txIncome = parseFloat(t.price) || 0;
@@ -282,20 +282,18 @@ const Reports = () => {
 
             groups[dateKey].count += 1;
             groups[dateKey].income += txIncome;
-            groups[dateKey].expenses += txCommission;
+            groups[dateKey].commissions += txCommission;
         });
 
-        // 2. Add Expenses (Products) to breakdown?
-        // User asked for "Gastos" column. Usually this means Commissions + Business Expenses.
-        // Let's add Product Expenses to the "Gastos" column for that day.
+        // 2. Add Expenses (Products) to breakdown
         if (userRole === 'admin') {
             filteredExpenses.forEach(e => {
                 if (e.category === 'product') {
                     const dateKey = getPRDateString(e.date);
                     if (!groups[dateKey]) {
-                        groups[dateKey] = { date: dateKey, count: 0, income: 0, expenses: 0 };
+                        groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
                     }
-                    groups[dateKey].expenses += (parseFloat(e.amount) || 0);
+                    groups[dateKey].productExpenses += (parseFloat(e.amount) || 0);
                 }
             });
         }
@@ -393,19 +391,21 @@ const Reports = () => {
                             <th style="text-align: left; border: 1px solid #e5e7eb; padding: 12px;">Fecha</th>
                             <th style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">Autos</th>
                             <th style="text-align: right; color: #10b981; border: 1px solid #e5e7eb; padding: 12px;">Ingreso</th>
-                            <th style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">Gastos</th>
+                            <th style="text-align: right; color: #F59E0B; border: 1px solid #e5e7eb; padding: 12px;">Comisiones</th>
+                            <th style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">Compras</th>
                             <th style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">Neto</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${breakdownData.map(row => {
-            const net = row.income - row.expenses;
+            const net = row.income - row.commissions - row.productExpenses;
             return `
                                 <tr>
                                     <td style="border: 1px solid #e5e7eb; padding: 12px;">${row.date}</td>
                                     <td style="text-align: center; border: 1px solid #e5e7eb; padding: 12px;">${row.count}</td>
                                     <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${row.income.toFixed(2)}</td>
-                                    <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${row.expenses.toFixed(2)}</td>
+                                    <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${row.commissions.toFixed(2)}</td>
+                                    <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${row.productExpenses.toFixed(2)}</td>
                                     <td style="text-align: right; font-weight: bold; border: 1px solid #e5e7eb; padding: 12px;">$${net.toFixed(2)}</td>
                                 </tr>
                             `;
@@ -418,8 +418,9 @@ const Reports = () => {
                                 ${userRole === 'admin' ? totalCount : formatToFraction(fractionalCount)}
                             </td>
                             <td style={{ textAlign: 'right', color: '#10b981', border: '1px solid #e5e7eb', padding: '12px' }}>$${totalIncome.toFixed(2)}</td>
-                            <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${totalCommissions.toFixed(2)}</td>
-                            <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${(totalIncome - totalCommissions).toFixed(2)}</td>
+                            <td style="text-align: right; color: #F59E0B; border: 1px solid #e5e7eb; padding: 12px;">$${totalCommissions.toFixed(2)}</td>
+                            <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${totalProductExpenses.toFixed(2)}</td>
+                            <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${(totalIncome - totalCommissions - totalProductExpenses).toFixed(2)}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -435,7 +436,7 @@ const Reports = () => {
         // Copy HTML to clipboard
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const countDisplay = userRole === 'admin' ? totalCount : formatToFraction(fractionalCount);
-        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${countDisplay}\nNeto: $${(totalIncome - totalCommissions).toFixed(2)}`;
+        const plainText = `REPORTE CARWASH - ${dateRange}\nAutos: ${countDisplay}\nNeto: $${(totalIncome - totalCommissions - totalProductExpenses).toFixed(2)}`;
         const textBlob = new Blob([plainText], { type: 'text/plain' });
 
         const item = new ClipboardItem({
@@ -574,20 +575,43 @@ const Reports = () => {
                     )
                 }
 
-                <div className="card">
-                    <h3 className="label">{userRole === 'admin' ? 'Gastos (Comisiones + Compras)' : 'Mi Neto (Menos Almuerzos)'}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Users size={32} className="text-warning" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
-                            ${userRole === 'admin' ? (totalCommissions + totalProductExpenses).toFixed(2) : netCommissions.toFixed(2)}
-                        </p>
+                {userRole === 'admin' ? (
+                    <>
+                        <div className="card">
+                            <h3 className="label">Comisiones (Nómina)</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <Users size={32} className="text-warning" />
+                                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+                                    ${totalCommissions.toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="card">
+                            <h3 className="label">Gastos / Compras</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <DollarSign size={32} className="text-danger" />
+                                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>
+                                    ${totalProductExpenses.toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="card">
+                        <h3 className="label">Mi Neto (Menos Almuerzos)</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <Users size={32} className="text-warning" />
+                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+                                ${netCommissions.toFixed(2)}
+                            </p>
+                        </div>
+                        {totalLunches > 0 && (
+                            <p style={{ fontSize: '0.9rem', color: 'var(--danger)', marginTop: '0.5rem' }}>
+                                -${totalLunches.toFixed(2)} en almuerzos
+                            </p>
+                        )}
                     </div>
-                    {userRole !== 'admin' && totalLunches > 0 && (
-                        <p style={{ fontSize: '0.9rem', color: 'var(--danger)', marginTop: '0.5rem' }}>
-                            -${totalLunches.toFixed(2)} en almuerzos
-                        </p>
-                    )}
-                </div>
+                )}
 
                 {
                     userRole === 'admin' && (
@@ -717,7 +741,8 @@ const Reports = () => {
                                         <th style={{ padding: '1rem' }}>Fecha</th>
                                         <th style={{ padding: '1rem' }}>Autos</th>
                                         <th style={{ padding: '1rem', color: 'var(--success)' }}>Ingresos (+)</th>
-                                        <th style={{ padding: '1rem', color: 'var(--danger)' }}>Gastos (-)</th>
+                                        <th style={{ padding: '1rem', color: 'var(--warning)' }}>Comisiones (-)</th>
+                                        <th style={{ padding: '1rem', color: 'var(--danger)' }}>Compras (-)</th>
                                         <th style={{ padding: '1rem' }}>Neto (=)</th>
                                     </tr>
                                 </thead>
@@ -727,8 +752,9 @@ const Reports = () => {
                                             <td style={{ padding: '1rem' }}>{row.date}</td>
                                             <td style={{ padding: '1rem' }}>{row.count}</td>
                                             <td style={{ padding: '1rem', color: 'var(--success)' }}>${row.income.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.expenses.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.expenses).toFixed(2)}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--warning)' }}>${row.commissions.toFixed(2)}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.productExpenses.toFixed(2)}</td>
+                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.commissions - row.productExpenses).toFixed(2)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
