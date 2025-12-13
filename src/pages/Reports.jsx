@@ -16,6 +16,7 @@ const Reports = () => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [userRole, setUserRole] = useState(null);
     const [paymentMethodFilter, setPaymentMethodFilter] = useState('all'); // 'all', 'cash', 'transfer'
+    const [editingTransactionId, setEditingTransactionId] = useState(null);
 
     // Fetch user info
     useEffect(() => {
@@ -39,7 +40,7 @@ const Reports = () => {
     }, []);
 
     // Fetch all transactions with assignments
-    const { data: allTransactions, loading } = useSupabase('transactions', '*, transaction_assignments(*)');
+    const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, transaction_assignments(*)');
 
     const { data: expenses } = useSupabase('expenses');
 
@@ -304,6 +305,18 @@ const Reports = () => {
     };
 
     const breakdownData = getBreakdownData();
+
+    // Handlers
+    const handlePaymentMethodUpdate = async (transactionId, newMethod) => {
+        if (!updateTransaction) return;
+        try {
+            await updateTransaction(transactionId, { payment_method: newMethod });
+            setEditingTransactionId(null);
+        } catch (error) {
+            console.error('Error updating payment method:', error);
+            alert('Error al actualizar método de pago');
+        }
+    };
 
     // Export Handlers
     const handleCopyToEmail = () => {
@@ -819,16 +832,37 @@ const Reports = () => {
                                         }
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        <span style={{
-                                            fontSize: '0.75rem',
-                                            padding: '0.1rem 0.4rem',
-                                            borderRadius: '4px',
-                                            backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                                            color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
-                                            border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`
-                                        }}>
-                                            {getPaymentMethodLabel(t.payment_method)}
-                                        </span>
+                                        {editingTransactionId === t.id ? (
+                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                <button onClick={() => handlePaymentMethodUpdate(t.id, 'cash')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #10B981', background: '#10B981', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Efec</button>
+                                                <button onClick={() => handlePaymentMethodUpdate(t.id, 'card')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #3B82F6', background: '#3B82F6', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Tarj</button>
+                                                <button onClick={() => handlePaymentMethodUpdate(t.id, 'transfer')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #F59E0B', background: '#F59E0B', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>ATH</button>
+                                                <button onClick={() => setEditingTransactionId(null)} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #666', background: '#666', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>X</button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => userRole === 'admin' && setEditingTransactionId(t.id)}
+                                                disabled={userRole !== 'admin'}
+                                                style={{
+                                                    fontSize: '0.75rem',
+                                                    padding: '0.1rem 0.4rem',
+                                                    borderRadius: '4px',
+                                                    backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                    color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
+                                                    border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`,
+                                                    cursor: userRole === 'admin' ? 'pointer' : 'default',
+                                                    background: 'none', // Reset button default
+                                                    // Re-apply background manually since button resets it or combine
+                                                }}
+                                                className={userRole === 'admin' ? "hover:opacity-80" : ""}
+                                            >
+                                                <span style={{
+                                                    // Move styles here to ensure they apply inside the button or just style the button
+                                                }}>
+                                                    {getPaymentMethodLabel(t.payment_method)}
+                                                </span>
+                                            </button>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                                         {userRole === 'admin' ? (
