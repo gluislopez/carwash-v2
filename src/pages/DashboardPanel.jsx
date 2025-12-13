@@ -1069,14 +1069,15 @@ const Dashboard = () => {
                                         const serviceName = services.find(s => s.id === t.service_id)?.name || 'Servicio';
                                         const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                         const vehicleStr = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Auto');
+                                        const clientName = t.customers?.name || 'Cliente';
                                         const price = `$${parseFloat(t.price).toFixed(2)}`;
-                                        return [time, vehicleStr, serviceName, price];
+                                        return [time, clientName, vehicleStr, serviceName, price];
                                     });
 
                                     doc.text("Historial de Autos", 14, doc.lastAutoTable.finalY + 15);
                                     autoTable(doc, {
                                         startY: doc.lastAutoTable.finalY + 20,
-                                        head: [['Hora', 'Vehículo', 'Servicio', 'Precio']],
+                                        head: [['Hora', 'Cliente', 'Vehículo', 'Servicio', 'Precio']],
                                         body: txBody,
                                         theme: 'striped',
                                         headStyles: { fillColor: [75, 85, 99] } // Gray
