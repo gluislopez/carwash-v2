@@ -285,15 +285,22 @@ const Reports = () => {
             groups[dateKey].commissions += txCommission;
         });
 
-        // 2. Add Expenses (Products) to breakdown
+        // 2. Add Expenses (Products AND Lunches) to breakdown
         if (userRole === 'admin') {
             filteredExpenses.forEach(e => {
+                const dateKey = getPRDateString(e.date);
+                if (!groups[dateKey]) {
+                    groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
+                }
+
                 if (e.category === 'product') {
-                    const dateKey = getPRDateString(e.date);
-                    if (!groups[dateKey]) {
-                        groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
-                    }
                     groups[dateKey].productExpenses += (parseFloat(e.amount) || 0);
+                } else if (e.category === 'lunch') {
+                    // Shift Lunch from Commission (Labor Cost) to Expense (Vendor Cost)
+                    // This shows "Net Payout" in Commission column
+                    const amount = parseFloat(e.amount) || 0;
+                    groups[dateKey].commissions -= amount;
+                    groups[dateKey].productExpenses += amount;
                 }
             });
         }
@@ -418,8 +425,8 @@ const Reports = () => {
                                 ${userRole === 'admin' ? totalCount : formatToFraction(fractionalCount)}
                             </td>
                             <td style={{ textAlign: 'right', color: '#10b981', border: '1px solid #e5e7eb', padding: '12px' }}>$${totalIncome.toFixed(2)}</td>
-                            <td style="text-align: right; color: #F59E0B; border: 1px solid #e5e7eb; padding: 12px;">$${totalCommissions.toFixed(2)}</td>
-                            <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${totalProductExpenses.toFixed(2)}</td>
+                            <td style="text-align: right; color: #F59E0B; border: 1px solid #e5e7eb; padding: 12px;">$${(totalCommissions - totalLunches).toFixed(2)}</td>
+                            <td style="text-align: right; color: #ef4444; border: 1px solid #e5e7eb; padding: 12px;">$${(totalProductExpenses + totalLunches).toFixed(2)}</td>
                             <td style="text-align: right; border: 1px solid #e5e7eb; padding: 12px;">$${(totalIncome - totalCommissions - totalProductExpenses).toFixed(2)}</td>
                         </tr>
                     </tfoot>
@@ -582,7 +589,7 @@ const Reports = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <Users size={32} className="text-warning" />
                                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
-                                    ${totalCommissions.toFixed(2)}
+                                    ${(totalCommissions - totalLunches).toFixed(2)}
                                 </p>
                             </div>
                         </div>
@@ -591,7 +598,7 @@ const Reports = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <DollarSign size={32} className="text-danger" />
                                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--danger)' }}>
-                                    ${totalProductExpenses.toFixed(2)}
+                                    ${(totalProductExpenses + totalLunches).toFixed(2)}
                                 </p>
                             </div>
                         </div>
