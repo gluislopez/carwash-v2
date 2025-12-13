@@ -1049,7 +1049,7 @@ const Dashboard = () => {
                                     });
 
                                     const empBody = Object.entries(empStats).map(([eid, stats]) => {
-                                        const emp = employees.find(e => e.id === eid);
+                                        const emp = employees.find(e => String(e.id) === String(eid));
                                         const name = emp ? `${emp.first_name} ${emp.last_name}` : 'Desconocido';
                                         return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
                                     });
