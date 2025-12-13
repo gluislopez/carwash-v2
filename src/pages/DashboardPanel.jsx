@@ -1638,6 +1638,9 @@ const Dashboard = () => {
                                                 .filter(t => t.status === 'in_progress')
                                                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                                                 .map(t => {
+                                                    const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                                    const vehicleDisplayName = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Modelo N/A');
+
                                                     // Calculate Wash Time (Current - Started)
                                                     const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at); // Fallback to created_at if started_at missing
                                                     const now = new Date();
@@ -1651,10 +1654,10 @@ const Dashboard = () => {
                                                         <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                 <div>
-                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
                                                                     <div style={{ color: 'var(--text-muted)' }}>
                                                                         {t.customers?.name}
-                                                                        {t.customers?.vehicle_model && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontStyle: 'italic' }}>({t.customers.vehicle_model})</span>}
+                                                                        {t.customers?.vehicle_plate && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.customers.vehicle_plate})</span>}
                                                                     </div>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
                                                                         <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>{getServiceName(t.service_id)}</div>
