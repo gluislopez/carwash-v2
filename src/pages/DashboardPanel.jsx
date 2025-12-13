@@ -1032,6 +1032,11 @@ const Dashboard = () => {
                                     });
 
                                     // 2.2 EMPLEADOS (Comisiones)
+                                    // Fetch employees directly to ensure data is fresh
+                                    const { data: empData, error: empError } = await supabase.from('employees').select('*');
+                                    const employeesList = empData || employees; // Fallback to state if fetch fails
+                                    if (empError) console.error("Error fetching employees for PDF:", empError);
+
                                     // Calculate per employee
                                     const empStats = {};
                                     completedTxs.forEach(t => {
@@ -1042,15 +1047,20 @@ const Dashboard = () => {
 
                                         assignments.forEach(a => {
                                             const eid = a.employee_id;
+                                            if (!eid) return; // Skip if no ID
                                             if (!empStats[eid]) empStats[eid] = { comm: 0, tips: 0 };
                                             empStats[eid].comm += shareComm;
                                             empStats[eid].tips += shareTip;
                                         });
                                     });
 
+                                    // Debug matching
+                                    console.log("PDF Stats Keys:", Object.keys(empStats));
+                                    console.log("PDF Employees:", employeesList.map(e => ({ id: e.id, name: e.first_name })));
+
                                     const empBody = Object.entries(empStats).map(([eid, stats]) => {
-                                        const emp = employees.find(e => String(e.id) === String(eid));
-                                        const name = emp ? `${emp.first_name} ${emp.last_name}` : 'Desconocido';
+                                        const emp = employeesList.find(e => String(e.id) === String(eid));
+                                        const name = emp ? `${emp.first_name} ${emp.last_name || ''}`.trim() : `ID: ${eid}`; // Fallback to ID if not found
                                         return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
                                     });
 
