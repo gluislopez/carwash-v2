@@ -1175,6 +1175,97 @@ const Reports = () => {
                     </div>
                 </div>
             )}
+
+            {activeModal === 'income' && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2100
+                }} onClick={() => setActiveModal(null)}>
+                    <div className="card" style={{ width: '90%', maxWidth: '700px', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setActiveModal(null)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+                        <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            Desglose de Ingresos
+                        </h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                            {/* BY PAYMENT METHOD */}
+                            <div>
+                                <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Por Método de Pago</h4>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        {['cash', 'card', 'transfer'].map(method => {
+                                            const total = filteredTransactions
+                                                .filter(t => t.payment_method === method)
+                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+                                            const percent = totalIncome > 0 ? (total / totalIncome) * 100 : 0;
+
+                                            // Determine Label & Color
+                                            let label = 'Otro';
+                                            let color = 'var(--text-primary)';
+                                            if (method === 'cash') { label = 'Efectivo'; color = '#10B981'; } // Success Green
+                                            if (method === 'card') { label = 'Tarjeta'; color = '#3B82F6'; } // Blue
+                                            if (method === 'transfer') { label = 'ATH Móvil'; color = '#F59E0B'; } // Warning Orange
+
+                                            return (
+                                                <tr key={method} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                    <td style={{ padding: '0.5rem' }}>{label}</td>
+                                                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color }}>
+                                                        ${total.toFixed(2)}
+                                                    </td>
+                                                    <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        {percent.toFixed(1)}%
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* BY SERVICE */}
+                            <div>
+                                <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Por Servicio (Top 5)</h4>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <tbody>
+                                        {(() => {
+                                            const serviceStats = {};
+                                            filteredTransactions.forEach(t => {
+                                                const sId = t.service_id;
+                                                if (!serviceStats[sId]) serviceStats[sId] = { count: 0, amount: 0 };
+                                                serviceStats[sId].count += 1;
+                                                serviceStats[sId].amount += (parseFloat(t.price) || 0);
+                                            });
+
+                                            return Object.entries(serviceStats)
+                                                .sort((a, b) => b[1].amount - a[1].amount)
+                                                .slice(0, 5)
+                                                .map(([sId, stats]) => (
+                                                    <tr key={sId} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                        <td style={{ padding: '0.5rem' }}>
+                                                            {getServiceName(sId, servicesList)}
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                                {stats.count} autos
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>
+                                                            ${stats.amount.toFixed(2)}
+                                                        </td>
+                                                    </tr>
+                                                ));
+                                        })()}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
