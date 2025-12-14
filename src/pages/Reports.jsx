@@ -573,11 +573,20 @@ const Reports = () => {
 
                 {
                     userRole === 'admin' && (
-                        <div className="card">
+                        <div
+                            className="card"
+                            onClick={() => setActiveModal('income')}
+                            style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
                             <h3 className="label">Ingresos Totales</h3>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <DollarSign size={32} className="text-success" />
                                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'right' }}>
+                                Ver detalle &rarr;
                             </div>
                         </div>
                     )
@@ -1166,7 +1175,7 @@ const Reports = () => {
                     </div>
                 </div>
             )}
-        </div >
+        </div>
     );
 };
 
