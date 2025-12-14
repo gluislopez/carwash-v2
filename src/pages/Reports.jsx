@@ -163,11 +163,11 @@ const Reports = () => {
     const dateFilteredTxs = getDateFilteredTransactions();
     const totalCash = dateFilteredTxs
         .filter(t => t.payment_method === 'cash')
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const totalTransfer = dateFilteredTxs
         .filter(t => t.payment_method === 'transfer')
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const getFilteredExpenses = () => {
         if (!expenses) return [];
@@ -223,7 +223,7 @@ const Reports = () => {
         return sum + (1 / count);
     }, 0);
 
-    const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+    const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
         const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
@@ -278,7 +278,7 @@ const Reports = () => {
                 groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
             }
 
-            const txIncome = parseFloat(t.price) || 0;
+            const txIncome = (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0); // User requested Tips included in Income
             const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
 
             groups[dateKey].count += 1;
@@ -1201,7 +1201,7 @@ const Reports = () => {
                                         {['cash', 'card', 'transfer'].map(method => {
                                             const total = filteredTransactions
                                                 .filter(t => t.payment_method === method)
-                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
                                             const percent = totalIncome > 0 ? (total / totalIncome) * 100 : 0;
 
                                             // Determine Label & Color
@@ -1238,7 +1238,7 @@ const Reports = () => {
                                                 const sId = t.service_id;
                                                 if (!serviceStats[sId]) serviceStats[sId] = { count: 0, amount: 0 };
                                                 serviceStats[sId].count += 1;
-                                                serviceStats[sId].amount += (parseFloat(t.price) || 0);
+                                                serviceStats[sId].amount += ((parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0));
                                             });
 
                                             return Object.entries(serviceStats)
