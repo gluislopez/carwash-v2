@@ -851,6 +851,7 @@ const Reports = () => {
                                 <th style={{ padding: '1rem' }}>Empleados</th>
                                 <th style={{ padding: '1rem' }}>Método</th>
                                 <th style={{ padding: '1rem' }}>{userRole === 'admin' ? 'Total Venta' : 'Mi Comisión'}</th>
+                                {(userRole === 'admin' || userRole === 'manager') && <th style={{ padding: '1rem' }}>Recibo</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -963,50 +964,48 @@ const Reports = () => {
                                         )}
                                     </td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                                            <span>
-                                                {userRole === 'admin' ? (
-                                                    `$${t.price.toFixed(2)}`
-                                                ) : (
-                                                    (() => {
-                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0);
-                                                        const tip = (parseFloat(t.tip) || 0);
-                                                        const count = (t.transaction_assignments?.length) || 1;
+                                        {userRole === 'admin' ? (
+                                            `$${t.price.toFixed(2)}`
+                                        ) : (
+                                            (() => {
+                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                const tip = (parseFloat(t.tip) || 0);
+                                                const count = (t.transaction_assignments?.length) || 1;
 
-                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                        const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+                                                const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                        const sharedShare = sharedPool / count;
-                                                        const tipShare = tip / count;
+                                                const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                const sharedShare = sharedPool / count;
+                                                const tipShare = tip / count;
 
-                                                        const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
-                                                        const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+                                                const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                        return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
-                                                    })()
-                                                )}
-                                            </span>
-                                            {(userRole === 'admin' || userRole === 'manager') && (
-                                                <button
-                                                    onClick={() => setEditingTransactionId(t.id)}
-                                                    style={{
-                                                        background: 'none',
-                                                        border: 'none',
-                                                        color: 'var(--success)',
-                                                        cursor: 'pointer',
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: '0.2rem',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: 'bold'
-                                                    }}
-                                                >
-                                                    <DollarSign size={14} /> Recibo
-                                                </button>
-                                            )}
-                                        </div>
+                                                return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
+                                            })()
+                                        )}
                                     </td>
+                                    {(userRole === 'admin' || userRole === 'manager') && (
+                                        <td style={{ padding: '1rem' }}>
+                                            <button
+                                                onClick={() => setEditingTransactionId(t.id)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--success)',
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.2rem',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                <DollarSign size={14} /> Recibo
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                             {filteredTransactions.length === 0 && (

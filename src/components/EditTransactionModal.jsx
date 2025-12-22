@@ -568,6 +568,36 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                             Cancelar
                         </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                try {
+                                    const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
+                                    const assignedNames = employees
+                                        .filter(e => selectedEmployeeIds.includes(e.id))
+                                        .map(e => e.name)
+                                        .join(', ');
+
+                                    const { doc } = await generateReceiptPDF(
+                                        transaction,
+                                        serviceName,
+                                        extras,
+                                        formData.price,
+                                        formData.tip || 0,
+                                        assignedNames,
+                                        reviewLink
+                                    );
+                                    doc.save(`recibo_${transaction.customers?.vehicle_plate || 'car'}.pdf`);
+                                } catch (error) {
+                                    console.error("Error generating/downloading PDF:", error);
+                                    alert("Error al generar PDF: " + error.message);
+                                }
+                            }}
+                            className="btn"
+                            style={{ backgroundColor: 'var(--success)', color: 'white' }}
+                        >
+                            <Droplets size={18} style={{ marginRight: '0.5rem' }} /> Descargar PDF
+                        </button>
                         <button type="button" onClick={handleSubmit} className="btn btn-primary" disabled={isUploading}>
                             {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
                             {isUploading ? ' Procesando...' : 'Guardar'}

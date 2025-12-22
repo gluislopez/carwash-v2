@@ -190,7 +190,7 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     // Save
     const fileName = `recibo_${transaction.customers.vehicle_plate}_${Date.now()}.pdf`;
     const pdfBlob = doc.output('blob');
-    return { blob: pdfBlob, fileName };
+    return { blob: pdfBlob, fileName, doc };
 };
 
 export const generateReportPDF = (transactions, dateRange, stats, userRole) => {

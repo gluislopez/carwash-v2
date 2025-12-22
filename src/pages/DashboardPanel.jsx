@@ -1328,12 +1328,12 @@ const Dashboard = () => {
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div
                     className="card"
-                    onClick={() => userRole === 'admin' && setActiveDetailModal('cars')}
-                    style={{ cursor: userRole === 'admin' ? 'pointer' : 'default', transition: 'transform 0.2s' }}
-                    onMouseEnter={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1.02)')}
-                    onMouseLeave={(e) => userRole === 'admin' && (e.currentTarget.style.transform = 'scale(1)')}
+                    onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('cars')}
+                    style={{ cursor: (userRole === 'admin' || userRole === 'manager') ? 'pointer' : 'default', transition: 'transform 0.2s' }}
+                    onMouseEnter={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1.02)')}
+                    onMouseLeave={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1)')}
                 >
-                    <h3 className="label">{userRole === 'admin' ? 'Autos Lavados Hoy (Ver Detalles)' : 'Mis Autos Lavados'}</h3>
+                    <h3 className="label">{(userRole === 'admin' || userRole === 'manager') ? 'Autos Lavados Hoy (Ver Detalles)' : 'Mis Autos Lavados'}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Car size={32} className="text-primary" />
                         <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
