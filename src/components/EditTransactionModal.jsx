@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, Trash2, Loader2 } from 'lucide-react';
+import { X, Save, Plus, Trash2, Loader2, Droplets } from 'lucide-react';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
 import { calculateSharedCommission } from '../utils/commissionRules';
