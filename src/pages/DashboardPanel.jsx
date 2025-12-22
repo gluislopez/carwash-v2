@@ -625,18 +625,22 @@ const Dashboard = () => {
     // 2. Total XP (Lifetime Cars)
     const [totalXp, setTotalXp] = useState(0);
     const [dailyTarget, setDailyTarget] = useState(10); // Default 10
+    const [reviewLink, setReviewLink] = useState(''); // Review link setting
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchXpAndSettings = async () => {
             // Fetch Settings
             const { data: settingsData } = await supabase
                 .from('settings')
-                .select('value')
-                .eq('key', 'daily_target')
-                .single();
+                .select('key, value');
 
             if (settingsData) {
-                setDailyTarget(parseInt(settingsData.value, 10) || 10);
+                const target = settingsData.find(s => s.key === 'daily_target');
+                if (target) setDailyTarget(parseInt(target.value, 10) || 10);
+
+                const link = settingsData.find(s => s.key === 'review_link');
+                if (link) setReviewLink(link.value);
             }
 
             if (myEmployeeId) {
@@ -654,17 +658,29 @@ const Dashboard = () => {
         fetchXpAndSettings();
     }, [myEmployeeId, transactions]); // Re-fetch when transactions change
 
-    const handleEditTarget = async (newTarget) => {
+    const handleUpdateSettings = async (updates) => {
         if (userRole !== 'admin') return;
 
-        const { error } = await supabase
-            .from('settings')
-            .upsert({ key: 'daily_target', value: newTarget.toString() });
+        try {
+            const upserts = Object.entries(updates).map(([key, value]) => ({
+                key,
+                value: value.toString()
+            }));
 
-        if (error) {
-            alert('Error al actualizar la meta: ' + error.message);
-        } else {
-            setDailyTarget(newTarget);
+            const { error } = await supabase
+                .from('settings')
+                .upsert(upserts);
+
+            if (error) throw error;
+
+            if (updates.daily_target !== undefined) setDailyTarget(parseInt(updates.daily_target));
+            if (updates.review_link !== undefined) setReviewLink(updates.review_link);
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            alert('Error al actualizar: ' + error.message);
+            return { success: false };
         }
     };
 
@@ -1148,6 +1164,28 @@ const Dashboard = () => {
                             <span>Enviar PDF Detallado</span>
                         </button>
                     )}
+
+                    {userRole === 'admin' && (
+                        <button
+                            onClick={() => setIsConfigModalOpen(true)}
+                            title="Configuración de Recibo"
+                            style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.3rem 0.6rem',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                borderRadius: '0.25rem',
+                                marginLeft: '0.5rem'
+                            }}
+                        >
+                            <Settings size={16} />
+                        </button>
+                    )}
                 </div>
 
                 {showNotes && (
@@ -1490,10 +1528,71 @@ const Dashboard = () => {
                 )
             }
 
+            {/* CONFIGURATION MODAL */}
+            {isConfigModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
+                }} onClick={() => setIsConfigModalOpen(false)}>
+                    <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        padding: '2rem',
+                        borderRadius: '0.5rem',
+                        width: '90%',
+                        maxWidth: '450px'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ margin: 0 }}>Configuración de Recibo</h2>
+                            <button onClick={() => setIsConfigModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label className="label">Link de Reseña de Google</label>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="https://g.page/r/..."
+                                value={reviewLink}
+                                onChange={(e) => setReviewLink(e.target.value)}
+                            />
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                className="btn"
+                                style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                onClick={() => setIsConfigModalOpen(false)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                style={{ flex: 1 }}
+                                onClick={async () => {
+                                    const res = await handleUpdateSettings({ review_link: reviewLink });
+                                    if (res.success) {
+                                        alert('Configuración guardada');
+                                        setIsConfigModalOpen(false);
+                                    }
+                                }}
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* EDIT TRANSACTION MODAL */}
             {
                 editingTransactionId && (
                     <EditTransactionModal
+                        key={editingTransactionId}
+                        isOpen={true}
                         transaction={transactions.find(t => t.id === editingTransactionId)}
                         services={services}
                         employees={employees}
@@ -1501,6 +1600,7 @@ const Dashboard = () => {
                         onUpdate={handleUpdateTransaction}
                         onDelete={handleDeleteTransactionV2}
                         userRole={userRole}
+                        reviewLink={reviewLink}
                     />
                 )
             }
@@ -1577,6 +1677,23 @@ const Dashboard = () => {
                                                                 {getPaymentMethodLabel(t.payment_method)}
                                                             </span>
                                                             <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                            <button
+                                                                onClick={() => handlePayment(t)}
+                                                                style={{
+                                                                    marginLeft: '1rem',
+                                                                    background: 'none',
+                                                                    border: 'none',
+                                                                    color: 'var(--success)',
+                                                                    cursor: 'pointer',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '0.2rem',
+                                                                    fontSize: '0.8rem',
+                                                                    fontWeight: 'bold'
+                                                                }}
+                                                            >
+                                                                <DollarSign size={14} /> Recibo
+                                                            </button>
                                                         </div>
                                                     </li>
                                                 ))}
@@ -2371,22 +2488,6 @@ const Dashboard = () => {
                 )
             }
 
-            {/* EDIT TRANSACTION MODAL */}
-            {/* v3.11 FORM RESTORE */}
-            {
-                editingTransactionId && (
-                    <EditTransactionModal
-                        key={editingTransactionId}
-                        isOpen={!!editingTransactionId}
-                        onClose={() => setEditingTransactionId(null)}
-                        transaction={transactions.find(t => t.id === editingTransactionId)}
-                        services={services}
-                        employees={employees} // Pass employees
-                        userRole={userRole} // Pass role for permission check
-                        onUpdate={handleUpdateTransaction}
-                    />
-                )
-            }
 
             {/* ERROR ALERT */}
             {
@@ -2668,7 +2769,7 @@ const Dashboard = () => {
                         dailyTarget={dailyTarget}
                         totalXp={totalXp}
                         isEditable={userRole === 'admin'}
-                        onEditTarget={handleEditTarget}
+                        onEditTarget={(newTarget) => handleUpdateSettings({ daily_target: newTarget })}
                     />
                 )
             }

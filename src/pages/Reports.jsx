@@ -6,6 +6,7 @@ import { formatDuration } from '../utils/formatUtils';
 import { formatToFraction } from '../utils/fractionUtils';
 import autoTable from 'jspdf-autotable';
 import useSupabase from '../hooks/useSupabase';
+import EditTransactionModal from '../components/EditTransactionModal';
 
 const Reports = () => {
     const [dateRange, setDateRange] = useState('week'); // 'today', 'week', 'month', 'custom'
@@ -18,10 +19,11 @@ const Reports = () => {
     const [paymentMethodFilter, setPaymentMethodFilter] = useState('all'); // 'all', 'cash', 'transfer'
     const [editingTransactionId, setEditingTransactionId] = useState(null);
     const [activeModal, setActiveModal] = useState(null); // 'commissions', 'expenses'
+    const [reviewLink, setReviewLink] = useState('');
 
     // Fetch user info
     useEffect(() => {
-        const getUser = async () => {
+        const getUserAndSettings = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setMyUserId(user.id);
@@ -36,8 +38,14 @@ const Reports = () => {
                     setMyEmployeeId(employee.id);
                 }
             }
+
+            // Fetch Review Link Setting
+            const { data: settings } = await supabase.from('settings').select('*').eq('key', 'review_link').maybeSingle();
+            if (settings) {
+                setReviewLink(settings.value);
+            }
         };
-        getUser();
+        getUserAndSettings();
     }, []);
 
     // Fetch all transactions with assignments
@@ -498,6 +506,35 @@ const Reports = () => {
                 >
                     Este Mes
                 </button>
+                {/* Previous Months Selector */}
+                <select
+                    className="input"
+                    onChange={(e) => {
+                        if (!e.target.value) return;
+                        const [year, month] = e.target.value.split('-');
+                        const start = new Date(year, month, 1);
+                        const end = new Date(year, parseInt(month) + 1, 0);
+                        setStartDate(start.toISOString().split('T')[0]);
+                        setEndDate(end.toISOString().split('T')[0]);
+                        setDateRange('custom');
+                    }}
+                    style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                    defaultValue=""
+                >
+                    <option value="" disabled>Meses Anteriores</option>
+                    {Array.from({ length: 12 }).map((_, i) => {
+                        const d = new Date();
+                        d.setDate(1); // Avoid month skipping on 31st
+                        d.setMonth(d.getMonth() - (i + 1));
+                        const value = `${d.getFullYear()}-${d.getMonth()}`;
+                        const label = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                        return (
+                            <option key={value} value={value}>
+                                {label.charAt(0).toUpperCase() + label.slice(1)}
+                            </option>
+                        );
+                    })}
+                </select>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
                     <input
                         type="date"
@@ -926,30 +963,49 @@ const Reports = () => {
                                         )}
                                     </td>
                                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                                        {userRole === 'admin' ? (
-                                            `$${t.price.toFixed(2)}`
-                                        ) : (
-                                            (() => {
-                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0);
-                                                const tip = (parseFloat(t.tip) || 0);
-                                                const count = (t.transaction_assignments?.length) || 1;
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                                            <span>
+                                                {userRole === 'admin' ? (
+                                                    `$${t.price.toFixed(2)}`
+                                                ) : (
+                                                    (() => {
+                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                        const tip = (parseFloat(t.tip) || 0);
+                                                        const count = (t.transaction_assignments?.length) || 1;
 
-                                                // 1. Calculate Total Assigned Extras (to subtract from pool)
-                                                const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                        const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                // 2. Shared Pool (Base Commission - Assigned Extras)
-                                                const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                const sharedShare = sharedPool / count;
-                                                const tipShare = tip / count;
+                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                        const sharedShare = sharedPool / count;
+                                                        const tipShare = tip / count;
 
-                                                // 3. My Extras
-                                                const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
-                                                const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+                                                        const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                        const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                                return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
-                                            })()
-                                        )}
+                                                        return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
+                                                    })()
+                                                )}
+                                            </span>
+                                            {(userRole === 'admin' || userRole === 'manager') && (
+                                                <button
+                                                    onClick={() => setEditingTransactionId(t.id)}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: 'var(--success)',
+                                                        cursor: 'pointer',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.2rem',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                >
+                                                    <DollarSign size={14} /> Recibo
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -1265,6 +1321,19 @@ const Reports = () => {
 
                     </div>
                 </div>
+            )}
+
+            {editingTransactionId && (
+                <EditTransactionModal
+                    isOpen={true}
+                    transaction={allTransactions.find(t => t.id === editingTransactionId)}
+                    services={servicesList}
+                    employees={employeesList}
+                    onClose={() => setEditingTransactionId(null)}
+                    onUpdate={updateTransaction}
+                    userRole={userRole}
+                    reviewLink={reviewLink}
+                />
             )}
         </div>
     );

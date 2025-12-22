@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export const generateReceiptPDF = async (transaction, serviceName, extras, total, tip, employeeNames = '') => {
+export const generateReceiptPDF = async (transaction, serviceName, extras, total, tip, employeeNames = '', reviewLink = '') => {
     const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -61,9 +61,9 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     // ----------------------
 
     // Helper for centering text
-    const centerText = (text, yPos, size = 10, bold = false) => {
+    const centerText = (text, yPos, size = 10, bold = false, font = 'courier') => {
         doc.setFontSize(size);
-        doc.setFont('courier', bold ? 'bold' : 'normal');
+        doc.setFont(font, bold ? 'bold' : 'normal');
         doc.text(text, centerX, yPos, { align: 'center' });
     };
 
@@ -161,6 +161,25 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     y += 5;
     centerText('Vuelva Pronto', y);
     y += 8;
+
+    // Review Link
+    if (reviewLink) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        centerText('¡Tu opinión nos importa!', y, 10, true, 'helvetica');
+        y += 5;
+
+        centerText('Déjanos una reseña y recomendación en:', y, 9, false, 'helvetica');
+        y += 5;
+
+        doc.setTextColor(0, 0, 255); // Blue color for link
+        const linkWidth = doc.getTextWidth(reviewLink);
+        const linkX = (pageWidth - linkWidth) / 2;
+        doc.textWithLink(reviewLink, linkX, y, { url: reviewLink });
+        doc.setTextColor(0, 0, 0); // Reset color
+        y += 8;
+    }
+
 
     // Footer Note
     doc.setFontSize(8);

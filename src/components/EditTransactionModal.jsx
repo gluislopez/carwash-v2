@@ -4,7 +4,7 @@ import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
 import { calculateSharedCommission } from '../utils/commissionRules';
 
-const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate, userRole }) => {
+const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate, userRole, reviewLink }) => {
     if (!isOpen || !transaction) return null;
 
     const [extras, setExtras] = useState(transaction.extras || []);
@@ -139,7 +139,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     extras,
                     formData.price,
                     formData.tip || 0,
-                    assignedNames
+                    assignedNames,
+                    reviewLink
                 );
 
                 if (pdfBlob.size === 0) throw new Error('PDF vacío (0 bytes).');

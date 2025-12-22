@@ -22,6 +22,8 @@ const Commissions = () => {
     const [transactions, setTransactions] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [specificMonth, setSpecificMonth] = useState('');
+
 
     useEffect(() => {
         const init = async () => {
@@ -99,6 +101,13 @@ const Commissions = () => {
         } else if (performanceFilter === 'month') {
             const start = new Date(now.getFullYear(), now.getMonth(), 1);
             const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            startStr = getPRDateString(start);
+            endStr = getPRDateString(end);
+            endStr = getPRDateString(end);
+        } else if (performanceFilter === 'specific_month' && specificMonth) {
+            const [year, month] = specificMonth.split('-');
+            const start = new Date(year, month, 1);
+            const end = new Date(year, parseInt(month) + 1, 0);
             startStr = getPRDateString(start);
             endStr = getPRDateString(end);
         }
@@ -253,6 +262,40 @@ const Commissions = () => {
                     </button>
                 ))}
             </div>
+            {/* Specific Month Selector */}
+            <div style={{ marginBottom: '2rem' }}>
+                <select
+                    className="input"
+                    onChange={(e) => {
+                        setSpecificMonth(e.target.value);
+                        setPerformanceFilter('specific_month');
+                    }}
+                    value={specificMonth}
+                    style={{
+                        padding: '0.5rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'white',
+                        width: '100%',
+                        maxWidth: '300px'
+                    }}
+                >
+                    <option value="" disabled>Seleccionar Mes Anterior...</option>
+                    {Array.from({ length: 12 }).map((_, i) => {
+                        const d = new Date();
+                        d.setDate(1);
+                        d.setMonth(d.getMonth() - (i + 1));
+                        const value = `${d.getFullYear()}-${d.getMonth()}`;
+                        const label = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                        return (
+                            <option key={value} value={value}>
+                                {label.charAt(0).toUpperCase() + label.slice(1)}
+                            </option>
+                        );
+                    })}
+                </select>
+            </div>
 
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -303,7 +346,7 @@ const Commissions = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                                         <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</span>
                                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                            {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(t.date || t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                     <div style={{ color: 'var(--text-main)', marginBottom: '0.25rem' }}>
