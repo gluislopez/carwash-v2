@@ -98,11 +98,11 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     doc.setFontSize(9);
     doc.text(`FECHA: ${dateStr} ${timeStr}`, 5, y);
     y += 5;
-    doc.text(`CLIENTE: ${(transaction.customers.name || '').toUpperCase()}`, 5, y);
+    doc.text(`CLIENTE: ${(transaction.customers?.name || '').toUpperCase()}`, 5, y);
     y += 5;
-    doc.text(`AUTO: ${(transaction.customers.vehicle_plate || '').toUpperCase()}`, 5, y);
+    doc.text(`AUTO: ${(transaction.customers?.vehicle_plate || '').toUpperCase()}`, 5, y);
     y += 4;
-    doc.text(`      (${(transaction.customers.vehicle_model || '').toUpperCase()})`, 5, y);
+    doc.text(`      (${(transaction.customers?.vehicle_model || '').toUpperCase()})`, 5, y);
     y += 5;
 
     if (employeeNames) {
@@ -188,7 +188,7 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     doc.text(splitFooter, pageWidth / 2, y, { align: 'center' });
 
     // Save
-    const fileName = `recibo_${transaction.customers.vehicle_plate}_${Date.now()}.pdf`;
+    const fileName = `recibo_${transaction.customers?.vehicle_plate || 'auto'}_${Date.now()}.pdf`;
     const pdfBlob = doc.output('blob');
     return { blob: pdfBlob, fileName, doc };
 };
