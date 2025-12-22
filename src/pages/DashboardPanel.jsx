@@ -659,7 +659,7 @@ const Dashboard = () => {
     }, [myEmployeeId, transactions]); // Re-fetch when transactions change
 
     const handleUpdateSettings = async (updates) => {
-        if (userRole !== 'admin') return;
+        if (userRole !== 'admin' && userRole !== 'manager') return;
 
         try {
             const upserts = Object.entries(updates).map(([key, value]) => ({
@@ -1165,27 +1165,6 @@ const Dashboard = () => {
                         </button>
                     )}
 
-                    {userRole === 'admin' && (
-                        <button
-                            onClick={() => setIsConfigModalOpen(true)}
-                            title="Configuración de Recibo"
-                            style={{
-                                backgroundColor: 'var(--bg-secondary)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--border-color)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                padding: '0.3rem 0.6rem',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                borderRadius: '0.25rem',
-                                marginLeft: '0.5rem'
-                            }}
-                        >
-                            <Settings size={16} />
-                        </button>
-                    )}
                 </div>
 
                 {showNotes && (
@@ -1317,10 +1296,37 @@ const Dashboard = () => {
 
 
             {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
-            <button className="btn btn-primary mobile-fab" onClick={() => setIsModalOpen(true)}>
-                <Plus size={20} />
-                <span className="desktop-text">Registrar Servicio</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button className="btn btn-primary mobile-fab" onClick={() => setIsModalOpen(true)}>
+                    <Plus size={20} />
+                    <span className="desktop-text">Registrar Servicio</span>
+                </button>
+
+                {(userRole === 'admin' || userRole === 'manager') && (
+                    <button
+                        onClick={() => setIsConfigModalOpen(true)}
+                        title="Configuración de Recibo"
+                        className="btn"
+                        style={{
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '42px',
+                            height: '42px',
+                            cursor: 'pointer',
+                            borderRadius: '0.5rem',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+                    >
+                        <Settings size={22} />
+                    </button>
+                )}
+            </div>
 
 
 

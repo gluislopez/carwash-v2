@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw } from 'lucide-react';
+import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw, Settings } from 'lucide-react';
 import { getEmployeeName, getServiceName, getCustomerName, getVehicleInfo } from '../utils/relationshipHelpers';
 import { formatDuration } from '../utils/formatUtils';
 import { formatToFraction } from '../utils/fractionUtils';
@@ -48,6 +48,30 @@ const Reports = () => {
         };
         getUserAndSettings();
     }, []);
+
+    const handleUpdateSettings = async (updates) => {
+        if (userRole !== 'admin' && userRole !== 'manager') return;
+
+        try {
+            const upserts = Object.entries(updates).map(([key, value]) => ({
+                key,
+                value: value.toString()
+            }));
+
+            const { error } = await supabase
+                .from('settings')
+                .upsert(upserts);
+
+            if (error) throw error;
+            if (updates.review_link !== undefined) setReviewLink(updates.review_link);
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            alert('Error al actualizar: ' + error.message);
+            return { success: false };
+        }
+    };
 
     // Fetch all transactions with assignments
     const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), transaction_assignments(*)');
@@ -478,9 +502,35 @@ const Reports = () => {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes y Finanzas</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div>
+                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes y Finanzas</h1>
+                        <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones</p>
+                    </div>
+                    {(userRole === 'admin' || userRole === 'manager') && (
+                        <button
+                            onClick={() => setActiveModal('settings')}
+                            title="Configuración de Recibo"
+                            style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '40px',
+                                height: '40px',
+                                cursor: 'pointer',
+                                borderRadius: '0.5rem',
+                                transition: 'all 0.2s',
+                                marginTop: '-0.5rem'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                        >
+                            <Settings size={20} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -1090,6 +1140,64 @@ const Reports = () => {
                     </div>
                 )
             }
+            {/* SETTINGS MODAL */}
+            {activeModal === 'settings' && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
+                }} onClick={() => setActiveModal(null)}>
+                    <div className="card" style={{ width: '90%', maxWidth: '400px', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setActiveModal(null)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            Configuración de Recibo
+                        </h3>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label className="label">Link de Reseña de Google</label>
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="https://g.page/r/..."
+                                value={reviewLink}
+                                onChange={(e) => setReviewLink(e.target.value)}
+                            />
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                className="btn"
+                                style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                onClick={() => setActiveModal(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                style={{ flex: 1 }}
+                                onClick={async () => {
+                                    const res = await handleUpdateSettings({ review_link: reviewLink });
+                                    if (res.success) {
+                                        alert('Configuración guardada');
+                                        setActiveModal(null);
+                                    }
+                                }}
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* MODALS FOR REPORT DETAILS */}
             {activeModal === 'commissions' && (
                 <div style={{
