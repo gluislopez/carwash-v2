@@ -162,8 +162,8 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     centerText('Vuelva Pronto', y);
     y += 8;
 
-    // Review Link (Favor internal private feedback if requested or no link provided)
-    const feedbackUrl = reviewLink || (transaction.id ? `${window.location.origin}/feedback/${transaction.id}` : '');
+    // Review Link (Prioritize internal private feedback)
+    const feedbackUrl = transaction.id ? `${window.location.origin}/feedback/${transaction.id}` : reviewLink;
 
     if (feedbackUrl) {
         doc.setFontSize(10);
@@ -171,7 +171,7 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
         centerText('¡Tu opinión nos importa!', y, 10, true, 'helvetica');
         y += 5;
 
-        centerText(reviewLink ? 'Déjanos una reseña en:' : 'Danos tu feedback privado aquí:', y, 9, false, 'helvetica');
+        centerText('¡Califícanos aquí!', y, 9, false, 'helvetica');
         y += 5;
 
         doc.setTextColor(0, 0, 255); // Blue color for link
