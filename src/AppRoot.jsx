@@ -12,6 +12,7 @@ import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
 import Inventory from './pages/Inventory';
 import GamificationSettings from './pages/GamificationSettings';
+import CustomerFeedback from './pages/CustomerFeedback';
 
 import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
@@ -152,6 +153,7 @@ const AppRoot = () => {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/test-deployment" element={<TestDeployment />} />
+                <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
 
                 <Route
                     path="*"

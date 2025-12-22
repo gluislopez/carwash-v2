@@ -162,24 +162,26 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     centerText('Vuelva Pronto', y);
     y += 8;
 
-    // Review Link
-    if (reviewLink) {
+    // Review Link (Favor internal private feedback if requested or no link provided)
+    const feedbackUrl = reviewLink || (transaction.id ? `${window.location.origin}/feedback/${transaction.id}` : '');
+
+    if (feedbackUrl) {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         centerText('¡Tu opinión nos importa!', y, 10, true, 'helvetica');
         y += 5;
 
-        centerText('Déjanos una reseña y recomendación en:', y, 9, false, 'helvetica');
+        centerText(reviewLink ? 'Déjanos una reseña en:' : 'Danos tu feedback privado aquí:', y, 9, false, 'helvetica');
         y += 5;
 
         doc.setTextColor(0, 0, 255); // Blue color for link
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        const splitLink = doc.splitTextToSize(reviewLink, pageWidth - 10);
+        const splitLink = doc.splitTextToSize(feedbackUrl, pageWidth - 10);
         doc.text(splitLink, pageWidth / 2, y, { align: 'center' });
 
         // Add a clickable link area (approximate for the block)
-        doc.link(5, y - 2, pageWidth - 10, splitLink.length * 4, { url: reviewLink });
+        doc.link(5, y - 2, pageWidth - 10, splitLink.length * 4, { url: feedbackUrl });
 
         doc.setTextColor(0, 0, 0); // Reset color
         y += (splitLink.length * 4) + 4;
