@@ -77,7 +77,7 @@ const CustomerFeedback = () => {
                             🎁 ¡REGALO PARA TI!
                         </p>
                         <p style={{ fontSize: '0.9rem' }}>
-                            Presenta este mensaje en tu próxima visita y recibe un **10% de descuento** o un **aromatizante gratis**.
+                            Presenta este mensaje en tu próxima visita y recibe un **10% de descuento**.
                         </p>
                     </div>
                 </div>
