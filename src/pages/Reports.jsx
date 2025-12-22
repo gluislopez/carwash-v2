@@ -39,10 +39,11 @@ const Reports = () => {
                 }
             }
 
-            // Fetch Review Link Setting
-            const { data: settings } = await supabase.from('settings').select('*').eq('key', 'review_link').maybeSingle();
-            if (settings) {
-                setReviewLink(settings.value);
+            // Fetch Settings
+            const { data: settingsData } = await supabase.from('settings').select('key, value');
+            if (settingsData) {
+                const link = settingsData.find(s => s.key === 'review_link');
+                if (link) setReviewLink(link.value);
             }
         };
         getUserAndSettings();

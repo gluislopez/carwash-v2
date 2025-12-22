@@ -173,11 +173,16 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
         y += 5;
 
         doc.setTextColor(0, 0, 255); // Blue color for link
-        const linkWidth = doc.getTextWidth(reviewLink);
-        const linkX = (pageWidth - linkWidth) / 2;
-        doc.textWithLink(reviewLink, linkX, y, { url: reviewLink });
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        const splitLink = doc.splitTextToSize(reviewLink, pageWidth - 10);
+        doc.text(splitLink, pageWidth / 2, y, { align: 'center' });
+
+        // Add a clickable link area (approximate for the block)
+        doc.link(5, y - 2, pageWidth - 10, splitLink.length * 4, { url: reviewLink });
+
         doc.setTextColor(0, 0, 0); // Reset color
-        y += 8;
+        y += (splitLink.length * 4) + 4;
     }
 
 
