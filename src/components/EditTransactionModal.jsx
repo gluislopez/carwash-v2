@@ -101,14 +101,25 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
     }, [formData.price, formData.serviceId, selectedEmployeeIds, extras, services]);
 
-    const handleSubmit = async () => {
+    const [showPaymentConfModal, setShowPaymentConfModal] = useState(false);
+
+    const handlePaymentConfirm = (method) => {
+        setFormData(prev => ({ ...prev, paymentMethod: method }));
+        setShowPaymentConfModal(false);
+        // Validar que el estado se actualice antes de procesar? 
+        // Mejor pasamos el metodo directamente a processTransaction para asegurar
+        processTransaction(method);
+    };
+
+    const processTransaction = async (confirmedMethod = null) => {
+        const methodToUse = confirmedMethod || formData.paymentMethod;
+
         setIsUploading(true); // Start loading
 
         // 1. DETERMINE NEW STATUS FIRST
         let newStatus = formData.status;
         if (formData.status === 'pending') newStatus = 'paid';
         if (formData.status === 'ready') newStatus = 'completed';
-        // if (formData.status === 'in_progress') newStatus = 'completed'; // REMOVED: Don't auto-complete in-progress
 
         const isCompleting = newStatus === 'paid' || newStatus === 'completed';
 
@@ -153,7 +164,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 // SIMPLIFIED UPLOAD (Match Test Button exactly)
                 const { data, error } = await supabase.storage
                     .from('receipts')
-                    .upload(fileName, pdfBlob); // Removed options (upsert, contentType) to match Test Button
+                    .upload(fileName, pdfBlob);
 
                 if (error) {
                     console.error('Supabase Upload Error:', error);
@@ -205,7 +216,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             await onUpdate(transaction.id, {
                 service_id: formData.serviceId,
                 price: parseFloat(formData.price),
-                payment_method: formData.paymentMethod,
+                payment_method: methodToUse, // Use the confirmed method
                 tip: parseFloat(formData.tip) || 0,
                 commission_amount: finalCommission,
                 status: newStatus,
@@ -233,6 +244,24 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             onClose(); // Close if no receipt needed or just saved
         }
     };
+
+    const handleSaveClick = () => {
+        // Check if we are completing/paying
+        let nextStatus = formData.status;
+        if (formData.status === 'pending') nextStatus = 'paid';
+        if (formData.status === 'ready') nextStatus = 'completed';
+
+        const isCompleting = nextStatus === 'paid' || nextStatus === 'completed';
+
+        if (isCompleting) {
+            setShowPaymentConfModal(true);
+        } else {
+            processTransaction();
+        }
+    };
+
+    // ... (rendering continues)
+
 
     // SUCCESS VIEW (Manual WhatsApp Trigger)
     if (successUrl) {
@@ -598,13 +627,94 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         >
                             <Droplets size={18} style={{ marginRight: '0.5rem' }} /> Descargar PDF
                         </button>
-                        <button type="button" onClick={handleSubmit} className="btn btn-primary" disabled={isUploading}>
+                        <button type="button" onClick={handleSaveClick} className="btn btn-primary" disabled={isUploading}>
                             {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
                             {isUploading ? ' Procesando...' : 'Guardar'}
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* PAYMENT CONFIRMATION MODAL (Overlay) */}
+            {showPaymentConfModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)', // Very dark to focus attention
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3500 // Higher than everything
+                }}>
+                    <div className="card" style={{ width: '90%', maxWidth: '500px', backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>💰 Confirmar Pago</h2>
+                        <p style={{ fontSize: '1.2rem', marginBottom: '2rem', color: 'var(--text-muted)' }}>
+                            ¿Cómo pagó el cliente?
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                            <button
+                                onClick={() => handlePaymentConfirm('cash')}
+                                className="btn"
+                                style={{
+                                    padding: '1.5rem',
+                                    fontSize: '1.5rem',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                    color: '#10B981',
+                                    border: '2px solid #10B981',
+                                    justifyContent: 'center',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                💵 EFECTIVO
+                            </button>
+
+                            <button
+                                onClick={() => handlePaymentConfirm('card')}
+                                className="btn"
+                                style={{
+                                    padding: '1.5rem',
+                                    fontSize: '1.5rem',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                    color: '#3B82F6',
+                                    border: '2px solid #3B82F6',
+                                    justifyContent: 'center',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                💳 TARJETA
+                            </button>
+
+                            <button
+                                onClick={() => handlePaymentConfirm('transfer')}
+                                className="btn"
+                                style={{
+                                    padding: '1.5rem',
+                                    fontSize: '1.5rem',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                    color: '#F59E0B',
+                                    border: '2px solid #F59E0B',
+                                    justifyContent: 'center',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                📱 ATH MÓVIL
+                            </button>
+
+                            <button
+                                onClick={() => setShowPaymentConfModal(false)}
+                                className="btn"
+                                style={{
+                                    padding: '1rem',
+                                    marginTop: '1rem',
+                                    backgroundColor: 'transparent',
+                                    border: '1px solid var(--border-color)',
+                                    justifyContent: 'center',
+                                    color: 'var(--text-muted)'
+                                }}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ASSIGNMENT MODAL (Internal) */}
             {showAssignmentModal && pendingExtra && (
