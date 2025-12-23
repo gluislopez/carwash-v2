@@ -661,16 +661,73 @@ const Dashboard = () => {
 
     useEffect(() => {
         const fetchFeedback = async () => {
-            const { data } = await supabase
+            let query = supabase
                 .from('customer_feedback')
                 .select('*, transactions(customers(name), services(name))')
                 .order('created_at', { ascending: false });
+
+            // Apply Date Filter
+            if (dateFilter === 'today') {
+                // Assuming prStartOfDay and prEndOfDay are available or need to be recalculated here if they are state-dependent or globals
+                // To be safe, let's use the same logic as transactions if possible, or simple JS dates converted to ISO
+                // Given previous logic, best to use the same strings if they are available in scope? 
+                // Wait, prStartOfDay/prEndOfDay are calculated at top level typically?
+                // Let's look at how they are defined. If they are variables inside the component body, we use them.
+                // If not, we re-calculate.
+                // Let's assume re-calculation for safety or usage of dateRange if manual.
+
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
+                const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+
+                // Better: Use the same helper or logic as transactions if accessible.
+                // Let's stick to current Dashboard logic.
+                // Actually, transactions are filtered IN MEMORY in this file (lines 490+).
+                // So maybe we should fetch ALL for the period? 
+                // Or fetch all and filter in memory? 
+                // Fetching all is easier for small scale, but filtering prevents over-fetching.
+
+                // Let's filter in memory like transactions to keep it consistent and reactive?
+                // Transactions are fetched via useSupabase which fetches ALL?.
+                // No, useSupabase likely fetches all.
+
+                // To fix the user request "can I see it by dates?", let's filter the FEEDBACKS list in the UI, 
+                // but for now, let's just fetch ALL (since volume is low) and filter in the RENDER or IN MEMORY.
+
+                // WAIT, lines 490 filter transactions. We should probably filter feedbacks similarly.
+                // But the user asked "will it be saved and can I see it by dates".
+                // Saving is confirmed. Viewing by dates requires filtering.
+
+                // Let's fetch ALL for now (simple) and adds a filtered list variable?
+                // Or better, let's just filter the 'feedbacks' state setter? 
+                // No, better to filter in the UI render or a derived state.
+
+                // Actually, let's just leave the fetch as fetching ALL (or last 100) and filter in the view?
+                // The user asked "puedo ver por fechas".
+                // If I fetch all, I can filter based on the main 'dateFilter' state.
+            }
+
+            // To be robust and answer "YES", I should make sure the UI respects the date.
+            // Currently the UI (lines 1600+) iterates over `feedbacks`.
+            // I should change that to `filteredFeedbacks`.
+
+            const { data } = await query;
             if (data) setFeedbacks(data);
         };
         if (userRole === 'admin' || userRole === 'manager') {
             fetchFeedback();
         }
-    }, [userRole, transactions]);
+    }, [userRole, transactions]); // Refresh when transactions change (new feedback might be linked)
+
+    // DERIVED STATE: Filtered Feedbacks
+    const filteredFeedbacks = feedbacks.filter(f => {
+        const fDate = getPRDateString(f.created_at);
+        if (dateFilter === 'today') {
+            return fDate === getPRDateString(new Date());
+        } else {
+            return fDate >= dateRange.start && fDate <= dateRange.end;
+        }
+    });
 
     const handleUpdateSettings = async (updates) => {
         if (userRole !== 'admin' && userRole !== 'manager') return;
@@ -1415,7 +1472,7 @@ const Dashboard = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <MessageSquare size={32} color="#8b5cf6" />
                             <div>
-                                <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{feedbacks.length}</p>
+                                <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{filteredFeedbacks.length}</p>
                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios recibidos</p>
                             </div>
                         </div>
@@ -1685,8 +1742,8 @@ const Dashboard = () => {
                             <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
                                 {activeDetailModal === 'feedback' && (
                                     <div style={{ display: 'grid', gap: '1rem' }}>
-                                        {feedbacks.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay feedbacks registrados aún.</p>}
-                                        {feedbacks.map(f => (
+                                        {filteredFeedbacks.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay feedbacks en este rango de fechas.</p>}
+                                        {filteredFeedbacks.map(f => (
                                             <div key={f.id} className="card" style={{ padding: '1rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                     <span style={{ fontWeight: 'bold' }}>{f.transactions?.customers?.name || 'Cliente Anónimo'}</span>
