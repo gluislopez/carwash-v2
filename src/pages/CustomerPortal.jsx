@@ -57,14 +57,12 @@ const CustomerPortal = () => {
                 setActiveService(active);
 
                 // Latest Completed Service for Feedback
-                // Find first completed/paid that is NOT active
-                if (!active) {
-                    const lastCompleted = txData.find(t => t.status === 'completed' || t.status === 'paid');
-                    if (lastCompleted) {
-                        setLatestTx(lastCompleted);
-                        if (lastCompleted.customer_feedback && lastCompleted.customer_feedback.length > 0) {
-                            setHasRated(true);
-                        }
+                // ALWAY check for latest completed, even if there is another active service
+                const lastCompleted = txData.find(t => t.status === 'completed' || t.status === 'paid');
+                if (lastCompleted) {
+                    setLatestTx(lastCompleted);
+                    if (lastCompleted.customer_feedback && lastCompleted.customer_feedback.length > 0) {
+                        setHasRated(true);
                     }
                 }
             }
