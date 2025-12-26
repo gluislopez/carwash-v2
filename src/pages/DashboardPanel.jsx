@@ -1404,7 +1404,7 @@ const Dashboard = () => {
 
 
 
-            <div className="workflow-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="uniform-3-col-grid" style={{ marginBottom: '1.5rem' }}>
                 {/* NUEVO: TOTAL REGISTRADOS (Todos) - Solo Admin/Manager */}
                 {(userRole === 'admin' || userRole === 'manager') && (
                     <div
@@ -1487,7 +1487,7 @@ const Dashboard = () => {
             </div>
 
             {/* MULTI-STAGE FLOW SECTIONS (Compacted) */}
-            <div className="workflow-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem', alignItems: 'start' }}>
+            <div className="uniform-3-col-grid" style={{ marginBottom: '2rem' }}>
 
                 {/* COLA DE ESPERA (Summary Card) */}
                 <div

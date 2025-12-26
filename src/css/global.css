@@ -228,9 +228,11 @@ body {
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
-.label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--text-muted);
+
+/* Utility for 3-Column Grids (Forces non-wrapping on all screens) */
+.uniform-3-col-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem;
+    align-items: start;
 }
