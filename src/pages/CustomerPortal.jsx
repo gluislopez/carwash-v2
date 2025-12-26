@@ -280,7 +280,7 @@ const CustomerPortal = () => {
                 {/* ... (existing history code) ... */}
 
                 <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.8, fontSize: '0.8rem', paddingBottom: '2rem' }}>
-                    <p>Express CarWash System v4.64</p>
+                    <p>Express CarWash System v4.69</p>
                     <button
                         onClick={async () => {
                             if (!confirm("¿Resetear la aplicación? Esto borrará la memoria caché.")) return;
@@ -316,7 +316,7 @@ const CustomerPortal = () => {
                             cursor: 'pointer'
                         }}
                     >
-                        ⚠️ Forzar Actualización / Reset
+                        ⚠️ RESET v4.69
                     </button>
 
                     {/* DEBUG INFO */}
