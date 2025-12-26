@@ -62,16 +62,23 @@ const CustomerPortal = () => {
                     const lastCompleted = txData.find(t => t.status === 'completed' || t.status === 'paid');
                     if (lastCompleted) {
                         setLatestTx(lastCompleted);
-                        // Check if it has feedback (using the relational join if RLS permits, or checking array length)
-                        // Note: If RLS hides feedback, this might be empty. But allow_public_access only opened base tables.
-                        // Assuming auth is anon, feedback might not be visible unless we open it.
-                        // Let's rely on local state if user just submitted, or try to read it.
                         if (lastCompleted.customer_feedback && lastCompleted.customer_feedback.length > 0) {
                             setHasRated(true);
                         }
                     }
                 }
             }
+
+            // 3. Fetch Queue Count (GLOBAL)
+            const { count, error: queueError } = await supabase
+                .from('transactions')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'waiting');
+
+            if (!queueError) {
+                setQueueCount(count);
+            }
+
             setLoading(false);
         };
 
@@ -111,8 +118,12 @@ const CustomerPortal = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Cargando perfil...</div>;
-    if (!customer) return <div className="p-8 text-center">Cliente no encontrado.</div>;
+    const [queueCount, setQueueCount] = useState(0);
+
+    // ... useEffect ...
+
+    if (loading) return <div className="p-8 text-center text-white bg-slate-900 min-h-screen">Cargando perfil...</div>;
+    if (!customer) return <div className="p-8 text-center text-white bg-slate-900 min-h-screen">Cliente no encontrado.</div>;
 
     return (
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
@@ -120,10 +131,40 @@ const CustomerPortal = () => {
             <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <img src="/logo.jpg" alt="Express CarWash" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', border: '3px solid rgba(255,255,255,0.2)' }} />
                 <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
-                <p style={{ opacity: 0.8 }}>Tu historial de servicios</p>
+
+                {/* QUEUE COUNTER */}
+                <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>{queueCount}</div>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>En Cola</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4ade80' }}>Abierto</div>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Estado</div>
+                    </div>
+                </div>
             </div>
 
-            <div style={{ maxWidth: '600px', margin: '-2rem auto 0', padding: '0 1rem' }}>
+            <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
+
+                {/* PROMO BADGE (If Saved) */}
+                {customer.promo_available && (
+                    <div style={{
+                        backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
+                        borderRadius: '1rem', marginBottom: '1rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ fontSize: '1.5rem' }}>🎟️</div>
+                            <div>
+                                <div style={{ fontWeight: 'bold' }}>¡TIENES 10% OFF!</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Disponible para hoy</div>
+                            </div>
+                        </div>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>USAR</div>
+                    </div>
+                )}
 
                 {/* PROMO WINNER CARD */}
                 {showPromo && (
