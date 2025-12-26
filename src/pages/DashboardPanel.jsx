@@ -1451,24 +1451,7 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* RESEÑAS PRIVADAS (Moved Here) */}
-                    {(userRole === 'admin' || userRole === 'manager') && (
-                        <div
-                            className="card"
-                            onClick={() => setActiveDetailModal('feedback')}
-                            style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                        >
-                            <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Feedback Privado</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <MessageSquare size={24} color="#8b5cf6" />
-                                <div>
-                                    <p style={{ fontSize: '1.75rem', fontWeight: 'bold', lineHeight: 1 }}>{filteredFeedbacks.length}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* CARD: LISTO PARA RECOGER (NUEVO) */}
@@ -1574,6 +1557,30 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* RESEÑAS PRIVADAS (Relocated Below Stats) */}
+            {(userRole === 'admin' || userRole === 'manager') && (
+                <div
+                    className="card"
+                    onClick={() => setActiveDetailModal('feedback')}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                            <MessageSquare size={24} color="#8b5cf6" />
+                        </div>
+                        <div>
+                            <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Feedback de Clientes</h3>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios y calificaciones recientes</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{filteredFeedbacks.length}</p>
+                    </div>
+                </div>
+            )}
 
             {/* ASSIGNMENT MODAL */}
             {
