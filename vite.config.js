@@ -38,5 +38,12 @@ export default defineConfig({
     // FORCE BUILD UPDATE: v4.02
     build: {
         sourcemap: true,
+        rollupOptions: {
+            output: {
+                entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+                chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+                assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`
+            }
+        }
     }
 })
