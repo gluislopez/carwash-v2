@@ -312,6 +312,17 @@ const CustomerPortal = () => {
                     >
                         ⚠️ Forzar Actualización / Reset
                     </button>
+
+                    {/* DEBUG INFO */}
+                    <div style={{ marginTop: '2rem', textAlign: 'left', backgroundColor: '#111', color: '#0f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '10px', overflowX: 'scroll', border: '1px solid #333' }}>
+                        <p><strong>DEBUG v4.66</strong></p>
+                        <p>Queue: {queueCount}</p>
+                        <p>Active ID: {activeService?.id || 'None'} ({activeService?.status})</p>
+                        <p>Latest Tx ID: {latestTx?.id || 'None'} ({latestTx?.status})</p>
+                        <p>Has Rated: {hasRated ? 'YES' : 'NO'}</p>
+                        <p>Show Promo: {showPromo ? 'YES' : 'NO'}</p>
+                        <p>Feedback Data: {JSON.stringify(latestTx?.customer_feedback || [])}</p>
+                    </div>
                 </div>
             </div>
         </div>
