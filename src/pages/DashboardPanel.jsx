@@ -1404,7 +1404,7 @@ const Dashboard = () => {
 
 
 
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="workflow-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
                 {/* NUEVO: TOTAL REGISTRADOS (Todos) - Solo Admin/Manager */}
                 {(userRole === 'admin' || userRole === 'manager') && (
                     <div

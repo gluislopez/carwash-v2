@@ -195,12 +195,6 @@
         display: none !important;
     }
 
-    /* Stats Grid */
-    .stats-grid {
-        grid-template-columns: 1fr !important;
-        gap: 1rem !important;
-    }
-
     /* Workflow Grid - Force 3 columns even on mobile */
     div.workflow-grid[style] {
         grid-template-columns: repeat(3, 1fr) !important;
