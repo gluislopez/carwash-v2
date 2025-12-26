@@ -60,8 +60,17 @@ const Dashboard = () => {
         if (!newNote.trim()) return;
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
 
+        // Get employee name for attribution
+        let authorName = 'Empleado';
+        if (myEmployeeId) {
+            const me = employees.find(e => e.id === myEmployeeId);
+            if (me) authorName = me.name || me.first_name;
+        }
+
+        const contentWithAuthor = `${authorName}: ${newNote}`;
+
         const { error } = await supabase.from('daily_notes').insert([
-            { content: newNote, date: today }
+            { content: contentWithAuthor, date: today }
         ]);
 
         if (!error) setNewNote('');
@@ -1559,25 +1568,51 @@ const Dashboard = () => {
             </div>
 
             {/* RESEÑAS PRIVADAS (Relocated Below Stats) */}
+            {/* ADMIN SPLIT ROW: FEEDBACK & DAILY NOTES */}
             {(userRole === 'admin' || userRole === 'manager') && (
-                <div
-                    className="card"
-                    onClick={() => setActiveDetailModal('feedback')}
-                    style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                            <MessageSquare size={24} color="#8b5cf6" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    {/* FEEDBACK CARD */}
+                    <div
+                        className="card"
+                        onClick={() => setActiveDetailModal('feedback')}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                                <MessageSquare size={24} color="#8b5cf6" />
+                            </div>
+                            <div>
+                                <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Feedback</h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios de clientes</p>
+                            </div>
                         </div>
                         <div>
-                            <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Feedback de Clientes</h3>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios y calificaciones recientes</p>
+                            <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{filteredFeedbacks.length}</p>
                         </div>
                     </div>
-                    <div>
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{filteredFeedbacks.length}</p>
+
+                    {/* DAILY NOTES CARD */}
+                    <div
+                        className="card"
+                        onClick={() => setActiveDetailModal('daily_notes')}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                                <MessageCircle size={24} color="#EAB308" />
+                            </div>
+                            <div>
+                                <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Notas del Día</h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bitácora de empleados</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{dailyNotes.length}</p>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1753,6 +1788,7 @@ const Dashboard = () => {
                                     {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
                                     {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
                                     {activeDetailModal === 'feedback' && '💬 Feedback Privado de Clientes'}
+                                    {activeDetailModal === 'daily_notes' && '📝 Notas del Día por Empleado'}
                                 </h2>
                                 <button
                                     onClick={() => setActiveDetailModal(null)}
@@ -1785,6 +1821,47 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+
+                                {activeDetailModal === 'daily_notes' && (
+                                    <div style={{ display: 'grid', gap: '1.5rem' }}>
+                                        {dailyNotes.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay notas registradas hoy.</p>}
+                                        {(() => {
+                                            // Group notes by Author (parsing "Name: Content")
+                                            const groupedNotes = {};
+                                            dailyNotes.forEach(note => {
+                                                const parts = note.content.split(':');
+                                                let author = 'Desconocido';
+                                                let content = note.content;
+
+                                                if (parts.length > 1) {
+                                                    author = parts[0].trim();
+                                                    content = parts.slice(1).join(':').trim();
+                                                }
+
+                                                if (!groupedNotes[author]) groupedNotes[author] = [];
+                                                groupedNotes[author].push({ ...note, cleanContent: content });
+                                            });
+
+                                            return Object.entries(groupedNotes).map(([author, notes]) => (
+                                                <div key={author} className="card" style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)' }}>
+                                                    <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                                                        👤 {author}
+                                                    </h3>
+                                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                                        {notes.map(n => (
+                                                            <li key={n.id} style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '60px' }}>
+                                                                    {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                                <span style={{ fontSize: '0.95rem' }}>{n.cleanContent}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            ));
+                                        })()}
                                     </div>
                                 )}
 
