@@ -1403,6 +1403,20 @@ const Dashboard = () => {
 
 
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                {/* NUEVO: TOTAL REGISTRADOS (Todos) */}
+                <div
+                    className="card"
+                    style={{ padding: '1.25rem', backgroundColor: 'var(--bg-card)' }}
+                >
+                    <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Total Registrados</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Car size={24} style={{ color: 'var(--text-muted)' }} />
+                        <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            {statsTransactions.length}
+                        </p>
+                    </div>
+                </div>
+
                 <div
                     className="card"
                     onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('cars')}
@@ -1415,7 +1429,7 @@ const Dashboard = () => {
                     onMouseLeave={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1)')}
                 >
                     <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                        {(userRole === 'admin' || userRole === 'manager') ? 'Autos Hoy' : 'Mis Autos'}
+                        {(userRole === 'admin' || userRole === 'manager') ? 'Autos Completados' : 'Mis Autos'}
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <Car size={24} className="text-primary" />
