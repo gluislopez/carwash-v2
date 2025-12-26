@@ -2666,161 +2666,165 @@ const Dashboard = () => {
 
 
 
-            {/* SECCIÓN DE HISTORIAL (PAGADOS) */}
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                {statsTransactions
-                    .filter(t => t.status === 'completed' || t.status === 'paid')
-                    .sort((a, b) => {
-                        const dateA = new Date(a.date);
-                        const dateB = new Date(b.date);
-                        if (dateB - dateA !== 0) return dateB - dateA;
-                        return new Date(b.created_at) - new Date(a.created_at);
-                    })
-                    .map(t => (
-                        <div
-                            key={t.id}
-                            className="card"
-                            style={{
-                                borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s'
-                            }}
-                            onClick={() => setSelectedTransaction(t)}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                <div>
-                                    <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                        🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                        <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
-                                        <span>•</span>
-                                        <span style={{
-                                            padding: '0.1rem 0.5rem',
-                                            borderRadius: '9999px',
-                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                            color: '#10B981'
-                                        }}>
-                                            {getPaymentMethodLabel(t.payment_method)}
-                                        </span>
-                                    </div>
-
-                                    {/* TIMING DETAILS (Users Request) */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
-                                        {(() => {
-                                            const created = new Date(t.created_at);
-                                            const started = t.started_at ? new Date(t.started_at) : created;
-                                            const finished = t.finished_at ? new Date(t.finished_at) : null;
-
-                                            // Wait Time (Created -> Started)
-                                            const waitMins = Math.max(0, Math.round((started - created) / 60000));
-
-                                            // Process Time (Started -> Finished)
-                                            const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
-
-                                            return (
-                                                <>
-                                                    <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
-                                                    <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
-                                                    {finished && (
-                                                        <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
-                                                            ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                                        ${parseFloat(t.price || 0).toFixed(2)}
-                                    </div>
-                                    {t.tip > 0 && (
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
-                                            + ${parseFloat(t.tip).toFixed(2)} propina
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
-                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
-                                </div>
-                                {t.extras && t.extras.length > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
-                                        <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
-                                    <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
-                                        {t.transaction_assignments && t.transaction_assignments.length > 0
-                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                            : getEmployeeName(t.employee_id)
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* ACTIONS FOR HISTORY ITEMS */}
-                            < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
-                                <button
-                                    className="btn"
-                                    onClick={() => handleRevertToReady(t)}
-                                    title="Devolver a Listo"
-                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            {/* SECCIÓN DE HISTORIAL (PAGADOS) - ADMIN/MANAGER ONLY */}
+            {(userRole === 'admin' || userRole === 'manager') && (
+                <>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        {statsTransactions
+                            .filter(t => t.status === 'completed' || t.status === 'paid')
+                            .sort((a, b) => {
+                                const dateA = new Date(a.date);
+                                const dateB = new Date(b.date);
+                                if (dateB - dateA !== 0) return dateB - dateA;
+                                return new Date(b.created_at) - new Date(a.created_at);
+                            })
+                            .map(t => (
+                                <div
+                                    key={t.id}
+                                    className="card"
+                                    style={{
+                                        borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                    onClick={() => setSelectedTransaction(t)}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 >
-                                    <RefreshCw size={14} /> <span>Devolver</span>
-                                </button>
-                                {userRole === 'admin' && (
-                                    <>
-                                        <button
-                                            className="btn"
-                                            style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingTransactionId(t.id);
-                                            }}
-                                            title="Editar"
-                                        >
-                                            <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
-                                        </button>
-                                        <button
-                                            className="btn"
-                                            style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
-                                                    handleDeleteTransactionV2(t.id);
-                                                }
-                                            }}
-                                            title="Eliminar"
-                                        >
-                                            <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                        <div>
+                                            <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                                                🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                                <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span>•</span>
+                                                <span style={{
+                                                    padding: '0.1rem 0.5rem',
+                                                    borderRadius: '9999px',
+                                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                                    color: '#10B981'
+                                                }}>
+                                                    {getPaymentMethodLabel(t.payment_method)}
+                                                </span>
+                                            </div>
 
-                        </div>
-                    ))
-                }
-                {
-                    statsTransactions.length === 0 && (
-                        <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
-                            No hay ventas registradas hoy
-                        </div>
-                    )
-                }
-            </div >
+                                            {/* TIMING DETAILS (Users Request) */}
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
+                                                {(() => {
+                                                    const created = new Date(t.created_at);
+                                                    const started = t.started_at ? new Date(t.started_at) : created;
+                                                    const finished = t.finished_at ? new Date(t.finished_at) : null;
+
+                                                    // Wait Time (Created -> Started)
+                                                    const waitMins = Math.max(0, Math.round((started - created) / 60000));
+
+                                                    // Process Time (Started -> Finished)
+                                                    const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
+
+                                                    return (
+                                                        <>
+                                                            <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
+                                                            <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
+                                                            {finished && (
+                                                                <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
+                                                                    ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                                ${parseFloat(t.price || 0).toFixed(2)}
+                                            </div>
+                                            {t.tip > 0 && (
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
+                                                    + ${parseFloat(t.tip).toFixed(2)} propina
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
+                                            <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
+                                        </div>
+                                        {t.extras && t.extras.length > 0 && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
+                                                <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
+                                            <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
+                                                {t.transaction_assignments && t.transaction_assignments.length > 0
+                                                    ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                                    : getEmployeeName(t.employee_id)
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* ACTIONS FOR HISTORY ITEMS */}
+                                    < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            className="btn"
+                                            onClick={() => handleRevertToReady(t)}
+                                            title="Devolver a Listo"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                        >
+                                            <RefreshCw size={14} /> <span>Devolver</span>
+                                        </button>
+                                        {userRole === 'admin' && (
+                                            <>
+                                                <button
+                                                    className="btn"
+                                                    style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingTransactionId(t.id);
+                                                    }}
+                                                    title="Editar"
+                                                >
+                                                    <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
+                                                </button>
+                                                <button
+                                                    className="btn"
+                                                    style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                                            handleDeleteTransactionV2(t.id);
+                                                        }
+                                                    }}
+                                                    title="Eliminar"
+                                                >
+                                                    <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+
+                                </div>
+                            ))
+                        }
+                        {
+                            statsTransactions.length === 0 && (
+                                <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
+                                    No hay ventas registradas hoy
+                                </div>
+                            )
+                        }
+                    </div >
+                </>
+            )}
 
             {/* TRANSACTION DETAIL MODAL */}
             {
@@ -2924,20 +2928,18 @@ const Dashboard = () => {
                 )
             }
 
-            {/* GAMIFICATION BAR OR ADMIN CHART (MOVED TO BOTTOM) - HIDDEN FOR EMPLOYEES */}
+            {/* GAMIFICATION BAR OR ADMIN CHART (MOVED TO BOTTOM) */}
             {
-                (userRole === 'admin' || userRole === 'manager') && (
-                    userRole === 'admin' && dateFilter === 'custom' ? (
-                        <EmployeeProductivityChart transactions={transactions} employees={employees} />
-                    ) : (
-                        <ProductivityBar
-                            dailyCount={fractionalCount}
-                            dailyTarget={dailyTarget}
-                            totalXp={totalXp}
-                            isEditable={userRole === 'admin'}
-                            onEditTarget={(newTarget) => handleUpdateSettings({ daily_target: newTarget })}
-                        />
-                    )
+                userRole === 'admin' && dateFilter === 'custom' ? (
+                    <EmployeeProductivityChart transactions={transactions} employees={employees} />
+                ) : (
+                    <ProductivityBar
+                        dailyCount={fractionalCount}
+                        dailyTarget={dailyTarget}
+                        totalXp={totalXp}
+                        isEditable={userRole === 'admin'}
+                        onEditTarget={(newTarget) => handleUpdateSettings({ daily_target: newTarget })}
+                    />
                 )
             }
 
