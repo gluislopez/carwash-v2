@@ -13,6 +13,7 @@ import Expenses from './pages/Expenses';
 import Inventory from './pages/Inventory';
 import GamificationSettings from './pages/GamificationSettings';
 import CustomerFeedback from './pages/CustomerFeedback';
+import CustomerPortal from './pages/CustomerPortal';
 
 import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
@@ -154,6 +155,7 @@ const AppRoot = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/test-deployment" element={<TestDeployment />} />
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
+                <Route path="/portal/:customerId" element={<CustomerPortal />} />
 
                 <Route
                     path="*"

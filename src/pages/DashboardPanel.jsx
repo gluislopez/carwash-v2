@@ -3177,6 +3177,7 @@ const Dashboard = () => {
                 )
             }
             {/* QR CODE MODAL */}
+            {/* QR CODE MODAL - PERMANENT CUSTOMER LINK */}
             {qrTransactionId && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -3188,19 +3189,30 @@ const Dashboard = () => {
                         maxWidth: '90%', width: '350px'
                     }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <h2 style={{ color: 'black', margin: 0 }}>Escanear Seguimiento</h2>
+                            <h2 style={{ color: 'black', margin: 0 }}>QR del Cliente</h2>
                             <button onClick={() => setQrTransactionId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                                 <X color="black" size={24} />
                             </button>
                         </div>
 
                         <div style={{ padding: '1rem', background: 'white', borderRadius: '0.5rem' }}>
-                            <QRCode value={`${window.location.origin}/feedback/${qrTransactionId}`} size={256} />
+                            {(() => {
+                                // Find transaction to get Customer ID
+                                const tx = statsTransactions.find(t => t.id === qrTransactionId) || transactions.find(t => t.id === qrTransactionId);
+                                const customerId = tx?.customers?.id || tx?.customer_id;
+
+                                if (customerId) {
+                                    return <QRCode value={`${window.location.origin}/portal/${customerId}`} size={256} />;
+                                } else {
+                                    return <p style={{ color: 'red', textAlign: 'center' }}>⚠️ Cliente no vinculado.<br />Edita el servicio para asignar un cliente.</p>;
+                                }
+                            })()}
                         </div>
 
-                        <p style={{ color: '#555', textAlign: 'center', fontSize: '0.9rem' }}>
-                            Muestra este código al cliente para que siga el estado de su vehículo en tiempo real.
-                        </p>
+                        <div style={{ color: '#555', textAlign: 'center', fontSize: '0.9rem' }}>
+                            <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Escanear para Portal de Cliente</p>
+                            <p>Historial • Estado • Info</p>
+                        </div>
                     </div>
                 </div>
             )}
