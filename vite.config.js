@@ -14,10 +14,17 @@ export default defineConfig({
                 short_name: 'CarWash',
                 description: 'Sistema de Gestión de CarWash',
                 theme_color: '#4F46E5',
-                background_color: '#ffffff',
+                background_color: '#0f172a',
                 display: 'standalone',
                 orientation: 'portrait',
+                start_url: '/',
                 icons: [
+                    {
+                        src: 'logo.jpg',
+                        sizes: '192x192',
+                        type: 'image/jpeg',
+                        purpose: 'any maskable'
+                    },
                     {
                         src: 'logo.jpg',
                         sizes: '512x512',
