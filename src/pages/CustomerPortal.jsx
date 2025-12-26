@@ -103,7 +103,8 @@ const CustomerPortal = () => {
         setSubmittingFeedback(false);
 
         if (error) {
-            alert("Error al enviar: " + error.message);
+            console.error("Feedback error:", error);
+            alert("Error al enviar (v4.63): " + JSON.stringify(error.message || error));
         } else {
             setShowPromo(true);
             setHasRated(true);
@@ -229,6 +230,12 @@ const CustomerPortal = () => {
                     {history.length === 0 && (
                         <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No hay historial disponible.</p>
                     )}
+                </div>
+                {/* HISTORY LIST */}
+                {/* ... (existing history code) ... */}
+
+                <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.5, fontSize: '0.8rem' }}>
+                    <p>Express CarWash System v4.63</p>
                 </div>
             </div>
         </div>
