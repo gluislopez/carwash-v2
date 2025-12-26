@@ -1442,6 +1442,25 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                {/* RESEÑAS PRIVADAS (Moved Here) */}
+                {(userRole === 'admin' || userRole === 'manager') && (
+                    <div
+                        className="card"
+                        onClick={() => setActiveDetailModal('feedback')}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    >
+                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Feedback Privado</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <MessageSquare size={24} color="#8b5cf6" />
+                            <div>
+                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', lineHeight: 1 }}>{filteredFeedbacks.length}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* SOLO ADMIN VE INGRESOS TOTALES */}
                 {userRole === 'admin' && (
                     <div
@@ -1480,35 +1499,16 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
-
-                {/* RESEÑAS PRIVADAS (Summary Card) */}
-                {(userRole === 'admin' || userRole === 'manager') && (
-                    <div
-                        className="card"
-                        onClick={() => setActiveDetailModal('feedback')}
-                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                    >
-                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Feedback Privado</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <MessageSquare size={24} color="#8b5cf6" />
-                            <div>
-                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', lineHeight: 1 }}>{filteredFeedbacks.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {/* MULTI-STAGE FLOW SECTIONS */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+            {/* MULTI-STAGE FLOW SECTIONS (Compacted) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
 
                 {/* COLA DE ESPERA (Summary Card) */}
                 <div
                     onClick={() => setActiveDetailModal('waiting_list')}
                     style={{
-                        backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '0.5rem',
+                        backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
                         border: activeDetailModal === 'waiting_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
                         transition: 'transform 0.2s'
@@ -1516,17 +1516,12 @@ const Dashboard = () => {
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3 style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Cola de Espera</h3>
-                        <div style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', padding: '0.5rem', borderRadius: '50%' }}>
-                            <Clock size={24} color="#6366f1" />
+                    <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Espera</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Clock size={24} color="#6366f1" />
+                        <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            {statsTransactions.filter(t => t.status === 'waiting').length}
                         </div>
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                        {statsTransactions.filter(t => t.status === 'waiting').length}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                        Click para asignar
                     </div>
                 </div>
 
@@ -1534,24 +1529,20 @@ const Dashboard = () => {
                 <div
                     onClick={() => setActiveDetailModal('in_progress_list')}
                     style={{
-                        backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '0.5rem',
+                        backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
                         border: activeDetailModal === 'in_progress_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
                         transition: 'transform 0.2s'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3 style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase' }}>En Proceso</h3>
-                        <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <Car size={20} color="#F59E0B" />
-                            <Droplets size={16} color="#3B82F6" />
+                    <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Droplets size={24} color="#3B82F6" />
+                        <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            {statsTransactions.filter(t => t.status === 'in_progress').length}
                         </div>
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                        {statsTransactions.filter(t => t.status === 'in_progress').length}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                        Lavando ahora
                     </div>
                 </div>
 
@@ -1559,23 +1550,20 @@ const Dashboard = () => {
                 <div
                     onClick={() => setActiveDetailModal('ready_list')}
                     style={{
-                        backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '0.5rem',
+                        backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
                         border: activeDetailModal === 'ready_list' ? '2px solid #10B981' : '1px solid var(--border-color)',
                         transition: 'transform 0.2s'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3 style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Listo para Recoger</h3>
-                        <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', padding: '0.5rem', borderRadius: '50%' }}>
-                            <DollarSign size={24} color="#10B981" />
+                    <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>Listos</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <DollarSign size={24} color="#10B981" />
+                        <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            {statsTransactions.filter(t => t.status === 'ready').length}
                         </div>
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                        {statsTransactions.filter(t => t.status === 'ready').length}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                        Esperando cliente
                     </div>
                 </div>
             </div>
