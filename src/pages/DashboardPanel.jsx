@@ -1402,18 +1402,24 @@ const Dashboard = () => {
 
 
 
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div
                     className="card"
                     onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('cars')}
-                    style={{ cursor: (userRole === 'admin' || userRole === 'manager') ? 'pointer' : 'default', transition: 'transform 0.2s' }}
+                    style={{
+                        cursor: (userRole === 'admin' || userRole === 'manager') ? 'pointer' : 'default',
+                        transition: 'transform 0.2s',
+                        padding: '1.25rem'
+                    }}
                     onMouseEnter={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1.02)')}
                     onMouseLeave={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1)')}
                 >
-                    <h3 className="label">{(userRole === 'admin' || userRole === 'manager') ? 'Autos Lavados Hoy (Ver Detalles)' : 'Mis Autos Lavados'}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Car size={32} className="text-primary" />
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                    <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                        {(userRole === 'admin' || userRole === 'manager') ? 'Autos Hoy' : 'Mis Autos'}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Car size={24} className="text-primary" />
+                        <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
                             {userRole === 'admin'
                                 ? statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length
                                 : formatToFraction(fractionalCount)
@@ -1422,38 +1428,40 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-
-
                 {/* SOLO ADMIN VE INGRESOS TOTALES */}
                 {userRole === 'admin' && (
                     <div
                         className="card"
                         onClick={() => setActiveDetailModal('income')}
-                        style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
                         onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                         onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >
-                        <h3 className="label">Ingresos Totales Hoy (Ver Detalles)</h3>
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
-                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>(Sin propinas)</p>
+                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Ingresos Hoy</h3>
+                        <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--success)', lineHeight: 1 }}>
+                            ${totalIncome.toFixed(0)}
+                        </p>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>(Sin propinas)</p>
                     </div>
                 )}
 
                 <div
                     className="card"
                     onClick={() => setActiveDetailModal('commissions')}
-                    style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <h3 className="label">{userRole === 'admin' ? 'Comisiones Totales (Ver Desglose)' : 'Mi Neto (Menos Almuerzos)'}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>
-                            ${userRole === 'admin' ? totalCommissions.toFixed(2) : netCommissions.toFixed(2)}
+                    <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                        {userRole === 'admin' ? 'Comisiones' : 'Mi Neto'}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--warning)', lineHeight: 1 }}>
+                            ${userRole === 'admin' ? totalCommissions.toFixed(0) : netCommissions.toFixed(2)}
                         </p>
                         {totalLunches > 0 && userRole !== 'admin' && (
-                            <span style={{ fontSize: '0.9rem', color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '0.5rem' }}>
-                                -${totalLunches.toFixed(2)} en almuerzos
+                            <span style={{ fontSize: '0.7rem', color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.2rem 0.4rem', borderRadius: '0.3rem' }}>
+                                -${totalLunches.toFixed(0)}
                             </span>
                         )}
                     </div>
@@ -1464,16 +1472,15 @@ const Dashboard = () => {
                     <div
                         className="card"
                         onClick={() => setActiveDetailModal('feedback')}
-                        style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
                         onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                         onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                     >
-                        <h3 className="label">Feedback Privado (Ver Todo)</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <MessageSquare size={32} color="#8b5cf6" />
+                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Feedback Privado</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <MessageSquare size={24} color="#8b5cf6" />
                             <div>
-                                <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{filteredFeedbacks.length}</p>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios recibidos</p>
+                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', lineHeight: 1 }}>{filteredFeedbacks.length}</p>
                             </div>
                         </div>
                     </div>
