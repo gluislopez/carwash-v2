@@ -1483,7 +1483,7 @@ const Dashboard = () => {
             </div>
 
             {/* MULTI-STAGE FLOW SECTIONS (Compacted) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem', alignItems: 'start' }}>
 
                 {/* COLA DE ESPERA (Summary Card) */}
                 <div
