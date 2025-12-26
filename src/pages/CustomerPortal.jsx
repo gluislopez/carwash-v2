@@ -73,7 +73,7 @@ const CustomerPortal = () => {
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
             {/* HERDER */}
             <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem', textAlign: 'center' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>CarWash SaaS</h1>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
                 <p style={{ opacity: 0.8 }}>Tu historial de servicios</p>
             </div>
 
@@ -111,7 +111,7 @@ const CustomerPortal = () => {
                         <Phone size={20} /> ATH Móvil
                     </h3>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>787-857-8983</p>
-                    <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>CarWash SaaS Official</p>
+                    <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Express CarWash</p>
                 </div>
 
                 {/* HISTORY LIST */}
