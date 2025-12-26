@@ -234,8 +234,45 @@ const CustomerPortal = () => {
                 {/* HISTORY LIST */}
                 {/* ... (existing history code) ... */}
 
-                <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.5, fontSize: '0.8rem' }}>
-                    <p>Express CarWash System v4.63</p>
+                <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.8, fontSize: '0.8rem', paddingBottom: '2rem' }}>
+                    <p>Express CarWash System v4.64</p>
+                    <button
+                        onClick={async () => {
+                            if (!confirm("¿Resetear la aplicación? Esto borrará la memoria caché.")) return;
+
+                            try {
+                                // Unregister SW
+                                if ('serviceWorker' in navigator) {
+                                    const registrations = await navigator.serviceWorker.getRegistrations();
+                                    for (const registration of registrations) {
+                                        await registration.unregister();
+                                    }
+                                }
+                                // Clear Caches
+                                if ('caches' in window) {
+                                    const keys = await caches.keys();
+                                    await Promise.all(keys.map(key => caches.delete(key)));
+                                }
+                                // Reload
+                                window.location.reload(true);
+                            } catch (e) {
+                                alert("Error reseteando: " + e.message);
+                                window.location.reload();
+                            }
+                        }}
+                        style={{
+                            marginTop: '1rem',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.5rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        ⚠️ Forzar Actualización / Reset
+                    </button>
                 </div>
             </div>
         </div>
