@@ -96,8 +96,7 @@ const CustomerPortal = () => {
             {
                 transaction_id: latestTx.id,
                 rating: rating,
-                comment: comment,
-                customer_name: customer.name
+                comment: comment
             }
         ]);
 
