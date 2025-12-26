@@ -141,6 +141,12 @@ const CustomerPortal = () => {
                         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Estado</div>
                     </div>
                 </div>
+
+                {/* STATUS DASHBOARD (DEBUG VISIBLE) */}
+                <div style={{ marginTop: '1rem', backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.8rem' }}>
+                    Last: {latestTx ? `${latestTx.services?.name} (${latestTx.status})` : 'None'} <br />
+                    Rated: {hasRated ? 'YES' : 'NO'}
+                </div>
             </div>
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
