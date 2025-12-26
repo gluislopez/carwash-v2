@@ -1442,25 +1442,6 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* RESEÑAS PRIVADAS (Moved Here) */}
-                {(userRole === 'admin' || userRole === 'manager') && (
-                    <div
-                        className="card"
-                        onClick={() => setActiveDetailModal('feedback')}
-                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                    >
-                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Feedback Privado</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <MessageSquare size={24} color="#8b5cf6" />
-                            <div>
-                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', lineHeight: 1 }}>{filteredFeedbacks.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* SOLO ADMIN VE INGRESOS TOTALES */}
                 {userRole === 'admin' && (
                     <div
@@ -1502,7 +1483,7 @@ const Dashboard = () => {
             </div>
 
             {/* MULTI-STAGE FLOW SECTIONS (Compacted) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem', alignItems: 'start' }}>
 
                 {/* COLA DE ESPERA (Summary Card) */}
                 <div
@@ -1525,25 +1506,47 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* CARD: EN PROCESO */}
-                <div
-                    onClick={() => setActiveDetailModal('in_progress_list')}
-                    style={{
-                        backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
-                        border: activeDetailModal === 'in_progress_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                        transition: 'transform 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                    <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Droplets size={24} color="#3B82F6" />
-                        <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                            {statsTransactions.filter(t => t.status === 'in_progress').length}
+                {/* Vertical Column for In Process + Feedback */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* CARD: EN PROCESO */}
+                    <div
+                        onClick={() => setActiveDetailModal('in_progress_list')}
+                        style={{
+                            backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
+                            border: activeDetailModal === 'in_progress_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                            transition: 'transform 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Droplets size={24} color="#3B82F6" />
+                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                                {statsTransactions.filter(t => t.status === 'in_progress').length}
+                            </div>
                         </div>
                     </div>
+
+                    {/* RESEÑAS PRIVADAS (Moved Here) */}
+                    {(userRole === 'admin' || userRole === 'manager') && (
+                        <div
+                            className="card"
+                            onClick={() => setActiveDetailModal('feedback')}
+                            style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                        >
+                            <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Feedback Privado</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <MessageSquare size={24} color="#8b5cf6" />
+                                <div>
+                                    <p style={{ fontSize: '1.75rem', fontWeight: 'bold', lineHeight: 1 }}>{filteredFeedbacks.length}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* CARD: LISTO PARA RECOGER (NUEVO) */}
