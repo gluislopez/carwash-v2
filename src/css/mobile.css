@@ -201,6 +201,12 @@
         gap: 1rem !important;
     }
 
+    /* Workflow Grid - Force 3 columns even on mobile */
+    .workflow-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
     /* Modal Full Screen */
     .modal-overlay {
         align-items: flex-end !important;
