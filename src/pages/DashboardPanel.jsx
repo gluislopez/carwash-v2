@@ -2924,18 +2924,20 @@ const Dashboard = () => {
                 )
             }
 
-            {/* GAMIFICATION BAR OR ADMIN CHART (MOVED TO BOTTOM) */}
+            {/* GAMIFICATION BAR OR ADMIN CHART (MOVED TO BOTTOM) - HIDDEN FOR EMPLOYEES */}
             {
-                userRole === 'admin' && dateFilter === 'custom' ? (
-                    <EmployeeProductivityChart transactions={transactions} employees={employees} />
-                ) : (
-                    <ProductivityBar
-                        dailyCount={fractionalCount}
-                        dailyTarget={dailyTarget}
-                        totalXp={totalXp}
-                        isEditable={userRole === 'admin'}
-                        onEditTarget={(newTarget) => handleUpdateSettings({ daily_target: newTarget })}
-                    />
+                (userRole === 'admin' || userRole === 'manager') && (
+                    userRole === 'admin' && dateFilter === 'custom' ? (
+                        <EmployeeProductivityChart transactions={transactions} employees={employees} />
+                    ) : (
+                        <ProductivityBar
+                            dailyCount={fractionalCount}
+                            dailyTarget={dailyTarget}
+                            totalXp={totalXp}
+                            isEditable={userRole === 'admin'}
+                            onEditTarget={(newTarget) => handleUpdateSettings({ daily_target: newTarget })}
+                        />
+                    )
                 )
             }
 
