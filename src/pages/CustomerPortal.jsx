@@ -109,7 +109,7 @@ const CustomerPortal = () => {
 
         if (error) {
             console.error("Feedback error:", error);
-            alert("Error al enviar (v4.63): " + JSON.stringify(error.message || error));
+            alert("Error al enviar: " + (error.message || "Intente nuevamente."));
         } else {
             setShowPromo(true);
             setHasRated(true);
@@ -142,10 +142,6 @@ const CustomerPortal = () => {
                     </div>
                 </div>
 
-                {/* STATUS DASHBOARD (DEBUG VISIBLE) */}
-                <div style={{ marginTop: '1rem', backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.8rem' }}>
-                    Last: {latestTx ? `${latestTx.services?.name} (${latestTx.status})` : 'None'} <br />
-                    Rated: {hasRated ? 'YES' : 'NO'}
                 </div>
             </div>
 
@@ -279,59 +275,11 @@ const CustomerPortal = () => {
                 {/* HISTORY LIST */}
                 {/* ... (existing history code) ... */}
 
-                <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.8, fontSize: '0.8rem', paddingBottom: '2rem' }}>
-                    <p>Express CarWash System v4.69</p>
-                    <button
-                        onClick={async () => {
-                            if (!confirm("¿Resetear la aplicación? Esto borrará la memoria caché.")) return;
-
-                            try {
-                                // Unregister SW
-                                if ('serviceWorker' in navigator) {
-                                    const registrations = await navigator.serviceWorker.getRegistrations();
-                                    for (const registration of registrations) {
-                                        await registration.unregister();
-                                    }
-                                }
-                                // Clear Caches
-                                if ('caches' in window) {
-                                    const keys = await caches.keys();
-                                    await Promise.all(keys.map(key => caches.delete(key)));
-                                }
-                                // Reload
-                                window.location.reload(true);
-                            } catch (e) {
-                                alert("Error reseteando: " + e.message);
-                                window.location.reload();
-                            }
-                        }}
-                        style={{
-                            marginTop: '1rem',
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.5rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        ⚠️ RESET v4.69
-                    </button>
-
-                    {/* DEBUG INFO */}
-                    <div style={{ marginTop: '2rem', textAlign: 'left', backgroundColor: '#111', color: '#0f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '10px', overflowX: 'scroll', border: '1px solid #333' }}>
-                        <p><strong>DEBUG v4.66</strong></p>
-                        <p>Queue: {queueCount}</p>
-                        <p>Active ID: {activeService?.id || 'None'} ({activeService?.status})</p>
-                        <p>Latest Tx ID: {latestTx?.id || 'None'} ({latestTx?.status})</p>
-                        <p>Has Rated: {hasRated ? 'YES' : 'NO'}</p>
-                        <p>Show Promo: {showPromo ? 'YES' : 'NO'}</p>
-                        <p>Feedback Data: {JSON.stringify(latestTx?.customer_feedback || [])}</p>
-                    </div>
+                <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.5, fontSize: '0.8rem', paddingBottom: '2rem' }}>
+                    <p>Express CarWash System v4.70</p>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
