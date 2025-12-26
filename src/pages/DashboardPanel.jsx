@@ -1022,25 +1022,27 @@ const Dashboard = () => {
                         </button>
                     )}
 
-                    {/* NOTES TOGGLE */}
-                    <button
-                        onClick={() => setShowNotes(!showNotes)}
-                        className="btn"
-                        style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.4rem',
-                            padding: '0.3rem 0.6rem',
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            borderRadius: '0.25rem'
-                        }}
-                    >
-                        <span>📝 Notas ({dailyNotes.length})</span>
-                        <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
-                    </button>
+                    {/* NOTES TOGGLE - HIDDEN FOR EMPLOYEES (Now in Grid) */}
+                    {(userRole === 'admin' || userRole === 'manager') && (
+                        <button
+                            onClick={() => setShowNotes(!showNotes)}
+                            className="btn"
+                            style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.3rem 0.6rem',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                borderRadius: '0.25rem'
+                            }}
+                        >
+                            <span>📝 Notas ({dailyNotes.length})</span>
+                            <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
+                        </button>
+                    )}
 
                     {/* WHATSAPP SELF-REPORT BUTTON (PDF) */}
                     {userRole === 'admin' && (
@@ -1565,6 +1567,29 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
+
+                {/* NOTE CARD FOR EMPLOYEES (Placed 3rd in Grid) */}
+                {userRole !== 'admin' && userRole !== 'manager' && (
+                    <div
+                        className="card"
+                        onClick={() => setActiveDetailModal('daily_notes')}
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                            Notas del Día
+                        </h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.4rem', borderRadius: '0.5rem' }}>
+                                <MessageCircle size={20} color="#EAB308" />
+                            </div>
+                            <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                                {dailyNotes.length}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* RESEÑAS PRIVADAS (Relocated Below Stats) */}
@@ -1862,6 +1887,24 @@ const Dashboard = () => {
                                                 </div>
                                             ));
                                         })()}
+
+                                        {/* ADD NOTE INPUT IN MODAL */}
+                                        <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Escribir nueva nota..."
+                                                    value={newNote}
+                                                    onChange={(e) => setNewNote(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
+                                                    style={{ flex: 1 }}
+                                                />
+                                                <button className="btn btn-primary" onClick={handleAddNote} disabled={!newNote.trim()}>
+                                                    <Send size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
