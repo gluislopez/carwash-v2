@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -12,6 +12,7 @@ import { formatDuration } from '../utils/formatUtils';
 import { formatToFraction } from '../utils/fractionUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import QRCode from 'react-qr-code';
 
 
 
@@ -73,6 +74,7 @@ const Dashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); // Estado para el modal de nueva transacción
     const [alertedTransactions, setAlertedTransactions] = useState(new Set()); // Para evitar alertas repetidas
     const [feedbacks, setFeedbacks] = useState([]); // Nuevo: Estado para las reseñas privadas
+    const [qrTransactionId, setQrTransactionId] = useState(null); // ID para mostrar modal QR
 
     useEffect(() => {
         const getUser = async () => {
@@ -1894,6 +1896,12 @@ const Dashboard = () => {
                                                                     >
                                                                         <Edit2 size={14} /> Editar
                                                                     </button>
+                                                                    <button
+                                                                        onClick={() => setQrTransactionId(t.id)}
+                                                                        style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
+                                                                    >
+                                                                        <QrCode size={14} /> Ver QR
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </li>
@@ -2049,6 +2057,12 @@ const Dashboard = () => {
                                                                             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                                                         >
                                                                             <Edit2 size={14} /> Editar
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setQrTransactionId(t.id)}
+                                                                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                        >
+                                                                            <QrCode size={14} /> Ver QR
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -3031,6 +3045,34 @@ const Dashboard = () => {
                     </div>
                 )
             }
+            {/* QR CODE MODAL */}
+            {qrTransactionId && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
+                }} onClick={() => setQrTransactionId(null)}>
+                    <div style={{
+                        backgroundColor: 'white', padding: '2rem', borderRadius: '1rem',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+                        maxWidth: '90%', width: '350px'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                            <h2 style={{ color: 'black', margin: 0 }}>Escanear Seguimiento</h2>
+                            <button onClick={() => setQrTransactionId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <X color="black" size={24} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '1rem', background: 'white', borderRadius: '0.5rem' }}>
+                            <QRCode value={`${window.location.origin}/feedback/${qrTransactionId}`} size={256} />
+                        </div>
+
+                        <p style={{ color: '#555', textAlign: 'center', fontSize: '0.9rem' }}>
+                            Muestra este código al cliente para que siga el estado de su vehículo en tiempo real.
+                        </p>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

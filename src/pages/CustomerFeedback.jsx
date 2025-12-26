@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { Star, Send, CheckCircle, Car } from 'lucide-react';
+import { Star, Send, CheckCircle, Car, Clock, Droplets, DollarSign } from 'lucide-react';
 
 const CustomerFeedback = () => {
     const { transactionId } = useParams();
@@ -12,6 +12,7 @@ const CustomerFeedback = () => {
     const [transaction, setTransaction] = useState(null);
     const [hover, setHover] = useState(0);
 
+    // Initial fetch and Polling for status updates
     useEffect(() => {
         const fetchTransaction = async () => {
             const { data } = await supabase
@@ -21,7 +22,10 @@ const CustomerFeedback = () => {
                 .single();
             if (data) setTransaction(data);
         };
+
         fetchTransaction();
+        const interval = setInterval(fetchTransaction, 5000); // Poll every 5 seconds
+        return () => clearInterval(interval);
     }, [transactionId]);
 
     const handleSubmit = async (e) => {
@@ -85,6 +89,63 @@ const CustomerFeedback = () => {
         );
     }
 
+    if (!transaction) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando información...</div>;
+
+    // TRACKING MODE: If not paid/completed, show tracking
+    if (transaction.status !== 'completed' && transaction.status !== 'paid') {
+        const getStatusConfig = (status) => {
+            switch (status) {
+                case 'waiting': return { label: 'En Cola de Espera', icon: <Clock size={64} color="#6366f1" />, color: '#6366f1', text: 'Estamos preparando todo para tu vehículo.' };
+                case 'in_progress': return { label: 'En Proceso de Lavado', icon: <Droplets size={64} color="#3B82F6" />, color: '#3B82F6', text: 'Tu auto está quedando reluciente.' };
+                case 'ready': return { label: '¡Listo para Retirar!', icon: <CheckCircle size={64} color="#10B981" />, color: '#10B981', text: 'Ya puedes pasar por tu vehículo.' };
+                default: return { label: 'Procesando...', icon: <Car size={64} />, color: 'gray', text: 'Consultando estatus...' };
+            }
+        };
+
+        const config = getStatusConfig(transaction.status);
+
+        return (
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-primary)', padding: '2rem', textAlign: 'center' }}>
+                <div className="card" style={{ padding: '3rem', maxWidth: '400px', width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                        width: '120px', height: '120px', borderRadius: '50%',
+                        backgroundColor: `${config.color}20`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        marginBottom: '2rem',
+                        boxShadow: `0 0 20px ${config.color}40`,
+                        animation: transaction.status === 'in_progress' ? 'pulse 2s infinite' : 'none'
+                    }}>
+                        {config.icon}
+                    </div>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                        {config.label}
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1.1rem' }}>
+                        {config.text}
+                    </p>
+
+                    <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', width: '100%' }}>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Vehículo</p>
+                        <p style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{transaction.services?.name || 'Servicio General'}</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Placa: {transaction.vehicle_plate || '---'}</p>
+                    </div>
+
+                    <p style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Esta pantalla se actualizará automáticamente... 🔄
+                    </p>
+                </div>
+                <style>{`
+                    @keyframes pulse {
+                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+                        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
+    // FEEDBACK MODE (Original)
     return (
         <div style={{
             minHeight: '100vh',
