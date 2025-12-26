@@ -10,6 +10,13 @@ const CustomerPortal = () => {
     const [activeService, setActiveService] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const [showPromo, setShowPromo] = useState(false);
+    const [latestTx, setLatestTx] = useState(null);
+    const [hasRated, setHasRated] = useState(false);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             if (!customerId) return;
@@ -28,33 +35,48 @@ const CustomerPortal = () => {
             }
             setCustomer(custData);
 
-            // 2. Fetch Transaction History
+            // 2. Fetch History & Check Feedback
             const { data: txData, error: txError } = await supabase
                 .from('transactions')
                 .select(`
                     *,
                     services (name),
-                    vehicles (model, brand, plate)
+                    vehicles (model, brand, plate),
+                    customer_feedback (id, rating) 
                 `)
                 .eq('customer_id', customerId)
                 .order('created_at', { ascending: false });
 
             if (!txError && txData) {
                 setHistory(txData);
-                // Check for active service (today or not completed)
+
+                // Active Service?
                 const active = txData.find(t =>
-                    t.status === 'waiting' ||
-                    t.status === 'in_progress' ||
-                    t.status === 'ready'
+                    t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready'
                 );
                 setActiveService(active);
+
+                // Latest Completed Service for Feedback
+                // Find first completed/paid that is NOT active
+                if (!active) {
+                    const lastCompleted = txData.find(t => t.status === 'completed' || t.status === 'paid');
+                    if (lastCompleted) {
+                        setLatestTx(lastCompleted);
+                        // Check if it has feedback (using the relational join if RLS permits, or checking array length)
+                        // Note: If RLS hides feedback, this might be empty. But allow_public_access only opened base tables.
+                        // Assuming auth is anon, feedback might not be visible unless we open it.
+                        // Let's rely on local state if user just submitted, or try to read it.
+                        if (lastCompleted.customer_feedback && lastCompleted.customer_feedback.length > 0) {
+                            setHasRated(true);
+                        }
+                    }
+                }
             }
             setLoading(false);
         };
 
         fetchData();
 
-        // Realtime subscription for updates
         const channel = supabase
             .channel(`public:transactions:customer:${customerId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `customer_id=eq.${customerId}` },
@@ -65,6 +87,29 @@ const CustomerPortal = () => {
         return () => supabase.removeChannel(channel);
 
     }, [customerId]);
+
+    const submitFeedback = async () => {
+        if (rating === 0) return alert("Por favor selecciona las estrellas.");
+        setSubmittingFeedback(true);
+
+        const { error } = await supabase.from('customer_feedback').insert([
+            {
+                transaction_id: latestTx.id,
+                rating: rating,
+                comments: comment,
+                customer_name: customer.name
+            }
+        ]);
+
+        setSubmittingFeedback(false);
+
+        if (error) {
+            alert("Error al enviar: " + error.message);
+        } else {
+            setShowPromo(true);
+            setHasRated(true);
+        }
+    };
 
     if (loading) return <div className="p-8 text-center">Cargando perfil...</div>;
     if (!customer) return <div className="p-8 text-center">Cliente no encontrado.</div>;
@@ -79,6 +124,56 @@ const CustomerPortal = () => {
             </div>
 
             <div style={{ maxWidth: '600px', margin: '-2rem auto 0', padding: '0 1rem' }}>
+
+                {/* PROMO WINNER CARD */}
+                {showPromo && (
+                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>¡Gracias x tu Feedback!</h2>
+                        <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Tienes un</p>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '900', backgroundColor: 'white', color: '#4f46e5', display: 'inline-block', padding: '0.5rem 1.5rem', borderRadius: '0.5rem', transform: 'rotate(-2deg)' }}>
+                            10% OFF
+                        </div>
+                        <p style={{ marginTop: '1rem', opacity: 0.9 }}>Muestra esta pantalla en tu próxima visita.</p>
+                    </div>
+                )}
+
+                {/* FEEDBACK CARD (If available and not rated yet) */}
+                {!showPromo && !hasRated && latestTx && (
+                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderTop: '5px solid #EAB308' }}>
+                        <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
+                        <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                            Califica tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <button key={star} onClick={() => setRating(star)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', transition: 'transform 0.2s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.2)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'}>
+                                    {star <= rating ? '⭐' : '☆'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {rating > 0 && (
+                            <div style={{ animation: 'fadeIn 0.5s' }}>
+                                <textarea
+                                    placeholder="¿Algún comentario extra?"
+                                    value={comment}
+                                    onChange={e => setComment(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb', marginBottom: '1rem', fontFamily: 'inherit' }}
+                                    rows="3"
+                                />
+                                <button
+                                    onClick={submitFeedback}
+                                    disabled={submittingFeedback}
+                                    style={{ width: '100%', padding: '0.75rem', backgroundColor: '#EAB308', color: 'white', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
+                                >
+                                    {submittingFeedback ? 'Enviando...' : 'Enviar y Ganar 🎁'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* CUSTOMER CARD */}
                 <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
