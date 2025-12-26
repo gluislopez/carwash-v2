@@ -1570,7 +1570,7 @@ const Dashboard = () => {
             {/* RESEÑAS PRIVADAS (Relocated Below Stats) */}
             {/* ADMIN SPLIT ROW: FEEDBACK & DAILY NOTES */}
             {(userRole === 'admin' || userRole === 'manager') && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div className="force-2-col-grid" style={{ marginBottom: '1.5rem' }}>
                     {/* FEEDBACK CARD */}
                     <div
                         className="card"

@@ -236,3 +236,11 @@ body {
     gap: 1rem;
     align-items: start;
 }
+
+/* Utility for 2-Column Grids (Forces non-wrapping on all screens) */
+.force-2-col-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem;
+    align-items: start;
+}
