@@ -847,7 +847,12 @@ const Dashboard = () => {
 
         try {
             // 1. TRY RPC FIRST (Bypass RLS)
-            const cancellerName = employee?.name || 'Usuario Desconocido';
+            let cancellerName = 'Usuario Desconocido';
+            if (myEmployeeId && employees) {
+                const me = employees.find(e => e.id === myEmployeeId);
+                if (me) cancellerName = me.name || 'Empleado';
+            }
+
             const { data: rpcData, error: rpcError } = await supabase.rpc('cancel_transaction_v2', {
                 tx_id: id,
                 canceller_name: cancellerName
