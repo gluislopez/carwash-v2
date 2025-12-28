@@ -605,6 +605,31 @@ const Reports = () => {
                 </div>
             </div>
 
+            {/* DOWNLOAD BUTTON */}
+            {userRole === 'admin' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                    <button
+                        onClick={() => {
+                            const stats = {
+                                count: totalCount,
+                                income: totalIncome,
+                                totalCash: totalCash,
+                                totalTransfer: totalTransfer,
+                                expenses: totalCommissions + totalProductExpenses,
+                                net: adminNet
+                            };
+                            import('../utils/pdfGenerator').then(mod => {
+                                mod.generateReportPDF(dateFilteredTxs, dateRange.toUpperCase(), stats, userRole);
+                            });
+                        }}
+                        className="btn btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <Download size={18} /> Descargar Reporte PDF
+                    </button>
+                </div>
+            )}
+
             {userRole === 'admin' && (
                 <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
                     <button
