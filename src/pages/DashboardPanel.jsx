@@ -1445,9 +1445,9 @@ const Dashboard = () => {
                         setActiveDetailModal('cancelled');
                         setShowDetailModal(true);
                     }}
-                    title="Ver servicios cancelados"
+                    title="Gestionar cancelaciones"
                 >
-                    <span style={{ fontSize: '1.1em' }} role="img" aria-label="cancel">🚫</span> Cancelados
+                    <span style={{ fontSize: '1.1em' }} role="img" aria-label="cancel">⚠️</span> Gestionar Cancelaciones
                 </button>
             </div>
 
@@ -1982,41 +1982,93 @@ const Dashboard = () => {
                                 )}
 
                                 {activeDetailModal === 'cancelled' && (
-                                    <div>
-                                        {/* FILTER CANCELLED TRANSACTIONS FROM ALL DATA OR STATS DATA? 
-                                            Accessing raw transactionsData directly to ensure we catch everything today 
-                                        */}
-                                        {transactions.filter(t => t.status === 'cancelled').length === 0 ? <p>No hay servicios cancelados hoy.</p> : (
-                                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                {[...transactions]
-                                                    .filter(t => t.status === 'cancelled')
-                                                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                                                    .map(t => (
-                                                        <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <div>
-                                                                <div style={{ fontWeight: 'bold', color: '#EF4444' }}>
-                                                                    {new Date(t.created_at).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                                                                    <span style={{ margin: '0 0.5rem', color: 'var(--text-primary)' }}>-</span>
-                                                                    <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>
-                                                                        {t.customers?.vehicle_plate || 'Sin Placa'}
-                                                                    </span>
-                                                                    <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
-                                                                        ({t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
-                                                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                        {/* SECTION 1: ACTIVE SERVICES (CANCEL HERE) */}
+                                        <div>
+                                            <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', borderBottom: '2px solid var(--primary)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                                ⚠️ Cancelar Servicios Activos
+                                            </h3>
+                                            {transactions.filter(t => ['waiting', 'process', 'ready'].includes(t.status)).length === 0 ?
+                                                <p style={{ color: 'var(--text-muted)' }}>No hay servicios activos para cancelar.</p> : (
+                                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                        {transactions
+                                                            .filter(t => ['waiting', 'process', 'ready'].includes(t.status))
+                                                            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                                                            .map(t => (
+                                                                <li key={t.id} style={{
+                                                                    padding: '1rem',
+                                                                    backgroundColor: 'var(--bg-secondary)',
+                                                                    borderRadius: '0.5rem',
+                                                                    marginBottom: '0.75rem',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center',
+                                                                    border: '1px solid var(--border-color)'
+                                                                }}>
+                                                                    <div>
+                                                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                                                            {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                                                                                ({t.customers?.vehicle_model} - {t.customers?.name})
+                                                                            </span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+                                                                            <span style={{
+                                                                                backgroundColor: t.status === 'waiting' ? '#F59E0B' : t.status === 'process' ? '#3B82F6' : '#10B981',
+                                                                                color: 'white', padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem'
+                                                                            }}>
+                                                                                {t.status === 'waiting' ? 'En Cola' : t.status === 'process' ? 'Lavando' : 'Listo'}
+                                                                            </span>
+                                                                            <span style={{ color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        className="btn"
+                                                                        onClick={() => handleDeleteTransactionV2(t.id)}
+                                                                        style={{
+                                                                            backgroundColor: '#EF4444',
+                                                                            color: 'white',
+                                                                            fontWeight: 'bold',
+                                                                            padding: '0.5rem 1rem'
+                                                                        }}
+                                                                    >
+                                                                        CANCELAR
+                                                                    </button>
+                                                                </li>
+                                                            ))}
+                                                    </ul>
+                                                )}
+                                        </div>
+
+                                        {/* SECTION 2: HISTORY */}
+                                        <div>
+                                            <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                                🕒 Historial de Cancelados (Hoy)
+                                            </h3>
+                                            {transactions.filter(t => t.status === 'cancelled').length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No hay servicios cancelados hoy.</p> : (
+                                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                    {[...transactions]
+                                                        .filter(t => t.status === 'cancelled')
+                                                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                                        .map(t => (
+                                                            <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 'bold', color: '#EF4444' }}>
+                                                                        {new Date(t.created_at).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                                        <span style={{ margin: '0 0.5rem', color: 'var(--text-primary)' }}>-</span>
+                                                                        <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                                                                            {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>
+                                                                        🚫 Cancelado por: <strong>{t.cancelled_by || 'Usuario'}</strong>
+                                                                    </div>
                                                                 </div>
-                                                                <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>
-                                                                    🚫 Cancelado por: <strong>{t.cancelled_by || 'Usuario'}</strong>
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                                                    {getServiceName(t.service_id)}
-                                                                </span>
-                                                            </div>
-                                                        </li>
-                                                    ))}
-                                            </ul>
-                                        )}
+                                                            </li>
+                                                        ))}
+                                                </ul>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
