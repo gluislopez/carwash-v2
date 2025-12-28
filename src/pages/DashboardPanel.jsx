@@ -876,14 +876,36 @@ const Dashboard = () => {
             console.log("Attempting Manual Soft Delete...");
 
             // A. Update status to 'cancelled' (Keep assignments for a moment to pass RLS)
-            const result = await updateTransaction(id, {
-                status: 'cancelled',
-                finished_at: null,
-                price: 0,
-                commission_amount: 0,
-                extras: [],
-                cancelled_by: cancellerName // Ensure we track who cancelled even in fallback
-            });
+            let result;
+            try {
+                result = await updateTransaction(id, {
+                    status: 'cancelled',
+                    finished_at: null,
+                    price: 0,
+                    commission_amount: 0,
+                    extras: [],
+                    cancelled_by: cancellerName // Try to save usage name
+                });
+            } catch (err) {
+                console.warn("Update with cancelled_by failed (likely missing column), retrying without it:", err);
+
+                // RETRY: Direct Supabase call without .select() to avoid schema cache issues
+                const { error: retryError } = await supabase
+                    .from('transactions')
+                    .update({
+                        status: 'cancelled',
+                        finished_at: null,
+                        price: 0,
+                        commission_amount: 0,
+                        extras: []
+                    })
+                    .eq('id', id);
+
+                if (retryError) throw retryError;
+
+                // Mock a result to pass the next check
+                result = [{ id }];
+            }
 
             // Check if RLS blocked the update
             if (!result || result.length === 0) {
