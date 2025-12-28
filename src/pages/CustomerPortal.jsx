@@ -141,8 +141,6 @@ const CustomerPortal = () => {
                         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Estado</div>
                     </div>
                 </div>
-
-                </div>
             </div>
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>

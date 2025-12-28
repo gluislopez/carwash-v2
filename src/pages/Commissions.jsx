@@ -282,10 +282,9 @@ const Commissions = () => {
             {/* DEBUG: Visible Date Range */}
             {selectedEmployee && performanceFilter !== 'all' && (
                 <div style={{ marginBottom: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                    📅 Periodo: <strong>{(() => {
-                        const { startStr, endStr } = getDateRange(performanceFilter);
-                        return `${startStr} a ${endStr}`;
-                    })()}</strong>
+                    📅 Periodo: <strong>
+                        {getDateRange(performanceFilter).startStr} a {getDateRange(performanceFilter).endStr}
+                    </strong>
                 </div>
             )}
             {/* Specific Month Selector */}
