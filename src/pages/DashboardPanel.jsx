@@ -843,8 +843,10 @@ const Dashboard = () => {
     };
 
     const handleDeleteTransactionV2 = async (id) => {
+        if (!window.confirm("¿Estás seguro de que quieres eliminar esta venta permanentemente?")) return;
+
         try {
-            // 1. Delete assignments first (manual cascade)
+            // 1. Delete assignments (Manual Cascade just in case)
             const { error: assignError } = await supabase
                 .from('transaction_assignments')
                 .delete()
@@ -852,13 +854,28 @@ const Dashboard = () => {
 
             if (assignError) throw assignError;
 
-            // 2. Delete the transaction
+            // 2. Delete Feedback (Manual Cascade)
+            const { error: feedbackError } = await supabase
+                .from('customer_feedback')
+                .delete()
+                .eq('transaction_id', id);
+
+            if (feedbackError) {
+                console.warn("Error deleting feedback (might not exist):", feedbackError);
+                // Continue, as feedback might not exist or table issue
+            }
+
+            // 3. Delete the transaction
             await removeTransaction(id);
+
+            // 4. Force strict refresh
             await refreshTransactions();
+
+            setEditingTransactionId(null); // Close modal if open
             alert("Venta eliminada correctamente.");
         } catch (error) {
             console.error("Error deleting:", error);
-            alert("Error al eliminar: " + error.message);
+            alert("Error al eliminar: " + (error.message || JSON.stringify(error)));
         }
     };
 

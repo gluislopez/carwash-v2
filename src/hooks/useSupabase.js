@@ -55,7 +55,7 @@ const useSupabase = (tableName, selectQuery = '*', options = {}) => {
 
     const remove = async (id) => {
         try {
-            const { error } = await supabase.from(tableName).delete().eq('id', id);
+            const { error } = await supabase.from(tableName).delete().eq('id', id).select();
             if (error) throw error;
             setData(data.filter(item => item.id !== id));
         } catch (err) {
