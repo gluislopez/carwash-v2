@@ -846,24 +846,7 @@ const Dashboard = () => {
         if (!window.confirm("¿Estás seguro de que quieres CANCELAR este servicio?\n\nDesaparecerá de la lista activa.")) return;
 
         try {
-            // 1. Delete assignments (Allowed for all users)
-            const { error: assignError } = await supabase
-                .from('transaction_assignments')
-                .delete()
-                .eq('transaction_id', id);
-
-            if (assignError) throw assignError;
-
-            // 2. Delete Feedback (If exists)
-            const { error: feedbackError } = await supabase
-                .from('customer_feedback')
-                .delete()
-                .eq('transaction_id', id);
-            if (feedbackError) {
-                console.warn("Error deleting feedback:", feedbackError);
-            }
-
-            // 3. TRY RPC FIRST (Bypass RLS)
+            // 1. TRY RPC FIRST (Bypass RLS)
             const { data: rpcData, error: rpcError } = await supabase.rpc('cancel_transaction_v2', { tx_id: id });
 
             if (!rpcError && rpcData?.success) {
@@ -877,22 +860,43 @@ const Dashboard = () => {
                 console.warn("RPC cancel failed or not exists, falling back to manual update:", rpcError);
             }
 
-            // 4. FALLBACK: Manual Soft Delete (Subject to RLS)
-            // This bypasses RLS restrictions for employees who can update but not delete.
+            // 2. FALLBACK: Manual Soft Delete (Subject to RLS)
+            // CRITICAL FIX: We must Update FIRST, while we are still assigned.
+            // If we delete assignments first, we lose permission to update the transaction!
+
+            console.log("Attempting Manual Soft Delete...");
+
+            // A. Update status to 'cancelled' (Keep assignments for a moment to pass RLS)
             const result = await updateTransaction(id, {
                 status: 'cancelled',
                 finished_at: null,
-                price: 0, // Set price to 0 so it doesn't affect stats if counted somewhere
+                price: 0,
                 commission_amount: 0,
-                extras: [] // Clear extras
+                extras: []
             });
 
-            // Check if RLS blocked it
+            // Check if RLS blocked the update
             if (!result || result.length === 0) {
-                alert("⚠️ ACCESO DENEGADO\n\nNo tienes permiso para cancelar este servicio.\n\nSOLUCIÓN: Pide al Admin que ejecute el script 'cancel_rpc.sql' en Supabase para habilitar borrado universal.");
-                console.warn("Soft Delete failed due to RLS.");
+                alert("⚠️ ACCESO DENEGADO\n\nNo tienes permiso para cancelar este servicio.\n\nSOLUCIÓN: Pide al Admin que ejecute el script 'cancel_rpc.sql'.");
                 return;
             }
+
+            // B. Now that it is cancelled, we can try to clean up assignments
+            // (Even if this fails, the service is effectively cancelled)
+
+            const { error: assignError } = await supabase
+                .from('transaction_assignments')
+                .delete()
+                .eq('transaction_id', id);
+
+            if (assignError) console.warn("Error cleaning assignments (non-critical):", assignError);
+
+            const { error: feedbackError } = await supabase
+                .from('customer_feedback')
+                .delete()
+                .eq('transaction_id', id);
+
+            if (feedbackError) console.warn("Error cleaning feedback:", feedbackError);
 
             // 5. Force refresh
             await refreshTransactions();
