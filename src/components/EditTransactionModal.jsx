@@ -351,6 +351,44 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
                 {/* REMOVED FORM TAG TO PREVENT SUBMIT ISSUES */}
                 <div id="edit-transaction-form">
+
+                    {/* CLIENTE ASIGNADO (NUEVO) */}
+                    {transaction.customers && (
+                        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '0.5rem', border: '1px solid #3B82F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontSize: '0.8rem', color: '#3B82F6', fontWeight: 'bold' }}>CLIENTE ASIGNADO</div>
+                                <div style={{ fontWeight: 'bold' }}>{transaction.customers.name}</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                    {transaction.customers.vehicle_model} {transaction.customers.vehicle_plate && `(${transaction.customers.vehicle_plate})`}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (window.confirm(`¿Estás seguro de desvincular al cliente ${transaction.customers.name} de este servicio?`)) {
+                                        await onUpdate(transaction.id, { customer_id: null });
+                                        onClose();
+                                    }
+                                }}
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    border: '1px solid #EF4444',
+                                    color: '#EF4444',
+                                    borderRadius: '0.25rem',
+                                    padding: '0.4rem 0.8rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                }}
+                            >
+                                <Trash2 size={14} /> Desvincular
+                            </button>
+                        </div>
+                    )}
+
                     <div style={{ marginBottom: '1rem' }}>
                         <label className="label">Servicio Base</label>
                         <select
