@@ -843,10 +843,10 @@ const Dashboard = () => {
     };
 
     const handleDeleteTransactionV2 = async (id) => {
-        if (!window.confirm("¿Estás seguro de que quieres eliminar esta venta permanentemente?")) return;
+        if (!window.confirm("¿Estás seguro de que quieres CANCELAR este servicio?\n\nDesaparecerá de la lista activa.")) return;
 
         try {
-            // 1. Delete assignments (Manual Cascade just in case)
+            // 1. Delete assignments (Allowed for all users)
             const { error: assignError } = await supabase
                 .from('transaction_assignments')
                 .delete()
@@ -854,28 +854,34 @@ const Dashboard = () => {
 
             if (assignError) throw assignError;
 
-            // 2. Delete Feedback (Manual Cascade)
+            // 2. Delete Feedback (If exists)
             const { error: feedbackError } = await supabase
                 .from('customer_feedback')
                 .delete()
                 .eq('transaction_id', id);
 
             if (feedbackError) {
-                console.warn("Error deleting feedback (might not exist):", feedbackError);
-                // Continue, as feedback might not exist or table issue
+                console.warn("Error deleting feedback:", feedbackError);
             }
 
-            // 3. Delete the transaction
-            await removeTransaction(id);
+            // 3. SOFT DELETE: Update status to 'cancelled' instead of hard DELETE
+            // This bypasses RLS restrictions for employees who can update but not delete.
+            await updateTransaction(id, {
+                status: 'cancelled',
+                finished_at: null,
+                price: 0, // Set price to 0 so it doesn't affect stats if counted somewhere
+                commission_amount: 0,
+                extras: [] // Clear extras
+            });
 
-            // 4. Force strict refresh
+            // 4. Force refresh
             await refreshTransactions();
 
-            setEditingTransactionId(null); // Close modal if open
-            alert("Venta eliminada correctamente.");
+            setEditingTransactionId(null);
+            alert("Venta cancelada correctamente.");
         } catch (error) {
-            console.error("Error deleting:", error);
-            alert("Error al eliminar: " + (error.message || JSON.stringify(error)));
+            console.error("Error cancelling:", error);
+            alert("Error al cancelar: " + (error.message || JSON.stringify(error)));
         }
     };
 
