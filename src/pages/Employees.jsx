@@ -504,7 +504,27 @@ const Employees = () => {
                                                     head: [['Fecha', 'Vehículo', 'Base', 'Extras', 'Propina', 'Total']],
                                                     body: tableData,
                                                     theme: 'grid',
-                                                    styles: { fontSize: 8 }
+                                                    styles: { fontSize: 8, textColor: [0, 0, 0] },
+                                                    didParseCell: function (data) {
+                                                        if (data.section === 'body') {
+                                                            const tx = stats.txs[data.row.index];
+                                                            if (tx) {
+                                                                const day = new Date(tx.date).getDay(); // 0=Sun, 1=Mon...
+                                                                const colors = {
+                                                                    0: [254, 202, 202], // Sun: Red-200
+                                                                    1: [253, 230, 138], // Mon: Amber-200
+                                                                    2: [254, 240, 138], // Tue: Yellow-200
+                                                                    3: [187, 247, 208], // Wed: Green-200
+                                                                    4: [191, 219, 254], // Thu: Blue-200
+                                                                    5: [221, 214, 254], // Fri: Violet-200
+                                                                    6: [251, 207, 232]  // Sat: Pink-200
+                                                                };
+                                                                if (colors[day]) {
+                                                                    data.cell.styles.fillColor = colors[day];
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 });
 
                                                 doc.save(`Nomina_${selectedEmployee.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
