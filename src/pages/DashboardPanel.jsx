@@ -1987,11 +1987,11 @@ const Dashboard = () => {
                                             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', borderBottom: '2px solid var(--primary)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                                                 ⚠️ Cancelar Servicios Activos
                                             </h3>
-                                            {transactions.filter(t => ['waiting', 'process', 'ready'].includes(t.status)).length === 0 ?
+                                            {transactions.filter(t => ['waiting', 'in_progress', 'ready'].includes(t.status)).length === 0 ?
                                                 <p style={{ color: 'var(--text-muted)' }}>No hay servicios activos para cancelar.</p> : (
                                                     <ul style={{ listStyle: 'none', padding: 0 }}>
                                                         {transactions
-                                                            .filter(t => ['waiting', 'process', 'ready'].includes(t.status))
+                                                            .filter(t => ['waiting', 'in_progress', 'ready'].includes(t.status))
                                                             .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
                                                             .map(t => (
                                                                 <li key={t.id} style={{
@@ -2013,10 +2013,10 @@ const Dashboard = () => {
                                                                         </div>
                                                                         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.9rem' }}>
                                                                             <span style={{
-                                                                                backgroundColor: t.status === 'waiting' ? '#F59E0B' : t.status === 'process' ? '#3B82F6' : '#10B981',
+                                                                                backgroundColor: t.status === 'waiting' ? '#F59E0B' : t.status === 'in_progress' ? '#3B82F6' : '#10B981',
                                                                                 color: 'white', padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem'
                                                                             }}>
-                                                                                {t.status === 'waiting' ? 'En Cola' : t.status === 'process' ? 'Lavando' : 'Listo'}
+                                                                                {t.status === 'waiting' ? 'En Cola' : t.status === 'in_progress' ? 'Lavando' : 'Listo'}
                                                                             </span>
                                                                             <span style={{ color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</span>
                                                                         </div>
