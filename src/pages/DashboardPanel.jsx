@@ -3203,7 +3203,40 @@ const Dashboard = () => {
                                 const customerId = tx?.customers?.id || tx?.customer_id;
 
                                 if (customerId) {
-                                    return <QRCode value={`${window.location.origin}/portal/${customerId}`} size={256} />;
+                                    const portalUrl = `${window.location.origin}/portal/${customerId}`;
+                                    const phone = tx.customers?.phone ? tx.customers.phone.replace(/\D/g, '') : '';
+                                    const formattedPhone = phone.length === 10 ? `1${phone}` : phone;
+                                    const whatsappMsg = encodeURIComponent(`Hola, sigue el estado de tu servicio en Express CarWash aquí: ${portalUrl}`);
+                                    const whatsappUrl = formattedPhone
+                                        ? `https://wa.me/${formattedPhone}?text=${whatsappMsg}`
+                                        : `https://wa.me/?text=${whatsappMsg}`;
+
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                            <QRCode value={portalUrl} size={256} />
+
+                                            <a
+                                                href={whatsappUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-primary"
+                                                style={{
+                                                    backgroundColor: '#25D366',
+                                                    border: 'none',
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    textDecoration: 'none',
+                                                    color: 'white'
+                                                }}
+                                            >
+                                                <MessageCircle size={20} />
+                                                Enviar Link por WhatsApp
+                                            </a>
+                                        </div>
+                                    );
                                 } else {
                                     return <p style={{ color: 'red', textAlign: 'center' }}>⚠️ Cliente no vinculado.<br />Edita el servicio para asignar un cliente.</p>;
                                 }
