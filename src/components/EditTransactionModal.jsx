@@ -352,7 +352,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 {/* REMOVED FORM TAG TO PREVENT SUBMIT ISSUES */}
                 <div id="edit-transaction-form">
 
-                    {/* CLIENTE ASIGNADO (NUEVO) */}
+                    {/* CLIENTE ASIGNADO */}
                     {transaction.customers && (
                         <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '0.5rem', border: '1px solid #3B82F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -362,30 +362,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                     {transaction.customers.vehicle_model} {transaction.customers.vehicle_plate && `(${transaction.customers.vehicle_plate})`}
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    if (window.confirm(`¿Estás seguro de desvincular al cliente ${transaction.customers.name} de este servicio?`)) {
-                                        await onUpdate(transaction.id, { customer_id: null });
-                                        onClose();
-                                    }
-                                }}
-                                style={{
-                                    backgroundColor: 'transparent',
-                                    border: '1px solid #EF4444',
-                                    color: '#EF4444',
-                                    borderRadius: '0.25rem',
-                                    padding: '0.4rem 0.8rem',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.25rem'
-                                }}
-                            >
-                                <Trash2 size={14} /> Desvincular
-                            </button>
                         </div>
                     )}
 
@@ -416,6 +392,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             ))}
                         </select>
                     </div>
+
+                    {/* ... (rest of the form remains same until buttons) ... */}
+                    {/* ... */}
+
 
                     {/* SECCIÓN DE LAVADORES (NUEVO) */}
                     <div style={{ marginBottom: '1rem' }}>
@@ -631,44 +611,60 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-                        <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                            Cancelar
-                        </button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
                         <button
                             type="button"
                             onClick={async () => {
-                                try {
-                                    const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
-                                    const assignedNames = employees
-                                        .filter(e => selectedEmployeeIds.includes(e.id))
-                                        .map(e => e.name)
-                                        .join(', ');
-
-                                    const { doc } = await generateReceiptPDF(
-                                        transaction,
-                                        serviceName,
-                                        extras,
-                                        formData.price,
-                                        formData.tip || 0,
-                                        assignedNames,
-                                        reviewLink
-                                    );
-                                    doc.save(`recibo_${transaction.customers?.vehicle_plate || 'car'}.pdf`);
-                                } catch (error) {
-                                    console.error("Error generating/downloading PDF:", error);
-                                    alert("Error al generar PDF: " + error.message);
+                                if (window.confirm('⚠️ ¿Estás seguro de ELIMINAR este servicio completo?\n\nEsta acción no se puede deshacer.')) {
+                                    await onDelete(transaction.id);
+                                    onClose();
                                 }
                             }}
                             className="btn"
-                            style={{ backgroundColor: 'var(--success)', color: 'white' }}
+                            style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5' }}
                         >
-                            <Droplets size={18} style={{ marginRight: '0.5rem' }} /> Descargar PDF
+                            <Trash2 size={18} style={{ marginRight: '0.5rem' }} /> Eliminar Servicio
                         </button>
-                        <button type="button" onClick={handleSaveClick} className="btn btn-primary" disabled={isUploading}>
-                            {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
-                            {isUploading ? ' Procesando...' : 'Guardar'}
-                        </button>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
+                                        const assignedNames = employees
+                                            .filter(e => selectedEmployeeIds.includes(e.id))
+                                            .map(e => e.name)
+                                            .join(', ');
+
+                                        const { doc } = await generateReceiptPDF(
+                                            transaction,
+                                            serviceName,
+                                            extras,
+                                            formData.price,
+                                            formData.tip || 0,
+                                            assignedNames,
+                                            reviewLink
+                                        );
+                                        doc.save(`recibo_${transaction.customers?.vehicle_plate || 'car'}.pdf`);
+                                    } catch (error) {
+                                        console.error("Error generating/downloading PDF:", error);
+                                        alert("Error al generar PDF: " + error.message);
+                                    }
+                                }}
+                                className="btn"
+                                style={{ backgroundColor: 'var(--success)', color: 'white' }}
+                            >
+                                <Droplets size={18} style={{ marginRight: '0.5rem' }} /> Descargar PDF
+                            </button>
+                            <button type="button" onClick={handleSaveClick} className="btn btn-primary" disabled={isUploading}>
+                                {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
+                                {isUploading ? ' Procesando...' : 'Guardar'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
