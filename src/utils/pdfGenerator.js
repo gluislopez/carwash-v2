@@ -253,13 +253,27 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
 
     const tableHeaders = [['Fecha', 'Cliente', 'Servicio', 'Método', 'Total']];
 
-    const tableBody = transactions.map(t => [
-        new Date(t.date).toLocaleDateString() + ' ' + new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        t.client_info || 'Cliente',
-        t.service_info || t.service_id,
-        t.payment_method === 'cash' ? 'Efectivo' : t.payment_method === 'card' ? 'Tarjeta' : 'Ath Móvil',
-        `$${t.price.toFixed(2)}`
-    ]);
+    const tableBody = transactions.map(t => {
+        const dateStr = new Date(t.date || t.created_at).toLocaleDateString() + ' ' + new Date(t.date || t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const customerName = t.customers?.name || 'Cliente Casual';
+        const serviceName = t.services?.name || 'Servicio';
+
+        let vehicleStr = '';
+        if (t.vehicles && t.vehicles.brand !== 'Generico') {
+            vehicleStr = `${t.vehicles.brand || ''} ${t.vehicles.model || ''}`;
+        } else {
+            vehicleStr = t.customers?.vehicle_model || t.customers?.vehicle_plate || '';
+        }
+
+        return [
+            dateStr,
+            `${customerName}\n(${vehicleStr})`, // Combine name and vehicle
+            serviceName,
+            t.payment_method === 'cash' ? 'Efectivo' : t.payment_method === 'card' ? 'Tarjeta' : 'Ath Móvil',
+            `$${(parseFloat(t.price) || 0).toFixed(2)}`
+        ];
+    });
 
     autoTable(doc, {
         startY: y,
