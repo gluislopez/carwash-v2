@@ -847,7 +847,11 @@ const Dashboard = () => {
 
         try {
             // 1. TRY RPC FIRST (Bypass RLS)
-            const { data: rpcData, error: rpcError } = await supabase.rpc('cancel_transaction_v2', { tx_id: id });
+            const cancellerName = employee?.name || 'Usuario Desconocido';
+            const { data: rpcData, error: rpcError } = await supabase.rpc('cancel_transaction_v2', {
+                tx_id: id,
+                canceller_name: cancellerName
+            });
 
             if (!rpcError && rpcData?.success) {
                 // RPC Success
@@ -1424,6 +1428,27 @@ const Dashboard = () => {
                                 @keyframes spin { 100% { transform: rotate(360deg); } }
                             `}</style>
                 </button>
+
+                {/* SHOW CANCELLED BUTTON */}
+                <button
+                    className="btn"
+                    style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: '#EF4444', // Red text
+                        padding: '0.5rem 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.9rem'
+                    }}
+                    onClick={() => {
+                        setActiveDetailModal('cancelled');
+                        setShowDetailModal(true);
+                    }}
+                    title="Ver servicios cancelados"
+                >
+                    <span style={{ fontSize: '1.1em' }} role="img" aria-label="cancel">🚫</span> Cancelados
+                </button>
             </div>
 
 
@@ -1956,6 +1981,45 @@ const Dashboard = () => {
                                     </div>
                                 )}
 
+                                {activeDetailModal === 'cancelled' && (
+                                    <div>
+                                        {/* FILTER CANCELLED TRANSACTIONS FROM ALL DATA OR STATS DATA? 
+                                            Accessing raw transactionsData directly to ensure we catch everything today 
+                                        */}
+                                        {transactions.filter(t => t.status === 'cancelled').length === 0 ? <p>No hay servicios cancelados hoy.</p> : (
+                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                {[...transactions]
+                                                    .filter(t => t.status === 'cancelled')
+                                                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                                    .map(t => (
+                                                        <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <div>
+                                                                <div style={{ fontWeight: 'bold', color: '#EF4444' }}>
+                                                                    {new Date(t.created_at).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                                    <span style={{ margin: '0 0.5rem', color: 'var(--text-primary)' }}>-</span>
+                                                                    <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                                                                        {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                    </span>
+                                                                    <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
+                                                                        ({t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
+                                                                    </span>
+                                                                </div>
+                                                                <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>
+                                                                    🚫 Cancelado por: <strong>{t.cancelled_by || 'Usuario'}</strong>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                                                    {getServiceName(t.service_id)}
+                                                                </span>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
+
                                 {activeDetailModal === 'cars' && (
                                     <div>
                                         {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length === 0 ? <p>No hay autos lavados hoy.</p> : (
@@ -2459,7 +2523,7 @@ const Dashboard = () => {
                                     )}
                             </div>
                         </div>
-                    </div>
+                    </div >
                 )
             }
 
@@ -2835,164 +2899,166 @@ const Dashboard = () => {
 
 
             {/* SECCIÓN DE HISTORIAL (PAGADOS) - ADMIN/MANAGER ONLY */}
-            {(userRole === 'admin' || userRole === 'manager') && (
-                <>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                        {statsTransactions
-                            .filter(t => t.status === 'completed' || t.status === 'paid')
-                            .sort((a, b) => {
-                                const dateA = new Date(a.date);
-                                const dateB = new Date(b.date);
-                                if (dateB - dateA !== 0) return dateB - dateA;
-                                return new Date(b.created_at) - new Date(a.created_at);
-                            })
-                            .map(t => (
-                                <div
-                                    key={t.id}
-                                    className="card"
-                                    style={{
-                                        borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s'
-                                    }}
-                                    onClick={() => setSelectedTransaction(t)}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                        <div>
-                                            <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                                🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
+            {
+                (userRole === 'admin' || userRole === 'manager') && (
+                    <>
+                        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                            {statsTransactions
+                                .filter(t => t.status === 'completed' || t.status === 'paid')
+                                .sort((a, b) => {
+                                    const dateA = new Date(a.date);
+                                    const dateB = new Date(b.date);
+                                    if (dateB - dateA !== 0) return dateB - dateA;
+                                    return new Date(b.created_at) - new Date(a.created_at);
+                                })
+                                .map(t => (
+                                    <div
+                                        key={t.id}
+                                        className="card"
+                                        style={{
+                                            borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s'
+                                        }}
+                                        onClick={() => setSelectedTransaction(t)}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div>
+                                                <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                                                    🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                                    <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span>•</span>
+                                                    <span style={{
+                                                        padding: '0.1rem 0.5rem',
+                                                        borderRadius: '9999px',
+                                                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                                        color: '#10B981'
+                                                    }}>
+                                                        {getPaymentMethodLabel(t.payment_method)}
+                                                    </span>
+                                                </div>
+
+                                                {/* TIMING DETAILS (Users Request) */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
+                                                    {(() => {
+                                                        const created = new Date(t.created_at);
+                                                        const started = t.started_at ? new Date(t.started_at) : created;
+                                                        const finished = t.finished_at ? new Date(t.finished_at) : null;
+
+                                                        // Wait Time (Created -> Started)
+                                                        const waitMins = Math.max(0, Math.round((started - created) / 60000));
+
+                                                        // Process Time (Started -> Finished)
+                                                        const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
+
+                                                        return (
+                                                            <>
+                                                                <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
+                                                                <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
+                                                                {finished && (
+                                                                    <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
+                                                                        ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                                <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
-                                                <span>•</span>
-                                                <span style={{
-                                                    padding: '0.1rem 0.5rem',
-                                                    borderRadius: '9999px',
-                                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                                    color: '#10B981'
-                                                }}>
-                                                    {getPaymentMethodLabel(t.payment_method)}
-                                                </span>
-                                            </div>
-
-                                            {/* TIMING DETAILS (Users Request) */}
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
-                                                {(() => {
-                                                    const created = new Date(t.created_at);
-                                                    const started = t.started_at ? new Date(t.started_at) : created;
-                                                    const finished = t.finished_at ? new Date(t.finished_at) : null;
-
-                                                    // Wait Time (Created -> Started)
-                                                    const waitMins = Math.max(0, Math.round((started - created) / 60000));
-
-                                                    // Process Time (Started -> Finished)
-                                                    const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
-
-                                                    return (
-                                                        <>
-                                                            <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
-                                                            <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
-                                                            {finished && (
-                                                                <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
-                                                                    ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    );
-                                                })()}
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                                    ${parseFloat(t.price || 0).toFixed(2)}
+                                                </div>
+                                                {t.tip > 0 && (
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
+                                                        + ${parseFloat(t.tip).toFixed(2)} propina
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                                                ${parseFloat(t.price || 0).toFixed(2)}
+
+                                        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
+                                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
                                             </div>
-                                            {t.tip > 0 && (
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
-                                                    + ${parseFloat(t.tip).toFixed(2)} propina
+                                            {t.extras && t.extras.length > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
+                                                    <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
                                                 </div>
                                             )}
-                                        </div>
-                                    </div>
-
-                                    <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
-                                            <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
-                                        </div>
-                                        {t.extras && t.extras.length > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
-                                                <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
+                                                <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
+                                                    {t.transaction_assignments && t.transaction_assignments.length > 0
+                                                        ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                                        : getEmployeeName(t.employee_id)
+                                                    }
+                                                </span>
                                             </div>
-                                        )}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
-                                            <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
-                                                {t.transaction_assignments && t.transaction_assignments.length > 0
-                                                    ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                                    : getEmployeeName(t.employee_id)
-                                                }
-                                            </span>
                                         </div>
-                                    </div>
 
-                                    {/* ACTIONS FOR HISTORY ITEMS */}
-                                    < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                            className="btn"
-                                            onClick={() => handleRevertToReady(t)}
-                                            title="Devolver a Listo"
-                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                        >
-                                            <RefreshCw size={14} /> <span>Devolver</span>
-                                        </button>
-                                        {userRole === 'admin' && (
-                                            <>
-                                                <button
-                                                    className="btn"
-                                                    style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setEditingTransactionId(t.id);
-                                                    }}
-                                                    title="Editar"
-                                                >
-                                                    <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
-                                                </button>
-                                                <button
-                                                    className="btn"
-                                                    style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
-                                                            handleDeleteTransactionV2(t.id);
-                                                        }
-                                                    }}
-                                                    title="Eliminar"
-                                                >
-                                                    <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
+                                        {/* ACTIONS FOR HISTORY ITEMS */}
+                                        < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                className="btn"
+                                                onClick={() => handleRevertToReady(t)}
+                                                title="Devolver a Listo"
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                            >
+                                                <RefreshCw size={14} /> <span>Devolver</span>
+                                            </button>
+                                            {userRole === 'admin' && (
+                                                <>
+                                                    <button
+                                                        className="btn"
+                                                        style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingTransactionId(t.id);
+                                                        }}
+                                                        title="Editar"
+                                                    >
+                                                        <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
+                                                    </button>
+                                                    <button
+                                                        className="btn"
+                                                        style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                                                handleDeleteTransactionV2(t.id);
+                                                            }
+                                                        }}
+                                                        title="Eliminar"
+                                                    >
+                                                        <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
 
-                                </div>
-                            ))
-                        }
-                        {
-                            statsTransactions.length === 0 && (
-                                <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
-                                    No hay ventas registradas hoy
-                                </div>
-                            )
-                        }
-                    </div >
-                </>
-            )}
+                                    </div>
+                                ))
+                            }
+                            {
+                                statsTransactions.length === 0 && (
+                                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
+                                        No hay ventas registradas hoy
+                                    </div>
+                                )
+                            }
+                        </div >
+                    </>
+                )
+            }
 
             {/* TRANSACTION DETAIL MODAL */}
             {
@@ -3226,77 +3292,79 @@ const Dashboard = () => {
             }
             {/* QR CODE MODAL */}
             {/* QR CODE MODAL - PERMANENT CUSTOMER LINK */}
-            {qrTransactionId && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
-                }} onClick={() => setQrTransactionId(null)}>
+            {
+                qrTransactionId && (
                     <div style={{
-                        backgroundColor: 'white', padding: '2rem', borderRadius: '1rem',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
-                        maxWidth: '90%', width: '350px'
-                    }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <h2 style={{ color: 'black', margin: 0 }}>QR del Cliente</h2>
-                            <button onClick={() => setQrTransactionId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                                <X color="black" size={24} />
-                            </button>
-                        </div>
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
+                    }} onClick={() => setQrTransactionId(null)}>
+                        <div style={{
+                            backgroundColor: 'white', padding: '2rem', borderRadius: '1rem',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+                            maxWidth: '90%', width: '350px'
+                        }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                <h2 style={{ color: 'black', margin: 0 }}>QR del Cliente</h2>
+                                <button onClick={() => setQrTransactionId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                    <X color="black" size={24} />
+                                </button>
+                            </div>
 
-                        <div style={{ padding: '1rem', background: 'white', borderRadius: '0.5rem' }}>
-                            {(() => {
-                                // Find transaction to get Customer ID
-                                const tx = statsTransactions.find(t => t.id === qrTransactionId) || transactions.find(t => t.id === qrTransactionId);
-                                const customerId = tx?.customers?.id || tx?.customer_id;
+                            <div style={{ padding: '1rem', background: 'white', borderRadius: '0.5rem' }}>
+                                {(() => {
+                                    // Find transaction to get Customer ID
+                                    const tx = statsTransactions.find(t => t.id === qrTransactionId) || transactions.find(t => t.id === qrTransactionId);
+                                    const customerId = tx?.customers?.id || tx?.customer_id;
 
-                                if (customerId) {
-                                    const portalUrl = `${window.location.origin}/portal/${customerId}`;
-                                    const phone = tx.customers?.phone ? tx.customers.phone.replace(/\D/g, '') : '';
-                                    const formattedPhone = phone.length === 10 ? `1${phone}` : phone;
-                                    const whatsappMsg = encodeURIComponent(`Hola, sigue el estado de tu servicio en Express CarWash aquí: ${portalUrl}`);
-                                    const whatsappUrl = formattedPhone
-                                        ? `https://wa.me/${formattedPhone}?text=${whatsappMsg}`
-                                        : `https://wa.me/?text=${whatsappMsg}`;
+                                    if (customerId) {
+                                        const portalUrl = `${window.location.origin}/portal/${customerId}`;
+                                        const phone = tx.customers?.phone ? tx.customers.phone.replace(/\D/g, '') : '';
+                                        const formattedPhone = phone.length === 10 ? `1${phone}` : phone;
+                                        const whatsappMsg = encodeURIComponent(`Hola, sigue el estado de tu servicio en Express CarWash aquí: ${portalUrl}`);
+                                        const whatsappUrl = formattedPhone
+                                            ? `https://wa.me/${formattedPhone}?text=${whatsappMsg}`
+                                            : `https://wa.me/?text=${whatsappMsg}`;
 
-                                    return (
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                                            <QRCode value={portalUrl} size={256} />
+                                        return (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                                <QRCode value={portalUrl} size={256} />
 
-                                            <a
-                                                href={whatsappUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="btn btn-primary"
-                                                style={{
-                                                    backgroundColor: '#25D366',
-                                                    border: 'none',
-                                                    width: '100%',
-                                                    display: 'flex',
-                                                    justifyContent: 'center',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    textDecoration: 'none',
-                                                    color: 'white'
-                                                }}
-                                            >
-                                                <MessageCircle size={20} />
-                                                Enviar Link por WhatsApp
-                                            </a>
-                                        </div>
-                                    );
-                                } else {
-                                    return <p style={{ color: 'red', textAlign: 'center' }}>⚠️ Cliente no vinculado.<br />Edita el servicio para asignar un cliente.</p>;
-                                }
-                            })()}
-                        </div>
+                                                <a
+                                                    href={whatsappUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="btn btn-primary"
+                                                    style={{
+                                                        backgroundColor: '#25D366',
+                                                        border: 'none',
+                                                        width: '100%',
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        textDecoration: 'none',
+                                                        color: 'white'
+                                                    }}
+                                                >
+                                                    <MessageCircle size={20} />
+                                                    Enviar Link por WhatsApp
+                                                </a>
+                                            </div>
+                                        );
+                                    } else {
+                                        return <p style={{ color: 'red', textAlign: 'center' }}>⚠️ Cliente no vinculado.<br />Edita el servicio para asignar un cliente.</p>;
+                                    }
+                                })()}
+                            </div>
 
-                        <div style={{ color: '#555', textAlign: 'center', fontSize: '0.9rem' }}>
-                            <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Escanear para Portal de Cliente</p>
-                            <p>Historial • Estado • Info</p>
+                            <div style={{ color: '#555', textAlign: 'center', fontSize: '0.9rem' }}>
+                                <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Escanear para Portal de Cliente</p>
+                                <p>Historial • Estado • Info</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div >
     );
 };
