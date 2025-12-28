@@ -859,14 +859,27 @@ const Dashboard = () => {
                 .from('customer_feedback')
                 .delete()
                 .eq('transaction_id', id);
-
             if (feedbackError) {
                 console.warn("Error deleting feedback:", feedbackError);
             }
 
-            // 3. SOFT DELETE: Update status to 'cancelled' instead of hard DELETE
+            // 3. TRY RPC FIRST (Bypass RLS)
+            const { data: rpcData, error: rpcError } = await supabase.rpc('cancel_transaction_v2', { tx_id: id });
+
+            if (!rpcError && rpcData?.success) {
+                // RPC Success
+                console.log("Transaction cancelled via RPC");
+                await refreshTransactions();
+                setEditingTransactionId(null);
+                alert("Venta cancelada correctamente (RPC).");
+                return;
+            } else {
+                console.warn("RPC cancel failed or not exists, falling back to manual update:", rpcError);
+            }
+
+            // 4. FALLBACK: Manual Soft Delete (Subject to RLS)
             // This bypasses RLS restrictions for employees who can update but not delete.
-            await updateTransaction(id, {
+            const result = await updateTransaction(id, {
                 status: 'cancelled',
                 finished_at: null,
                 price: 0, // Set price to 0 so it doesn't affect stats if counted somewhere
@@ -874,7 +887,14 @@ const Dashboard = () => {
                 extras: [] // Clear extras
             });
 
-            // 4. Force refresh
+            // Check if RLS blocked it
+            if (!result || result.length === 0) {
+                alert("⚠️ ACCESO DENEGADO\n\nNo tienes permiso para cancelar este servicio.\n\nSOLUCIÓN: Pide al Admin que ejecute el script 'cancel_rpc.sql' en Supabase para habilitar borrado universal.");
+                console.warn("Soft Delete failed due to RLS.");
+                return;
+            }
+
+            // 5. Force refresh
             await refreshTransactions();
 
             setEditingTransactionId(null);
