@@ -42,7 +42,10 @@ const CustomerPortal = () => {
                     *,
                     services (name),
                     vehicles (model, brand, plate),
-                    customer_feedback (id, rating) 
+                    customer_feedback (id, rating),
+                    transaction_assignments (
+                        employees (name)
+                    )
                 `)
                 .eq('customer_id', customerId)
                 .order('created_at', { ascending: false });
@@ -117,6 +120,7 @@ const CustomerPortal = () => {
     };
 
     const [queueCount, setQueueCount] = useState(0);
+    const [selectedTransaction, setSelectedTransaction] = useState(null); // Modal State
 
     // ... useEffect ...
 
@@ -227,8 +231,14 @@ const CustomerPortal = () => {
 
                 {/* ACTIVE SERVICE */}
                 {activeService && (
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6' }}>
-                        <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem' }}>SERVICIO EN CURSO</h3>
+                    <div
+                        onClick={() => setSelectedTransaction(activeService)}
+                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
+                    >
+                        <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                            SERVICIO EN CURSO
+                            <span style={{ fontSize: '0.8rem', color: '#aaa' }}>Ver detalles &rarr;</span>
+                        </h3>
                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{activeService.services?.name || 'Lavado'}</div>
                         <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', backgroundColor: '#eff6ff', color: '#3b82f6', fontSize: '0.9rem', fontWeight: 'bold' }}>
@@ -253,7 +263,11 @@ const CustomerPortal = () => {
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Historial Reciente</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {history.map(tx => (
-                        <div key={tx.id} style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <div
+                            key={tx.id}
+                            onClick={() => setSelectedTransaction(tx)}
+                            style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
+                        >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
                                 <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{tx.services?.name || 'Servicio'}</span>
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
@@ -270,8 +284,66 @@ const CustomerPortal = () => {
                         <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No hay historial disponible.</p>
                     )}
                 </div>
-                {/* HISTORY LIST */}
-                {/* ... (existing history code) ... */}
+
+                {/* DETAIL MODAL */}
+                {selectedTransaction && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000,
+                        padding: '1rem'
+                    }} onClick={() => setSelectedTransaction(null)}>
+                        <div style={{ backgroundColor: 'white', width: '100%', maxWidth: '400px', borderRadius: '1rem', padding: '1.5rem', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setSelectedTransaction(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                                &times;
+                            </button>
+
+                            <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem' }}>Detalle del Servicio</h2>
+                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>{new Date(selectedTransaction.created_at).toLocaleString()}</p>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.25rem' }}>Vehículo</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                    {selectedTransaction.vehicles?.model ? `${selectedTransaction.vehicles.brand} ${selectedTransaction.vehicles.model}` : selectedTransaction.extras?.vehicle_model || 'Vehículo'}
+                                </div>
+                                <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>{selectedTransaction.vehicles?.plate || selectedTransaction.extras?.vehicle_plate || ''}</div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.25rem' }}>Servicio</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#3b82f6' }}>
+                                    {selectedTransaction.services?.name || 'Lavado'}
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>Atendido por:</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0 ? (
+                                        selectedTransaction.transaction_assignments.map((assign, idx) => (
+                                            <span key={idx} style={{
+                                                backgroundColor: '#eff6ff', color: '#1e40af',
+                                                padding: '0.25rem 0.75rem', borderRadius: '0.5rem',
+                                                fontSize: '0.95rem', fontWeight: '500',
+                                                display: 'flex', alignItems: 'center', gap: '0.4rem'
+                                            }}>
+                                                👤 {assign.employees?.name || 'Empleado'}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Sin asignar aún</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setSelectedTransaction(null)}
+                                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f1f5f9', color: '#334155', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.5, fontSize: '0.8rem', paddingBottom: '2rem' }}>
                     <p>Express CarWash System v4.70</p>
