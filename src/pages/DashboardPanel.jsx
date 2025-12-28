@@ -881,7 +881,8 @@ const Dashboard = () => {
                 finished_at: null,
                 price: 0,
                 commission_amount: 0,
-                extras: []
+                extras: [],
+                cancelled_by: cancellerName // Ensure we track who cancelled even in fallback
             });
 
             // Check if RLS blocked the update
