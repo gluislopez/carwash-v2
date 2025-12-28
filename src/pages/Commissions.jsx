@@ -74,43 +74,60 @@ const Commissions = () => {
 
         init();
         fetchData();
+
+        // Realtime Subscription
+        const channel = supabase
+            .channel('commissions-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+                fetchData();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => supabase.removeChannel(channel);
     }, []);
 
     // --- Stats Logic (Reused & Adapted) ---
-    const getFilteredData = () => {
-        if (!selectedEmployee) return { filteredTxs: [], filteredExps: [] };
-
-        // Determine Date Range Strings (YYYY-MM-DD)
+    // Refactored Date Range Helper (Exposed for UI)
+    const getDateRange = (filter) => {
         const now = new Date();
         let startStr = '';
         let endStr = '';
 
-        if (performanceFilter === 'today') {
+        if (filter === 'today') {
             startStr = getPRDateString(now);
             endStr = startStr;
-        } else if (performanceFilter === 'week') {
+        } else if (filter === 'week') {
             const day = now.getDay();
             const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
             const start = new Date(now);
             start.setDate(diff);
             const end = new Date(start);
             end.setDate(start.getDate() + 6);
-
             startStr = getPRDateString(start);
             endStr = getPRDateString(end);
-        } else if (performanceFilter === 'month') {
+        } else if (filter === 'month') {
             const start = new Date(now.getFullYear(), now.getMonth(), 1);
             const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             startStr = getPRDateString(start);
             endStr = getPRDateString(end);
-            endStr = getPRDateString(end);
-        } else if (performanceFilter === 'specific_month' && specificMonth) {
+        } else if (filter === 'specific_month' && specificMonth) {
             const [year, month] = specificMonth.split('-');
             const start = new Date(year, month, 1);
             const end = new Date(year, parseInt(month) + 1, 0);
             startStr = getPRDateString(start);
             endStr = getPRDateString(end);
         }
+        return { startStr, endStr };
+    };
+
+    // --- Stats Logic (Reused & Adapted) ---
+    const getFilteredData = () => {
+        if (!selectedEmployee) return { filteredTxs: [], filteredExps: [] };
+
+        const { startStr, endStr } = getDateRange(performanceFilter);
 
         const filteredTxs = transactions.filter(t => {
             // Check assignment
@@ -122,8 +139,7 @@ const Commissions = () => {
             // Date Filter
             if (performanceFilter === 'all') return true;
 
-            // Use string comparison
-            // Ensure we compare YYYY-MM-DD only
+            // Use string comparison (PR Time)
             const tDateStr = getPRDateString(t.date || t.created_at);
 
             return tDateStr >= startStr && tDateStr <= endStr;
@@ -239,7 +255,7 @@ const Commissions = () => {
             </div>
 
             {/* Filters */}
-            <div style={{ marginBottom: '2rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                 {['today', 'week', 'month', 'all'].map(filter => (
                     <button
                         key={filter}
@@ -262,6 +278,16 @@ const Commissions = () => {
                     </button>
                 ))}
             </div>
+
+            {/* DEBUG: Visible Date Range */}
+            {selectedEmployee && performanceFilter !== 'all' && (
+                <div style={{ marginBottom: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                    📅 Periodo: <strong>{(() => {
+                        const { startStr, endStr } = getDateRange(performanceFilter);
+                        return `${startStr} a ${endStr}`;
+                    })()}</strong>
+                </div>
+            )}
             {/* Specific Month Selector */}
             <div style={{ marginBottom: '2rem' }}>
                 <select
