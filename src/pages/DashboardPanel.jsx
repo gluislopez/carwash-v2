@@ -1443,7 +1443,6 @@ const Dashboard = () => {
                     }}
                     onClick={() => {
                         setActiveDetailModal('cancelled');
-                        setShowDetailModal(true);
                     }}
                     title="Gestionar cancelaciones"
                 >
