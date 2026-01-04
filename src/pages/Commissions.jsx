@@ -147,6 +147,8 @@ const Commissions = () => {
 
         const filteredExps = expenses.filter(e => {
             if (e.employee_id !== selectedEmployee.id) return false;
+            // Only deduct lunches from employee commissions
+            if (e.category !== 'lunch') return false;
             if (performanceFilter === 'all') return true;
 
             const eDateStr = getPRDateString(e.date || e.created_at);
@@ -337,11 +339,11 @@ const Commissions = () => {
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>${stats.tips.toFixed(2)}</div>
                 </div>
                 <div className="card" style={{ textAlign: 'center', border: '1px solid var(--success)', backgroundColor: 'rgba(16, 185, 129, 0.05)' }}>
-                    <div style={{ color: 'var(--success)', marginBottom: '0.5rem', fontWeight: 'bold' }}>TOTAL NETO</div>
+                    <div style={{ color: 'var(--success)', marginBottom: '0.5rem', fontWeight: 'bold' }}>TOTAL A PAGAR</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--success)' }}>${stats.net.toFixed(2)}</div>
                     {stats.expenses > 0 && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>
-                            (Menos ${stats.expenses.toFixed(2)} en gastos)
+                            (Menos ${stats.expenses.toFixed(2)} en almuerzos)
                         </div>
                     )}
                 </div>
