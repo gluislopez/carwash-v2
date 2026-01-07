@@ -41,7 +41,7 @@ const Layout = ({ children }) => {
     };
 
     const navItems = [
-        { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+        { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
         { path: '/services', label: 'Servicios', icon: <ShoppingBag size={20} /> },
         { path: '/customers', label: 'Clientes', icon: <Users size={20} /> },
 

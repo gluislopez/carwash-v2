@@ -14,6 +14,7 @@ import Inventory from './pages/Inventory';
 import GamificationSettings from './pages/GamificationSettings';
 import CustomerFeedback from './pages/CustomerFeedback';
 import CustomerPortal from './pages/CustomerPortal';
+import SmartRoot from './pages/SmartRoot';
 
 import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
@@ -157,13 +158,18 @@ const AppRoot = () => {
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
 
+                {/* SMART ROOT (Decides where to go) */}
+                <Route path="/" element={<SmartRoot />} />
+
                 <Route
                     path="*"
                     element={
                         <RequireAuth>
                             <Layout>
                                 <Routes>
-                                    <Route path="/" element={<Dashboard />} />
+                                    <Route path="/dashboard" element={<Dashboard />} />
+                                    {/* Redirect legacy / to dashboard if it hits here (though SmartRoot handles it) */}
+                                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
                                     <Route path="/services" element={<Services />} />
                                     <Route path="/employees" element={<Employees />} />
                                     <Route path="/customers" element={<Customers />} />

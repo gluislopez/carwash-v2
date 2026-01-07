@@ -21,6 +21,9 @@ const CustomerPortal = () => {
         const fetchData = async () => {
             if (!customerId) return;
 
+            // SAVE ID FOR PWA "SMART LAUNCH"
+            localStorage.setItem('my_carwash_id', customerId);
+
             // 1. Fetch Customer Info
             const { data: custData, error: custError } = await supabase
                 .from('customers')
@@ -145,6 +148,10 @@ const CustomerPortal = () => {
                         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Estado</div>
                     </div>
                 </div>
+
+                <div style={{ fontSize: '0.8rem', marginTop: '1.5rem', opacity: 0.8, backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                    📲 Add to Home Screen / Instalar App
+                </div>
             </div>
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
@@ -240,12 +247,30 @@ const CustomerPortal = () => {
                             <span style={{ fontSize: '0.8rem', color: '#aaa' }}>Ver detalles &rarr;</span>
                         </h3>
                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{activeService.services?.name || 'Lavado'}</div>
-                        <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', backgroundColor: '#eff6ff', color: '#3b82f6', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                {activeService.status === 'waiting' && '⏳ En Espera'}
-                                {activeService.status === 'in_progress' && '🚿 En Proceso'}
-                                {activeService.status === 'ready' && '✅ Listo para Recoger'}
-                            </span>
+                        <div style={{ marginTop: '0.5rem' }}>
+                            {/* EMPLOYEES LIST */}
+                            {activeService.transaction_assignments && activeService.transaction_assignments.length > 0 && (
+                                <div style={{ marginBottom: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    {activeService.transaction_assignments.map((assign, idx) => (
+                                        <span key={idx} style={{
+                                            backgroundColor: '#eff6ff', color: '#1e40af',
+                                            padding: '0.1rem 0.5rem', borderRadius: '0.5rem',
+                                            fontSize: '0.8rem', fontWeight: '500',
+                                            display: 'flex', alignItems: 'center', gap: '0.3rem'
+                                        }}>
+                                            👤 {assign.employees?.name || 'Empleado'}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', backgroundColor: '#eff6ff', color: '#3b82f6', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                    {activeService.status === 'waiting' && '⏳ En Espera'}
+                                    {activeService.status === 'in_progress' && '🚿 En Proceso'}
+                                    {activeService.status === 'ready' && '✅ Listo para Recoger'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 )}

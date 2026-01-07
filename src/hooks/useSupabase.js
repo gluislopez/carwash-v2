@@ -45,8 +45,14 @@ const useSupabase = (tableName, selectQuery = '*', options = {}) => {
         try {
             const { data: updated, error } = await supabase.from(tableName).update(updates).eq('id', id).select();
             if (error) throw error;
-            setData(data.map(item => item.id === id ? updated[0] : item));
-            return updated;
+
+            if (updated && updated.length > 0) {
+                setData(data.map(item => item.id === id ? updated[0] : item));
+                return updated;
+            } else {
+                // RLS likely blocked the update, or id not found. Return empty but don't corrupt state.
+                return [];
+            }
         } catch (err) {
             setError(err.message);
             throw err;

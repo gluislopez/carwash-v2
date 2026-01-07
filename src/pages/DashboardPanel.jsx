@@ -2314,6 +2314,12 @@ const Dashboard = () => {
                                                                             <Edit2 size={14} /> Editar
 
                                                                         </button>
+                                                                        <button
+                                                                            onClick={() => setQrTransactionId(t.id)}
+                                                                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                        >
+                                                                            <QrCode size={14} /> Ver QR
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             </li>
