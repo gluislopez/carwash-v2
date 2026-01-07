@@ -352,17 +352,20 @@ const CustomerPortal = () => {
                         <div style={{ marginTop: '0.5rem' }}>
                             {/* EMPLOYEES LIST */}
                             {activeService.transaction_assignments && activeService.transaction_assignments.length > 0 && (
-                                <div style={{ marginBottom: '0.8rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                    {activeService.transaction_assignments.map((assign, idx) => (
-                                        <span key={idx} style={{
-                                            backgroundColor: '#eff6ff', color: '#1e40af',
-                                            padding: '0.25rem 0.6rem', borderRadius: '0.5rem',
-                                            fontSize: '0.8rem', fontWeight: '600',
-                                            display: 'flex', alignItems: 'center', gap: '0.3rem'
-                                        }}>
-                                            👤 {assign.employees?.name || 'Empleado'}
-                                        </span>
-                                    ))}
+                                <div style={{ marginBottom: '0.8rem' }}>
+                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.3rem' }}>Atendido por:</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        {activeService.transaction_assignments.map((assign, idx) => (
+                                            <span key={idx} style={{
+                                                backgroundColor: '#eff6ff', color: '#1e40af',
+                                                padding: '0.25rem 0.6rem', borderRadius: '0.5rem',
+                                                fontSize: '0.8rem', fontWeight: '600',
+                                                display: 'flex', alignItems: 'center', gap: '0.3rem'
+                                            }}>
+                                                👤 {assign.employees?.name || 'Empleado'}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
