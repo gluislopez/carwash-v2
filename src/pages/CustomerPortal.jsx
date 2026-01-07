@@ -401,7 +401,7 @@ const CustomerPortal = () => {
                                 <Phone size={24} color="white" />
                             </div>
                             <div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>ATH Móvil Business</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>ATH Móvil</div>
                                 <div style={{ fontSize: '1.3rem', fontWeight: '800', marginTop: '0.1rem' }}>787-857-8983</div>
                                 <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Express CarWash</div>
                             </div>
