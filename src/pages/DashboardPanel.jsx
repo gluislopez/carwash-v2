@@ -238,7 +238,9 @@ const Dashboard = () => {
         const totalToPay = (parseFloat(transaction.price) + extrasTotal).toFixed(2);
         const serviceName = getServiceName(transaction.service_id);
 
-        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n🌟 *¿Satisfecho con el servicio?*\nLe agradeceríamos mucho una reseña de 5 estrellas. ⭐⭐⭐⭐⭐\n\n¡Lo esperamos!`;
+        const portalLink = `${window.location.origin}/portal/${transaction.customer_id}`;
+
+        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.\n\n📲 *Ver Link de Pago y Calificar:*\n${portalLink}\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n¡Lo esperamos!`;
 
         // Use api.whatsapp.com for better compatibility
         const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
