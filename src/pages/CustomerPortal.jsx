@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { MapPin, Phone, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign } from 'lucide-react';
+import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
     const { customerId } = useParams();
@@ -16,6 +17,11 @@ const CustomerPortal = () => {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
+    // Coupon State
+    const [availableCoupons, setAvailableCoupons] = useState(0);
+    const [nextCouponIndex, setNextCouponIndex] = useState(0);
+    const [showCouponModal, setShowCouponModal] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -55,6 +61,15 @@ const CustomerPortal = () => {
 
             if (!txError && txData) {
                 setHistory(txData);
+
+                // Loyalty Logic
+                const totalVisits = txData.length;
+                const earned = Math.floor(totalVisits / 5);
+                const redeemed = custData.redeemed_coupons || 0;
+                const available = Math.max(0, earned - redeemed);
+
+                setAvailableCoupons(available);
+                setNextCouponIndex(redeemed + 1);
 
                 // Active Service?
                 const active = txData.find(t =>
@@ -156,22 +171,92 @@ const CustomerPortal = () => {
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
-                {/* PROMO BADGE (If Saved) */}
-                {customer.promo_available && (
-                    <div style={{
-                        backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
-                        borderRadius: '1rem', marginBottom: '1rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)'
-                    }}>
+                {/* LOYALTY COUPON BADGE */}
+                {availableCoupons > 0 ? (
+                    <div
+                        onClick={() => setShowCouponModal(true)}
+                        style={{
+                            backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
+                            borderRadius: '1rem', marginBottom: '1rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
+                            cursor: 'pointer'
+                        }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <div style={{ fontSize: '1.5rem' }}>🎟️</div>
                             <div>
                                 <div style={{ fontWeight: 'bold' }}>¡TIENES 10% OFF!</div>
-                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Disponible para hoy</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Visita #{nextCouponIndex * 5} alcanzada</div>
                             </div>
                         </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>USAR</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.8rem', borderRadius: '0.5rem' }}>
+                            USAR
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{
+                        backgroundColor: 'white', color: '#64748b', padding: '1rem',
+                        borderRadius: '1rem', marginBottom: '1rem',
+                        display: 'flex', alignItems: 'center', gap: '1rem',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                    }}>
+                        <Gift size={24} className="text-purple-500" />
+                        <div>
+                            <div style={{ fontWeight: 'bold', color: '#333' }}>Programa de Lealtad</div>
+                            <div style={{ fontSize: '0.85rem' }}>
+                                {5 - (history.length % 5)} visitas más para tu próximo 10% OFF
+                            </div>
+                            {/* Simple Progress Bar */}
+                            <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', marginTop: '0.5rem' }}>
+                                <div style={{ width: `${(history.length % 5) * 20}%`, height: '100%', backgroundColor: '#a855f7', borderRadius: '3px' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* COUPON MODAL */}
+                {showCouponModal && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000
+                    }} onClick={() => setShowCouponModal(false)}>
+                        <div style={{
+                            backgroundColor: 'white', padding: '2rem', borderRadius: '1rem',
+                            width: '90%', maxWidth: '350px', textAlign: 'center', position: 'relative'
+                        }} onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setShowCouponModal(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <X size={24} color="#64748b" />
+                            </button>
+
+                            <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4f46e5', marginBottom: '0.5rem' }}>¡Felicidades!</h2>
+                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Muestra este código al cajero para reclamar tu 10% de descuento.</p>
+
+                            <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', border: '2px dashed #4f46e5', display: 'inline-block', marginBottom: '1.5rem' }}>
+                                <QRCode
+                                    value={`${window.location.origin}/verify-coupon?customerId=${customer.id}&couponIndex=${nextCouponIndex}`}
+                                    size={200}
+                                />
+                            </div>
+
+                            <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Cupón #{nextCouponIndex} • Válido por un solo uso</p>
+
+                            <button
+                                onClick={() => setShowCouponModal(false)}
+                                style={{
+                                    marginTop: '1.5rem',
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    backgroundColor: '#4f46e5',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    borderRadius: '0.5rem',
+                                    border: 'none',
+                                    fontSize: '1rem'
+                                }}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 )}
 

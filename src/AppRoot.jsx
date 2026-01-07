@@ -18,6 +18,7 @@ import SmartRoot from './pages/SmartRoot';
 
 import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
+import CouponVerifier from './pages/CouponVerifier';
 
 // Componente para proteger rutas
 const RequireAuth = ({ children }) => {
@@ -175,8 +176,8 @@ const AppRoot = () => {
                                     <Route path="/customers" element={<Customers />} />
                                     <Route path="/reports" element={<Reports />} />
                                     <Route path="/expenses" element={<Expenses />} />
-
                                     <Route path="/commissions" element={<Commissions />} />
+                                    <Route path="/verify-coupon" element={<CouponVerifier />} />
                                     <Route path="/inventory" element={<Inventory />} />
                                     <Route path="/gamification-settings" element={<GamificationSettings />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
