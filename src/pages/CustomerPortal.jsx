@@ -226,7 +226,7 @@ const CustomerPortal = () => {
                 <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>{queueCount}</div>
-                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>En Cola</div>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Fila de Espera</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isBusinessOpen ? '#4ade80' : '#ef4444' }}>
