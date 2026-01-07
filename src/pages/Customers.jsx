@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Phone, Mail, Car, Search } from 'lucide-react';
+import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
+import QRCode from 'react-qr-code';
 
 const Customers = () => {
     const { data: customers, create, remove, update } = useSupabase('customers', '*', { orderBy: { column: 'name', ascending: true } });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
+    const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
 
     // Search and Stats State
     const [searchTerm, setSearchTerm] = useState('');
@@ -206,6 +208,9 @@ const Customers = () => {
 
                         {userRole === 'admin' && (
                             <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => setSelectedQrCustomer(customer)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Ver QR">
+                                    <QrCode size={18} />
+                                </button>
                                 <button onClick={() => openModal(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
                                     <Edit size={18} />
                                 </button>
@@ -313,6 +318,77 @@ const Customers = () => {
                     </div>
                 </div>
             )}
+
+            {/* QR CODE MODAL FOR CUSTOMERS */}
+            {
+                selectedQrCustomer && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000
+                    }} onClick={() => setSelectedQrCustomer(null)}>
+                        <div style={{
+                            backgroundColor: 'white', padding: '2rem', borderRadius: '1rem',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+                            maxWidth: '90%', width: '350px'
+                        }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                <h2 style={{ color: 'black', margin: 0 }}>QR del Cliente</h2>
+                                <button onClick={() => setSelectedQrCustomer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                    <X color="black" size={24} />
+                                </button>
+                            </div>
+
+                            <div style={{ padding: '1rem', background: 'white', borderRadius: '0.5rem' }}>
+                                {(() => {
+                                    const portalUrl = `${window.location.origin}/portal/${selectedQrCustomer.id}`;
+                                    const phone = selectedQrCustomer.phone ? selectedQrCustomer.phone.replace(/\D/g, '') : '';
+                                    const formattedPhone = phone.length === 10 ? `1${phone}` : phone;
+                                    const whatsappMsg = encodeURIComponent(`Hola ${selectedQrCustomer.name.split(' ')[0]}, aquí tienes el enlace a tu portal de cliente en Express CarWash: ${portalUrl}`);
+                                    const whatsappUrl = formattedPhone
+                                        ? `https://wa.me/${formattedPhone}?text=${whatsappMsg}`
+                                        : `https://wa.me/?text=${whatsappMsg}`;
+
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                            <QRCode value={portalUrl} size={256} />
+
+                                            <div style={{ textAlign: 'center', color: '#333', marginBottom: '0.5rem' }}>
+                                                <strong>{selectedQrCustomer.name}</strong>
+                                                <div style={{ fontSize: '0.9rem', color: '#666' }}>{selectedQrCustomer.vehicle_model}</div>
+                                            </div>
+
+                                            <a
+                                                href={whatsappUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-primary"
+                                                style={{
+                                                    backgroundColor: '#25D366',
+                                                    border: 'none',
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    textDecoration: 'none',
+                                                    color: 'white'
+                                                }}
+                                            >
+                                                <MessageCircle size={20} />
+                                                Enviar Link por WhatsApp
+                                            </a>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            <div style={{ color: '#555', textAlign: 'center', fontSize: '0.9rem' }}>
+                                <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Escanea o envía para acceso al portal</p>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 };
