@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign } from 'lucide-react';
+import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
@@ -18,10 +18,49 @@ const CustomerPortal = () => {
     const [comment, setComment] = useState('');
     const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
-    // Coupon State
     const [availableCoupons, setAvailableCoupons] = useState(0);
     const [nextCouponIndex, setNextCouponIndex] = useState(0);
     const [showCouponModal, setShowCouponModal] = useState(false);
+
+    // PWA State
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [isIOS, setIsIOS] = useState(false);
+    const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+
+    useEffect(() => {
+        // Check if iOS
+        const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        setIsIOS(isIosDevice);
+
+        // Capture install prompt
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (isIOS) {
+            setShowIOSInstructions(true);
+        } else if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                setDeferredPrompt(null);
+            }
+        } else {
+            // Already installed or not supported, maybe show a hint or do nothing
+            // For now, if no prompt and not iOS, we can assume it's installed or not capable
+            // But let's show an alert for clarity during this phase if clicked
+            // alert("Para instalar, busca la opción 'Instalar aplicación' en el menú de tu navegador.");
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -164,10 +203,85 @@ const CustomerPortal = () => {
                     </div>
                 </div>
 
-                <div style={{ fontSize: '0.8rem', marginTop: '1.5rem', opacity: 0.8, backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '0.5rem' }}>
-                    📲 Add to Home Screen / Instalar App
+                <div
+                    onClick={handleInstallClick}
+                    style={{
+                        fontSize: '0.9rem', marginTop: '1.5rem',
+                        opacity: (deferredPrompt || isIOS) ? 1 : 0.5,
+                        backgroundColor: (deferredPrompt || isIOS) ? '#4f46e5' : 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        padding: '0.7rem 1.2rem',
+                        borderRadius: '0.5rem',
+                        cursor: (deferredPrompt || isIOS) ? 'pointer' : 'default',
+                        fontWeight: (deferredPrompt || isIOS) ? 'bold' : 'normal',
+                        transition: 'all 0.2s'
+                    }}>
+                    📲 {isIOS ? 'Instalar en iPhone (iOS)' : 'Instalar App'}
                 </div>
             </div>
+
+            {/* IOS INSTRUCTIONS MODAL */}
+            {showIOSInstructions && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 9999,
+                    display: 'flex', flexDirection: 'column', justifyContent: 'end', alignItems: 'center',
+                    paddingBottom: '2rem'
+                }} onClick={() => setShowIOSInstructions(false)}>
+
+                    <div style={{ color: 'white', textAlign: 'center', marginBottom: '2rem', animation: 'bounce 2s infinite' }}>
+                        <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Para instalar la App:</div>
+                        <div style={{ fontSize: '1rem', opacity: 0.8 }}>Debes usar Safari</div>
+                    </div>
+
+                    <div style={{
+                        backgroundColor: '#1e1e1e', color: 'white', padding: '1.5rem',
+                        borderRadius: '1rem', width: '90%', maxWidth: '400px',
+                        textAlign: 'center', position: 'relative'
+                    }} onClick={e => e.stopPropagation()}>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+                            <div style={{ fontSize: '1.5rem', color: '#3b82f6' }}><Share size={32} /></div>
+                            <div>
+                                <div style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Paso 1</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Toca el botón 'Compartir'</div>
+                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Suele estar abajo en el centro</div>
+                            </div>
+                        </div>
+
+                        <div style={{ width: '100%', height: '1px', backgroundColor: '#374151', marginBottom: '1.5rem' }}></div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+                            <div style={{ fontSize: '1.5rem' }}>📱</div>
+                            <div>
+                                <div style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Paso 2</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Selecciona 'Agregar a Inicio'</div>
+                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>(Add to Home Screen)</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setShowIOSInstructions(false)}
+                            style={{
+                                width: '100%', padding: '1rem',
+                                backgroundColor: '#3b82f6', color: 'white',
+                                borderRadius: '0.8rem', border: 'none',
+                                fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer'
+                            }}
+                        >
+                            Entendido
+                        </button>
+                    </div>
+
+                    {/* Arrow pointing down for emphasis */}
+                    <div style={{
+                        marginTop: '1rem', fontSize: '2rem', color: 'white',
+                        transform: 'translateY(10px)', opacity: 0.5
+                    }}>
+                        ⬇️
+                    </div>
+                </div>
+            )}
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
