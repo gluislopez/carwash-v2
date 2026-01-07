@@ -244,18 +244,35 @@ const CustomerPortal = () => {
                     >
                         <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                             SERVICIO EN CURSO
-                            <span style={{ fontSize: '0.8rem', color: '#aaa' }}>Ver detalles &rarr;</span>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Ver detalles &rarr;</span>
                         </h3>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{activeService.services?.name || 'Lavado'}</div>
+
+                        {/* Service Name with High Contrast */}
+                        <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.2rem' }}>
+                            {activeService.services?.name || 'Lavado'}
+                        </div>
+
+                        {/* Extras Count & Text */}
+                        {activeService.extras && activeService.extras.length > 0 && (
+                            <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                                + {activeService.extras.length} servicios extra <span style={{ fontSize: '0.8rem' }}>({activeService.extras.map(e => e.description).join(', ')})</span>
+                            </div>
+                        )}
+
+                        {/* TOTAL COST DISPLAY */}
+                        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#10b981', marginBottom: '0.8rem' }}>
+                            ${(parseFloat(activeService.price || 0) + (activeService.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}
+                        </div>
+
                         <div style={{ marginTop: '0.5rem' }}>
                             {/* EMPLOYEES LIST */}
                             {activeService.transaction_assignments && activeService.transaction_assignments.length > 0 && (
-                                <div style={{ marginBottom: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                <div style={{ marginBottom: '0.8rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {activeService.transaction_assignments.map((assign, idx) => (
                                         <span key={idx} style={{
                                             backgroundColor: '#eff6ff', color: '#1e40af',
-                                            padding: '0.1rem 0.5rem', borderRadius: '0.5rem',
-                                            fontSize: '0.8rem', fontWeight: '500',
+                                            padding: '0.25rem 0.6rem', borderRadius: '0.5rem',
+                                            fontSize: '0.8rem', fontWeight: '600',
                                             display: 'flex', alignItems: 'center', gap: '0.3rem'
                                         }}>
                                             👤 {assign.employees?.name || 'Empleado'}
@@ -275,13 +292,36 @@ const CustomerPortal = () => {
                     </div>
                 )}
 
-                {/* INFO CARD (ATH MOVIL) */}
+                {/* PAYMENT METHODS CARD */}
                 <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
-                    <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Phone size={20} /> ATH Móvil
+                    <h3 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                        💳 Métodos de Pago
                     </h3>
-                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>787-857-8983</p>
-                    <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Express CarWash</p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {/* CASH OPTION */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                                <DollarSign size={24} color="white" />
+                            </div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>Efectivo</div>
+                        </div>
+
+                        {/* LINE SEPARATOR */}
+                        <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />
+
+                        {/* ATH MOVIL OPTION */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                                <Phone size={24} color="white" />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>ATH Móvil Business</div>
+                                <div style={{ fontSize: '1.3rem', fontWeight: '800', marginTop: '0.1rem' }}>787-857-8983</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Express CarWash</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* HISTORY LIST */}
