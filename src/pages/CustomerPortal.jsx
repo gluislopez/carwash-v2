@@ -27,6 +27,37 @@ const CustomerPortal = () => {
     const [isIOS, setIsIOS] = useState(false);
     const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
+    // Business Status
+    const [isBusinessOpen, setIsBusinessOpen] = useState(true);
+
+    useEffect(() => {
+        // Fetch Business Status
+        const fetchStatus = async () => {
+            const { data } = await supabase
+                .from('business_settings')
+                .select('setting_value')
+                .eq('setting_key', 'is_open')
+                .single();
+
+            if (data) {
+                setIsBusinessOpen(data.setting_value === 'true');
+            }
+        };
+        fetchStatus();
+
+        // Realtime
+        const channel = supabase
+            .channel('public:portal_settings')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, payload => {
+                if (payload.new && payload.new.setting_key === 'is_open') {
+                    setIsBusinessOpen(payload.new.setting_value === 'true');
+                }
+            })
+            .subscribe();
+
+        return () => supabase.removeChannel(channel);
+    }, []);
+
     useEffect(() => {
         // Check if iOS
         const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -198,7 +229,9 @@ const CustomerPortal = () => {
                         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>En Cola</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4ade80' }}>Abierto</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isBusinessOpen ? '#4ade80' : '#ef4444' }}>
+                            {isBusinessOpen ? 'Abierto' : 'Cerrado'}
+                        </div>
                         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Estado</div>
                     </div>
                 </div>

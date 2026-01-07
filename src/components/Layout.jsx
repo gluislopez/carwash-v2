@@ -8,8 +8,49 @@ const Layout = ({ children }) => {
     const [userEmail, setUserEmail] = useState('');
     const [userRole, setUserRole] = useState(null);
     const [employeeName, setEmployeeName] = useState('');
+
+    // Business Status State
+    const [isBusinessOpen, setIsBusinessOpen] = useState(true);
+
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Fetch Business Status
+    useEffect(() => {
+        const fetchStatus = async () => {
+            const { data } = await supabase
+                .from('business_settings')
+                .select('setting_value')
+                .eq('setting_key', 'is_open')
+                .single();
+
+            if (data) {
+                setIsBusinessOpen(data.setting_value === 'true');
+            }
+        };
+        fetchStatus();
+
+        // Subscribe to changes
+        const channel = supabase
+            .channel('public:business_settings')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, payload => {
+                if (payload.new && payload.new.setting_key === 'is_open') {
+                    setIsBusinessOpen(payload.new.setting_value === 'true');
+                }
+            })
+            .subscribe();
+
+        return () => supabase.removeChannel(channel);
+    }, []);
+
+    const toggleBusinessStatus = async () => {
+        const newState = !isBusinessOpen;
+        setIsBusinessOpen(newState); // Optimistic update
+
+        await supabase
+            .from('business_settings')
+            .upsert({ setting_key: 'is_open', setting_value: String(newState) });
+    };
 
     useEffect(() => {
         const getUser = async () => {
@@ -148,6 +189,37 @@ const Layout = ({ children }) => {
                     </button>
                 </div>
 
+                {/* BUSINESS STATUS TOGGLE (Admin Only) */}
+                {
+                    userRole === 'admin' && (
+                        <div style={{ paddingBottom: '1rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                            <div
+                                onClick={toggleBusinessStatus}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    backgroundColor: isBusinessOpen ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                    padding: '0.75rem', borderRadius: '0.5rem', cursor: 'pointer',
+                                    border: `1px solid ${isBusinessOpen ? 'var(--success)' : 'var(--danger)'}`
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <div style={{
+                                        width: '10px', height: '10px', borderRadius: '50%',
+                                        backgroundColor: isBusinessOpen ? 'var(--success)' : 'var(--danger)',
+                                        boxShadow: `0 0 10px ${isBusinessOpen ? 'var(--success)' : 'var(--danger)'}`
+                                    }}></div>
+                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isBusinessOpen ? 'var(--success)' : 'var(--danger)' }}>
+                                        {isBusinessOpen ? 'NEGOCIO ABIERTO' : 'CERRADO'}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                                    {isBusinessOpen ? 'Clic para cerrar' : 'Clic para abrir'}
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+
                 <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;
@@ -216,23 +288,25 @@ const Layout = ({ children }) => {
                         Cerrar Sesión
                     </button>
                 </div>
-            </aside>
+            </aside >
 
             {/* Main Content Wrapper */}
-            <main className="main-content">
+            < main className="main-content" >
                 {children}
-            </main>
+            </main >
 
             {/* Mobile Overlay */}
-            {isMobileMenuOpen && (
-                <div
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 40
-                    }}
-                />
-            )}
+            {
+                isMobileMenuOpen && (
+                    <div
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 40
+                        }}
+                    />
+                )
+            }
 
             {/* Global Print Styles */}
             <style>{`
@@ -242,7 +316,7 @@ const Layout = ({ children }) => {
                     body { background-color: white !important; }
                 }
             `}</style>
-        </div>
+        </div >
     );
 };
 
