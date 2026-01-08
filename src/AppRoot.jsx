@@ -12,6 +12,7 @@ import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
 import Inventory from './pages/Inventory';
 import GamificationSettings from './pages/GamificationSettings';
+import Promotions from './pages/Promotions';
 import CustomerFeedback from './pages/CustomerFeedback';
 import CustomerPortal from './pages/CustomerPortal';
 import SmartRoot from './pages/SmartRoot';
@@ -180,6 +181,7 @@ const AppRoot = () => {
                                     <Route path="/verify-coupon" element={<CouponVerifier />} />
                                     <Route path="/inventory" element={<Inventory />} />
                                     <Route path="/gamification-settings" element={<GamificationSettings />} />
+                                    <Route path="/promotions" element={<Promotions />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                             </Layout>

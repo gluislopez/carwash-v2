@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User, Package } from 'lucide-react';
+import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User, Package, Megaphone } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [userEmail, setUserEmail] = useState('');
-    const [userRole, setUserRole] = useState(null);
-    const [employeeName, setEmployeeName] = useState('');
+    // ... code ...
 
-    // Business Status State
-    const [isBusinessOpen, setIsBusinessOpen] = useState(true);
+    // ... inside navItems logic ... (Wait, I need to see where navItems are defined)
 
-    const location = useLocation();
     const navigate = useNavigate();
 
     // Fetch Business Status
@@ -96,6 +91,7 @@ const Layout = ({ children }) => {
         navItems.push({ path: '/employees', label: 'Empleados', icon: <Users size={20} /> });
         navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
         navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
+        navItems.push({ path: '/promotions', label: 'Promociones', icon: <Megaphone size={20} /> });
     }
 
     // Inventory for Admin and Manager
