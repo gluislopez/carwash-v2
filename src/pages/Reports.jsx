@@ -10,16 +10,23 @@ import EditTransactionModal from '../components/EditTransactionModal';
 
 const Reports = () => {
     const [dateRange, setDateRange] = useState('week'); // 'today', 'week', 'month', 'custom'
+    const [selectedDay, setSelectedDay] = useState(null);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [myUserId, setMyUserId] = useState(null);
     const [myEmployeeId, setMyEmployeeId] = useState(null);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [userRole, setUserRole] = useState(null);
-    const [paymentMethodFilter, setPaymentMethodFilter] = useState('all'); // 'all', 'cash', 'transfer'
+    const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
     const [editingTransactionId, setEditingTransactionId] = useState(null);
-    const [activeModal, setActiveModal] = useState(null); // 'commissions', 'expenses'
+    const [activeModal, setActiveModal] = useState(null);
     const [reviewLink, setReviewLink] = useState('');
+
+    // Update main date setters to reset day
+    const handleSetDateRange = (newRange) => {
+        setDateRange(newRange);
+        setSelectedDay(null);
+    };
 
     // Fetch user info
     useEffect(() => {
@@ -77,14 +84,7 @@ const Reports = () => {
     const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), services(name), vehicles(brand, model), transaction_assignments(*)');
 
     const { data: expenses } = useSupabase('expenses');
-
-    // Fetch Daily Notes
     const { data: allNotes } = useSupabase('daily_notes');
-
-
-    // Helper to get customers/services names (fetching them separately would be better but for now we rely on IDs or need to fetch them)
-    // Actually useSupabase returns data for the table passed. We need multiple hooks or a way to fetch others.
-    // Let's use separate hooks for auxiliary data to map names.
     const { data: customersList } = useSupabase('customers');
     const { data: servicesList } = useSupabase('services');
     const { data: employeesList } = useSupabase('employees');
@@ -119,7 +119,7 @@ const Reports = () => {
             // Start and end are today
         } else if (dateRange === 'week') {
             const day = today.getDay();
-            const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
             start.setDate(diff); // Monday
             end.setDate(start.getDate() + 6); // Sunday
         } else if (dateRange === 'month') {
@@ -137,12 +137,17 @@ const Reports = () => {
 
         return allTransactions.filter(t => {
             const tDateStr = getPRDateString(t.date);
-            const dateInRange = tDateStr >= startStr && tDateStr <= endStr;
 
-            if (dateRange === 'today') {
-                if (tDateStr !== startStr) return false;
+            // 1. First check Day Filter (sub-filter)
+            if (selectedDay) {
+                if (tDateStr !== selectedDay) return false;
             } else {
-                if (tDateStr < startStr || tDateStr > endStr) return false;
+                // Standard Range Filter
+                if (dateRange === 'today') {
+                    if (tDateStr !== startStr) return false;
+                } else {
+                    if (tDateStr < startStr || tDateStr > endStr) return false;
+                }
             }
 
             // Payment Method Filter
@@ -288,11 +293,11 @@ const Reports = () => {
     // Admin Net = Income - (Commissions + Lunches + Products)
     // Employee Net = My Commissions - My Lunches
     const netCommissions = totalCommissions - totalLunches;
-    const adminNet = totalIncome - totalCommissions - totalProductExpenses; // Note: Lunches are paid from commissions, so they don't reduce business income further? 
+    const adminNet = totalIncome - totalCommissions - totalProductExpenses; // Note: Lunches are paid from commissions, so they don't reduce business income further?
     // Wait, if the business pays for lunch upfront and deducts it, then:
     // Business Cash Flow: +Income - CommissionPaid.
     // CommissionPaid = (GrossCommission - LunchCost).
-    // So Business Expense is actually GrossCommission. The fact that part of it was paid as lunch is irrelevant to the business bottom line, 
+    // So Business Expense is actually GrossCommission. The fact that part of it was paid as lunch is irrelevant to the business bottom line,
     // UNLESS the business paid for the lunch from its own cash.
     // Let's assume Business Paid Lunch.
     // So Business Cash Out = CommissionPaid (Cash) + LunchPaid (Cash).
@@ -360,7 +365,7 @@ const Reports = () => {
     // Export Handlers
     const handleCopyToEmail = () => {
         // Create HTML Table for Email
-        // Note: Images in email often need to be hosted publicly. 
+        // Note: Images in email often need to be hosted publicly.
         // For now we will use the text header, but if they have a public URL we could use it.
         // We will add a nice header block.
 
@@ -420,7 +425,7 @@ const Reports = () => {
                     <h1 style="margin: 0; color: #1e40af; font-size: 24px;">CARWASH SAAS</h1>
                     <p style="margin: 5px 0; color: #6b7280;">Reporte de Operaciones</p>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <p><strong>Periodo:</strong> ${dateRange}</p>
                     <p><strong>Generado:</strong> ${new Date().toLocaleDateString('es-PR')}</p>
@@ -465,7 +470,7 @@ const Reports = () => {
                         </tr>
                     </tfoot>
                 </table>
-                
+
                 ${notesHtml}
 
                 <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af;">
@@ -591,7 +596,7 @@ const Reports = () => {
                         type="date"
                         className="input"
                         value={startDate}
-                        onChange={(e) => { setStartDate(e.target.value); setDateRange('custom'); }}
+                        onChange={(e) => { setStartDate(e.target.value); setDateRange('custom'); setSelectedDay(null); }}
                         style={{ padding: '0.5rem' }}
                     />
                     <span style={{ color: 'var(--text-muted)' }}>-</span>
@@ -599,11 +604,81 @@ const Reports = () => {
                         type="date"
                         className="input"
                         value={endDate}
-                        onChange={(e) => { setEndDate(e.target.value); setDateRange('custom'); }}
+                        onChange={(e) => { setEndDate(e.target.value); setDateRange('custom'); setSelectedDay(null); }}
                         style={{ padding: '0.5rem' }}
                     />
                 </div>
             </div>
+
+            {/* DAILY TABS (Only visible if range is Week or Custom week-ish or Month) */}
+            {/* We show this if dateRange is 'week' OR 'month' OR 'custom' */}
+            {(dateRange === 'week' || dateRange === 'month' || dateRange === 'custom') && (
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                    {(() => {
+                        let days = [];
+                        const today = new Date();
+                        let start = new Date();
+                        let end = new Date();
+
+                        if (dateRange === 'week') {
+                            const day = today.getDay();
+                            const diff = (day === 0 ? -6 : 1) - day; // Correction: To get to Monday
+                            start.setDate(today.getDate() + diff); // Monday
+                            end = new Date(start);
+                            end.setDate(start.getDate() + 6);
+                        } else if (dateRange === 'month') {
+                            start = new Date(today.getFullYear(), today.getMonth(), 1);
+                            end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        } else if (dateRange === 'custom' && startDate && endDate) {
+                            start = new Date(startDate);
+                            end = new Date(endDate);
+                        }
+
+                        // Generate days loop
+                        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                            // Limit to max 7 days for now to avoid overcrowding if month is selected?
+                            // User asked for "días de la semana en curso" specifically below "Meses Anteriores". 
+                            // So if month is selected, maybe we shouldn't show 30 tabs?
+                            // Let's limit to 7 days if range > 10 days? No, let's just scroll.
+                            days.push(new Date(d));
+                        }
+                        // Re-limit to current week if user specifically meant that, but sticking to range is more logical.
+                        // Actually, if 'month' is selected, showing 31 buttons is intense.
+                        // The user prompt was: "Below current months... tabs with current week days".
+                        // This implies regardless of the filter? Or only when looking at current stuff?
+                        // Let's assume if 'week' is selected, we show the 7 days.
+                        // If 'month' is selected, we show nothing? Or we show weeks?
+                        // I will stick to showing tabs primarily for 'week' mode as it fits "days of the week".
+
+                        if (dateRange !== 'week') return null; // Only show for week for now as per "Pestañas con los días de la semana"
+
+                        return days.map(d => {
+                            const dateStr = getPRDateString(d);
+                            const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' });
+                            const dayNum = d.getDate();
+                            const isSelected = selectedDay === dateStr;
+                            const isToday = getPRDateString(new Date()) === dateStr;
+
+                            return (
+                                <button
+                                    key={dateStr}
+                                    onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                                    style={{
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '60px',
+                                        padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)',
+                                        backgroundColor: isSelected ? 'var(--primary)' : (isToday ? 'rgba(37, 99, 235, 0.1)' : 'var(--bg-card)'),
+                                        color: isSelected ? 'white' : 'var(--text-primary)',
+                                        cursor: 'pointer', flexShrink: 0
+                                    }}
+                                >
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase' }}>{dayName}</span>
+                                    <span style={{ fontSize: '1.2rem' }}>{dayNum}</span>
+                                </button>
+                            );
+                        });
+                    })()}
+                </div>
+            )}
 
             {/* DOWNLOAD BUTTON */}
             {userRole === 'admin' && (
@@ -808,21 +883,70 @@ const Reports = () => {
 
                                             if (maxHour !== null) {
                                                 const ampm = maxHour >= 12 ? 'PM' : 'AM';
-                                                const displayHour = maxHour % 12 || 12;
+                                                const hour12 = maxHour % 12 || 12;
                                                 return (
                                                     <>
-                                                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                                                            {displayHour}:00 {ampm}
-                                                        </p>
-                                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                                            {maxCount} autos registrados
-                                                        </p>
+                                                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{hour12}:00 {ampm}</p>
+                                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{maxCount} autos registrados</p>
                                                     </>
                                                 );
                                             }
                                             return <p style={{ color: 'var(--text-muted)' }}>No hay suficientes datos</p>;
                                         })()}
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* EMPLOYEE PERFORMANCE GRAPH */}
+                            <div className="card" style={{ gridColumn: 'span 2' }}>
+                                <h3 className="label">Desempeño por Empleado</h3>
+                                <div style={{ marginTop: '1rem' }}>
+                                    {(() => {
+                                        const empStats = {};
+                                        filteredTransactions.forEach(t => {
+                                            const assigns = t.transaction_assignments || [];
+                                            // Fallback for legacy single employee_id if no assignments
+                                            if (assigns.length === 0 && t.employee_id) {
+                                                assigns.push({ employee_id: t.employee_id });
+                                            }
+
+                                            assigns.forEach(a => {
+                                                const emp = employeesList?.find(e => e.id === a.employee_id);
+                                                const name = emp ? emp.name.split(' ')[0] : 'Desc.';
+                                                empStats[name] = (empStats[name] || 0) + 1;
+                                            });
+                                        });
+
+                                        const sortedStats = Object.entries(empStats).sort(([, a], [, b]) => b - a);
+                                        const maxVal = sortedStats.length > 0 ? sortedStats[0][1] : 1;
+
+                                        if (sortedStats.length === 0) return <p style={{ color: 'var(--text-muted)' }}>No hay datos de empleados</p>;
+
+                                        return (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {sortedStats.map(([name, count]) => (
+                                                    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                        <div style={{ width: '80px', fontSize: '0.9rem', fontWeight: 'bold' }}>{name}</div>
+                                                        <div style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', borderRadius: '4px', height: '24px', overflow: 'hidden' }}>
+                                                            <div style={{
+                                                                width: `${(count / maxVal) * 100}%`,
+                                                                backgroundColor: 'var(--primary)',
+                                                                height: '100%',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                paddingLeft: '0.5rem',
+                                                                color: 'white',
+                                                                fontSize: '0.8rem',
+                                                                transition: 'width 0.5s ease-out'
+                                                            }}>
+                                                                {count > 0 && <span style={{ marginLeft: '5px' }}>{count}</span>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
