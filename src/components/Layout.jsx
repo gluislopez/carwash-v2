@@ -4,11 +4,15 @@ import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trop
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
-    // ... code ...
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+    const [userRole, setUserRole] = useState(null);
+    const [employeeName, setEmployeeName] = useState('');
 
-    // ... inside navItems logic ... (Wait, I need to see where navItems are defined)
+    // Business Status State
+    const [isBusinessOpen, setIsBusinessOpen] = useState(true);
 
-    const navigate = useNavigate();
+    const location = useLocation();
 
     // Fetch Business Status
     useEffect(() => {
