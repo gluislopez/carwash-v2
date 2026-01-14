@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share } from 'lucide-react';
+import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
@@ -19,6 +19,7 @@ const CustomerPortal = () => {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [submittingFeedback, setSubmittingFeedback] = useState(false);
+    const [stripeLink, setStripeLink] = useState('');
 
     const [availableCoupons, setAvailableCoupons] = useState(0);
     const [nextCouponIndex, setNextCouponIndex] = useState(0);
@@ -182,6 +183,16 @@ const CustomerPortal = () => {
                     .eq('customer_id', customerId)
                     .order('payment_date', { ascending: false });
                 if (payments) setSubPayments(payments);
+            }
+
+            // 6. Fetch Global Settings (Stripe Link)
+            const { data: settings } = await supabase
+                .from('settings')
+                .select('key, value');
+
+            if (settings) {
+                const sLink = settings.find(s => s.key === 'stripe_link');
+                if (sLink) setStripeLink(sLink.value);
             }
 
             setLoading(false);
@@ -648,6 +659,37 @@ const CustomerPortal = () => {
                             </div>
                             <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>Efectivo</div>
                         </div>
+
+                        {/* Stripe OPTION */}
+                        {stripeLink && (
+                            <>
+                                <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />
+                                <a
+                                    href={stripeLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem',
+                                        textDecoration: 'none',
+                                        color: 'white',
+                                        backgroundColor: 'rgba(255,255,255,0.1)',
+                                        padding: '0.75rem',
+                                        borderRadius: '0.75rem'
+                                    }}
+                                >
+                                    <div style={{ backgroundColor: '#6366f1', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                                        <CreditCard size={24} color="white" />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>Pagar con Tarjeta</div>
+                                        <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Seguro vía Stripe</div>
+                                    </div>
+                                    <div style={{ fontSize: '1.2rem', opacity: 0.7 }}>&rarr;</div>
+                                </a>
+                            </>
+                        )}
 
                         {/* LINE SEPARATOR */}
                         <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />

@@ -710,6 +710,7 @@ const Dashboard = () => {
     const [totalXp, setTotalXp] = useState(0);
     const [dailyTarget, setDailyTarget] = useState(10); // Default 10
     const [reviewLink, setReviewLink] = useState(''); // Review link setting
+    const [stripeLink, setStripeLink] = useState(''); // Stripe payment link
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
     useEffect(() => {
@@ -725,6 +726,9 @@ const Dashboard = () => {
 
                 const link = settingsData.find(s => s.key === 'review_link');
                 if (link) setReviewLink(link.value);
+
+                const sLink = settingsData.find(s => s.key === 'stripe_link');
+                if (sLink) setStripeLink(sLink.value);
             }
 
             if (myEmployeeId) {
@@ -829,6 +833,7 @@ const Dashboard = () => {
 
             if (updates.daily_target !== undefined) setDailyTarget(parseInt(updates.daily_target));
             if (updates.review_link !== undefined) setReviewLink(updates.review_link);
+            if (updates.stripe_link !== undefined) setStripeLink(updates.stripe_link);
 
             return { success: true };
         } catch (error) {
@@ -1937,6 +1942,20 @@ const Dashboard = () => {
                                 </p>
                             </div>
 
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label className="label">Link de Pago Stripe</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="https://buy.stripe.com/..."
+                                    value={stripeLink}
+                                    onChange={(e) => setStripeLink(e.target.value)}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                    Link de pago de Stripe para que los clientes paguen desde el portal.
+                                </p>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button
                                     className="btn"
@@ -1949,7 +1968,10 @@ const Dashboard = () => {
                                     className="btn btn-primary"
                                     style={{ flex: 1 }}
                                     onClick={async () => {
-                                        const res = await handleUpdateSettings({ review_link: reviewLink });
+                                        const res = await handleUpdateSettings({
+                                            review_link: reviewLink,
+                                            stripe_link: stripeLink
+                                        });
                                         if (res.success) {
                                             alert('Configuración guardada');
                                             setIsConfigModalOpen(false);
