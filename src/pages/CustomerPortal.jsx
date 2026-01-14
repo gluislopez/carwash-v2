@@ -101,6 +101,8 @@ const CustomerPortal = () => {
 
             // SAVE ID FOR PWA "SMART LAUNCH"
             localStorage.setItem('my_carwash_id', customerId);
+            // Backup cookie (more reliable for some iOS PWA scenarios)
+            document.cookie = `my_carwash_id=${customerId}; path=/; max-age=31536000; SameSite=Lax`;
 
             // 1. Fetch Customer Info
             const { data: custData, error: custError } = await supabase

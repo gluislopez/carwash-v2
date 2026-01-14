@@ -8,6 +8,9 @@ const SmartRoot = () => {
 
     useEffect(() => {
         const checkRouting = async () => {
+            // Give storage/cookies a moment to "settle" in PWA mode
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             // 1. Check for Active Session (Admin/Employee)
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
@@ -17,8 +20,22 @@ const SmartRoot = () => {
             }
 
             // 2. Check for Saved Client ID (PWA Mode)
-            const savedClientId = localStorage.getItem('my_carwash_id');
-            if (savedClientId) {
+            let savedClientId = localStorage.getItem('my_carwash_id');
+
+            // Fallback for cookie (iOS PWA)
+            if (!savedClientId) {
+                const cookieValue = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('my_carwash_id='))
+                    ?.split('=')[1];
+                if (cookieValue) {
+                    savedClientId = cookieValue;
+                    // Restore to localStorage for consistency
+                    localStorage.setItem('my_carwash_id', savedClientId);
+                }
+            }
+
+            if (savedClientId && savedClientId !== 'null' && savedClientId !== 'undefined') {
                 // Client has "installed" the app, go to their portal
                 navigate(`/portal/${savedClientId}`, { replace: true });
                 return;
