@@ -10,6 +10,7 @@ const CustomerPortal = () => {
     const [history, setHistory] = useState([]);
     const [activeService, setActiveService] = useState(null);
     const [membership, setMembership] = useState(null);
+    const [subPayments, setSubPayments] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [showPromo, setShowPromo] = useState(false);
@@ -169,14 +170,17 @@ const CustomerPortal = () => {
                 setQueueCount(count);
             }
 
-            // 4. Fetch Membership
-            const { data: memberSub } = await supabase
-                .from('customer_memberships')
-                .select('*, memberships(*)')
-                .eq('customer_id', customerId)
-                .eq('status', 'active')
-                .single();
-            if (memberSub) setMembership(memberSub);
+            if (memberSub) {
+                setMembership(memberSub);
+
+                // 5. Fetch Subscription Payments
+                const { data: payments } = await supabase
+                    .from('subscription_payments')
+                    .select('*')
+                    .eq('customer_id', customerId)
+                    .order('payment_date', { ascending: false });
+                if (payments) setSubPayments(payments);
+            }
 
             setLoading(false);
         };
@@ -423,12 +427,42 @@ const CustomerPortal = () => {
                                 </div>
                             </div>
                         )}
-
                         {membership.memberships.type === 'unlimited' && (
                             <div style={{ fontSize: '0.8rem', opacity: 0.7, fontStyle: 'italic' }}>
                                 Disfruta de lavados sin límites mientras tu plan esté activo.
                             </div>
                         )}
+
+                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+                            <div>
+                                <div style={{ opacity: 0.7 }}>Próximo Pago</div>
+                                <div style={{ fontWeight: 'bold' }}>
+                                    {membership.next_billing_date ? new Date(membership.next_billing_date).toLocaleDateString() : 'N/A'}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ opacity: 0.7 }}>Costo Mensual</div>
+                                <div style={{ fontWeight: 'bold' }}>${membership.memberships.price}</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* SUBSCRIPTION PAYMENT HISTORY */}
+                {membership && subPayments.length > 0 && (
+                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b', marginBottom: '1rem' }}>Historial de Pagos (Suscripción)</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {subPayments.map(p => (
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
+                                        <span style={{ color: '#4b5563' }}>{new Date(p.payment_date).toLocaleDateString()}</span>
+                                    </div>
+                                    <span style={{ fontWeight: 'bold', color: '#1e293b' }}>${p.amount}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 

@@ -413,6 +413,7 @@ const Dashboard = () => {
     const [newExtra, setNewExtra] = useState({ description: '', price: '' });
     const [customerSearch, setCustomerSearch] = useState(''); // Estado para el buscador de clientes
     const [showCustomerSearch, setShowCustomerSearch] = useState(false); // Toggle para mostrar el input
+    const [plateSearch, setPlateSearch] = useState(''); // New: LPR Search
 
     // Quick Add Customer State
     const [isAddingCustomer, setIsAddingCustomer] = useState(false);
@@ -503,6 +504,27 @@ const Dashboard = () => {
             }
         } catch (error) {
             alert('Error al crear cliente: ' + error.message);
+        }
+    };
+
+    const handlePlateSearch = async (e) => {
+        if (e.key !== 'Enter' || !plateSearch.trim()) return;
+
+        const plate = plateSearch.trim().toUpperCase();
+        const found = customers.find(c => c.vehicle_plate?.toUpperCase() === plate);
+
+        if (found) {
+            setFormData({ ...formData, customerId: found.id });
+            handleCustomerSelect(found.id);
+            setIsModalOpen(true);
+            setPlateSearch('');
+        } else {
+            if (confirm(`No se encontró el vehículo ${plate}. ¿Deseas registrarlo como nuevo?`)) {
+                setNewCustomer({ ...newCustomer, vehicle_plate: plate });
+                setIsAddingCustomer(true);
+                setIsModalOpen(true);
+                setPlateSearch('');
+            }
         }
     };
 
@@ -1519,6 +1541,20 @@ const Dashboard = () => {
                     <Plus size={20} />
                     <span className="desktop-text">Registrar Servicio</span>
                 </button>
+
+                {/* QUICK PLATE SEARCH (LPR Simulation) */}
+                <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+                    <Car size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                        type="text"
+                        placeholder="Buscar Tablilla... (Enter)"
+                        className="input"
+                        value={plateSearch}
+                        onChange={(e) => setPlateSearch(e.target.value)}
+                        onKeyDown={handlePlateSearch}
+                        style={{ paddingLeft: '2.5rem', width: '100%', border: '1px solid var(--primary)', boxShadow: '0 0 10px rgba(99, 102, 241, 0.2)' }}
+                    />
+                </div>
 
                 {(userRole === 'admin' || userRole === 'manager') && (
                     <button
