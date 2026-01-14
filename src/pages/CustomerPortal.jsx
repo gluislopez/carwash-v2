@@ -610,6 +610,14 @@ const CustomerPortal = () => {
                             {activeService.services?.name || 'Lavado'}
                         </div>
 
+                        {/* Vehicle Info */}
+                        <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
+                            🚗 {activeService.vehicles?.model ? `${activeService.vehicles.brand} ${activeService.vehicles.model}` : activeService.extras?.vehicle_model || 'Vehículo'}
+                            <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                {activeService.vehicles?.plate || activeService.extras?.vehicle_plate}
+                            </span>
+                        </div>
+
                         {/* Extras Count & Text */}
                         {activeService.extras && activeService.extras.length > 0 && (
                             <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>

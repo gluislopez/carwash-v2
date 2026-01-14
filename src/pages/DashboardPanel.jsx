@@ -140,10 +140,10 @@ const Dashboard = () => {
     const { data: employeesData } = useSupabase('employees');
     const employees = employeesData || [];
 
-    const { data: customersData, refresh: refreshCustomers } = useSupabase('customers');
+    const { data: customersData, update: updateCustomer, refresh: refreshCustomers } = useSupabase('customers');
     const customers = customersData || [];
 
-    const { data: vehiclesData } = useSupabase('vehicles');
+    const { data: vehiclesData, create: createVehicle, refresh: refreshVehicles } = useSupabase('vehicles');
     const vehicles = vehiclesData || [];
 
     const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model, phone), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
@@ -519,16 +519,84 @@ const Dashboard = () => {
             return;
         }
 
+        // Clean values
+        const cleanPlate = newCustomer.vehicle_plate.trim().toUpperCase();
+        const cleanPhone = newCustomer.phone.replace(/\D/g, '');
+
         try {
-            const [created] = await createCustomer(newCustomer);
+            // 1. Check if customer exists by phone
+            let existingCustomer = null;
+            if (cleanPhone) {
+                existingCustomer = customers.find(c => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+            }
+
+            if (existingCustomer) {
+                // 2. Customer exists, check if vehicle exists for them
+                const existingVehicle = vehicles.find(v =>
+                    v.customer_id === existingCustomer.id &&
+                    v.plate.trim().toUpperCase() === cleanPlate
+                );
+
+                if (existingVehicle) {
+                    alert(`El cliente ${existingCustomer.name} ya tiene registrado el vehículo ${cleanPlate}. Seleccionándolo...`);
+                    setFormData({ ...formData, customerId: existingCustomer.id, vehicleId: existingVehicle.id });
+                } else {
+                    // 3. New vehicle for existing customer
+                    alert(`Cliente ${existingCustomer.name} encontrado. Añadiendo nuevo vehículo ${cleanPlate} a su perfil...`);
+
+                    const [newV] = await createVehicle({
+                        customer_id: existingCustomer.id,
+                        plate: cleanPlate,
+                        brand: '', // Could be extracted from model if needed
+                        model: newCustomer.vehicle_model,
+                        color: ''
+                    });
+
+                    // Update legacy fields in customer record for compatibility
+                    await updateCustomer(existingCustomer.id, {
+                        vehicle_plate: cleanPlate,
+                        vehicle_model: newCustomer.vehicle_model
+                    });
+
+                    await refreshVehicles();
+                    await refreshCustomers();
+                    setFormData({ ...formData, customerId: existingCustomer.id, vehicleId: newV.id });
+                }
+
+                setIsAddingCustomer(false);
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_model: '', email: '' });
+                return;
+            }
+
+            // 4. Truly New Customer
+            const [created] = await createCustomer({
+                ...newCustomer,
+                vehicle_plate: cleanPlate
+            });
+
             if (created) {
-                await refreshCustomers(); // Recargar lista
-                setFormData({ ...formData, customerId: created.id }); // Seleccionar el nuevo
-                setIsAddingCustomer(false); // Cerrar mini-form
-                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_model: '', email: '' }); // Reset
+                // Also create initial vehicle record
+                const [newV] = await createVehicle({
+                    customer_id: created.id,
+                    plate: cleanPlate,
+                    model: newCustomer.vehicle_model
+                });
+
+                await refreshCustomers();
+                await refreshVehicles();
+
+                setFormData({
+                    ...formData,
+                    customerId: created.id,
+                    vehicleId: newV.id
+                });
+                setIsAddingCustomer(false);
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_model: '', email: '' });
+                alert("¡Cliente y Vehículo registrados!");
             }
         } catch (error) {
-            alert('Error al crear cliente: ' + error.message);
+            console.error("Error in handleCreateCustomer:", error);
+            alert('Error al procesar: ' + error.message);
         }
     };
 
