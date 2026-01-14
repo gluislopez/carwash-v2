@@ -1281,6 +1281,27 @@ const Dashboard = () => {
                     {/* WHATSAPP SELF-REPORT BUTTON (PDF) */}
                     {userRole === 'admin' && (
                         <button
+                            onClick={() => setIsConfigModalOpen(true)}
+                            className="btn"
+                            style={{
+                                backgroundColor: '#6366f1',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                padding: '0.3rem 0.6rem',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                borderRadius: '0.25rem',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            <Settings size={16} />
+                            <span>Configuración</span>
+                        </button>
+                    )}
+                    {userRole === 'admin' && (
+                        <button
                             className="btn"
                             onClick={async () => {
                                 try {
@@ -1657,7 +1678,7 @@ const Dashboard = () => {
                 {(userRole === 'admin' || userRole === 'manager') && (
                     <button
                         onClick={() => setIsConfigModalOpen(true)}
-                        title="Configuración de Recibo"
+                        title="Configuración de Sistema"
                         className="btn"
                         style={{
                             backgroundColor: 'rgba(255,255,255,0.1)',
@@ -1666,16 +1687,19 @@ const Dashboard = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            width: '42px',
+                            gap: '0.5rem',
+                            padding: '0 1rem',
                             height: '42px',
                             cursor: 'pointer',
                             borderRadius: '0.5rem',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            fontWeight: '600'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
                     >
-                        <Settings size={22} />
+                        <Settings size={20} />
+                        <span className="desktop-text">Configurar</span>
                     </button>
                 )}
             </div>
