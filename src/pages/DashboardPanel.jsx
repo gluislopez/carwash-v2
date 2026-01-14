@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
@@ -159,6 +159,31 @@ const Dashboard = () => {
 
     const { data: expensesData } = useSupabase('expenses');
     const expenses = expensesData || [];
+
+    // Sorting services by popularity (most requested first)
+    const sortedServices = useMemo(() => {
+        if (!services.length) return [];
+
+        // Count transactions for each service
+        const counts = {};
+        transactions.forEach(tx => {
+            if (tx.service_id) {
+                counts[tx.service_id] = (counts[tx.service_id] || 0) + 1;
+            }
+            // Also count if it was used as an extra
+            if (tx.extras && Array.isArray(tx.extras)) {
+                tx.extras.forEach(extra => {
+                    const matchedService = services.find(s => s.name === extra.description);
+                    if (matchedService) {
+                        counts[matchedService.id] = (counts[matchedService.id] || 0) + 1;
+                    }
+                });
+            }
+        });
+
+        // Sort copy of services based on counts
+        return [...services].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
+    }, [services, transactions]);
 
     const [verifyingTransaction, setVerifyingTransaction] = useState(null);
     const [verificationChecks, setVerificationChecks] = useState({
@@ -2958,7 +2983,7 @@ const Dashboard = () => {
                                                 onChange={handleServiceChange}
                                             >
                                                 <option value="">Seleccionar Servicio...</option>
-                                                {services.map(s => (
+                                                {sortedServices.map(s => (
                                                     <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
                                                 ))}
                                             </select>
@@ -2987,7 +3012,7 @@ const Dashboard = () => {
                                                 }}
                                             >
                                                 <option value="">Seleccionar Servicio Secundario...</option>
-                                                {services.map(s => (
+                                                {sortedServices.map(s => (
                                                     <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
                                                 ))}
                                             </select>
