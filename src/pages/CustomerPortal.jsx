@@ -173,6 +173,14 @@ const CustomerPortal = () => {
                 setQueueCount(count);
             }
 
+            // 4. Fetch Membership Details
+            const { data: memberSub } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(name, type, wash_limit, price)')
+                .eq('customer_id', customerId)
+                .is('cancelled_at', null)
+                .single();
+
             if (memberSub) {
                 setMembership(memberSub);
 
