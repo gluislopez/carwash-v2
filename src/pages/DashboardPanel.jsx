@@ -336,12 +336,16 @@ const Dashboard = () => {
 
     const [canRedeemPoints, setCanRedeemPoints] = useState(false); // Loyalty State
     const [isRedemption, setIsRedemption] = useState(false); // Loyalty State
+    const [customerMembership, setCustomerMembership] = useState(null);
+    const [isMembershipUsage, setIsMembershipUsage] = useState(false);
 
-    const handleCustomerSelect = (customerId) => {
+    const handleCustomerSelect = async (customerId) => {
         if (!customerId) {
             setVipInfo(null);
             setLastService(null);
             setCanRedeemPoints(false);
+            setCustomerMembership(null);
+            setIsMembershipUsage(false);
             return;
         }
 
@@ -368,6 +372,25 @@ const Dashboard = () => {
             setCanRedeemPoints(true);
         } else {
             setCanRedeemPoints(false);
+        }
+
+        // 4. Membership Check
+        const { data: memberSub } = await supabase
+            .from('customer_memberships')
+            .select('*, memberships(*)')
+            .eq('customer_id', customerId)
+            .eq('status', 'active')
+            .single();
+
+        if (memberSub) {
+            setCustomerMembership(memberSub);
+            // Auto-check if it's unlimited or has washes left
+            if (memberSub.memberships.type === 'unlimited' || (memberSub.usage_count < memberSub.memberships.wash_limit)) {
+                // We could auto-enable it, but better let users choose
+            }
+        } else {
+            setCustomerMembership(null);
+            setIsMembershipUsage(false);
         }
     };
 
@@ -988,11 +1011,11 @@ const Dashboard = () => {
             vehicle_id: formData.vehicleId || null, // Add vehicle_id
             service_id: formData.serviceId,
             employee_id: null, // No assigned yet
-            price: basePrice,
+            price: isMembershipUsage ? 0 : basePrice,
             commission_amount: (parseFloat(formData.commissionAmount) || 0) + (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0),
             tip: 0,
-            payment_method: 'cash',
-            extras: formData.extras || [],
+            payment_method: isMembershipUsage ? 'membership' : 'cash',
+            extras: isMembershipUsage ? [...(formData.extras || []), { description: `Membresía: ${customerMembership.memberships.name}`, price: 0 }] : (formData.extras || []),
 
             status: 'waiting', // Initial Status
             total_price: basePrice // REQUIRED by DB constraint
@@ -1015,12 +1038,21 @@ const Dashboard = () => {
                 }
             }
 
+            // [MEMBERSHIP] Increment Usage
+            if (isMembershipUsage && customerMembership) {
+                await supabase.from('customer_memberships')
+                    .update({ usage_count: (customerMembership.usage_count || 0) + 1 })
+                    .eq('id', customerMembership.id);
+            }
+
             setIsSubmitting(true); // Disable button
             await createTransaction(newTransaction);
 
             setIsModalOpen(false);
             setIsSubmitting(false);
             setIsRedemption(false); // Reset Loyalty State
+            setIsMembershipUsage(false);
+            setCustomerMembership(null);
             setFormData({
                 customerId: '',
                 vehicleId: '',
@@ -2845,6 +2877,41 @@ const Dashboard = () => {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
+
+                                        {/* MEMBERSHIP INDICATOR */}
+                                        {customerMembership && (
+                                            <div style={{
+                                                gridColumn: 'span 2',
+                                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                                border: '1px solid #22C55E',
+                                                padding: '0.75rem',
+                                                borderRadius: '0.5rem',
+                                                marginBottom: '1rem',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center'
+                                            }}>
+                                                <div>
+                                                    <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships.name}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        {customerMembership.memberships.type === 'unlimited'
+                                                            ? 'Lavados Ilimitados'
+                                                            : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships.wash_limit}`}
+                                                    </div>
+                                                </div>
+                                                {(customerMembership.memberships.type === 'unlimited' || customerMembership.usage_count < customerMembership.memberships.wash_limit) && (
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isMembershipUsage}
+                                                            onChange={(e) => setIsMembershipUsage(e.target.checked)}
+                                                            style={{ width: '20px', height: '20px' }}
+                                                        />
+                                                        <span style={{ fontWeight: 'bold' }}>Saldar con Membresía</span>
+                                                    </label>
+                                                )}
+                                            </div>
+                                        )}
 
                                         <div style={{ marginBottom: '1rem' }}>
                                             <label className="label">Servicio Principal</label>

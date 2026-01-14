@@ -17,7 +17,8 @@ export default defineConfig({
                 background_color: '#0f172a',
                 display: 'standalone',
                 orientation: 'portrait',
-                start_url: '/',
+                orientation: 'portrait',
+                // start_url: '/', // REMOVED: To allow deep linking (smart launch) on iOS/Android PWA
                 icons: [
                     {
                         src: 'logo.jpg',

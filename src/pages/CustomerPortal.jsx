@@ -9,6 +9,7 @@ const CustomerPortal = () => {
     const [customer, setCustomer] = useState(null);
     const [history, setHistory] = useState([]);
     const [activeService, setActiveService] = useState(null);
+    const [membership, setMembership] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const [showPromo, setShowPromo] = useState(false);
@@ -167,6 +168,15 @@ const CustomerPortal = () => {
             if (!queueError) {
                 setQueueCount(count);
             }
+
+            // 4. Fetch Membership
+            const { data: memberSub } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(*)')
+                .eq('customer_id', customerId)
+                .eq('status', 'active')
+                .single();
+            if (memberSub) setMembership(memberSub);
 
             setLoading(false);
         };
@@ -358,6 +368,67 @@ const CustomerPortal = () => {
                                 <div style={{ width: `${(history.length % 5) * 20}%`, height: '100%', backgroundColor: '#a855f7', borderRadius: '3px' }}></div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* MEMBERSHIP CARD */}
+                {membership && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                        color: 'white',
+                        padding: '1.5rem',
+                        borderRadius: '1rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1 }}>
+                            <Gift size={100} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Membresía Activa</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{membership.memberships.name}</div>
+                            </div>
+                            <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                ACTIVO
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Beneficios:</div>
+                            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                                {membership.memberships.type === 'unlimited'
+                                    ? '✨ Lavados Ilimitados'
+                                    : `📦 ${membership.memberships.wash_limit} Lavados Premium`}
+                            </div>
+                        </div>
+
+                        {membership.memberships.type === 'limited' && (
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
+                                    <span>Uso del Plan</span>
+                                    <span>{membership.usage_count} / {membership.memberships.wash_limit}</span>
+                                </div>
+                                <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
+                                    <div style={{
+                                        width: `${(membership.usage_count / membership.memberships.wash_limit) * 100}%`,
+                                        height: '100%',
+                                        backgroundColor: '#4ade80',
+                                        borderRadius: '4px',
+                                        transition: 'width 0.5s ease-out'
+                                    }}></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {membership.memberships.type === 'unlimited' && (
+                            <div style={{ fontSize: '0.8rem', opacity: 0.7, fontStyle: 'italic' }}>
+                                Disfruta de lavados sin límites mientras tu plan esté activo.
+                            </div>
+                        )}
                     </div>
                 )}
 

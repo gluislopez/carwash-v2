@@ -14,6 +14,8 @@ const Customers = () => {
     // Search and Stats State
     const [searchTerm, setSearchTerm] = useState('');
     const [visitCounts, setVisitCounts] = useState({});
+    const [activeMemberships, setActiveMemberships] = useState({});
+    const [availablePlans, setAvailablePlans] = useState([]);
 
     // Obtener el rol del usuario actual y conteo de visitas
     useEffect(() => {
@@ -41,8 +43,30 @@ const Customers = () => {
             }
         };
 
+        const getMemberships = async () => {
+            const { data: memberData } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(name, type)')
+                .eq('status', 'active');
+
+            if (memberData) {
+                const map = {};
+                memberData.forEach(m => {
+                    map[m.customer_id] = m;
+                });
+                setActiveMemberships(map);
+            }
+
+            const { data: plans } = await supabase
+                .from('memberships')
+                .select('*')
+                .eq('active', true);
+            if (plans) setAvailablePlans(plans);
+        };
+
         getUserRole();
         getVisitCounts();
+        getMemberships();
     }, []);
 
     const [formData, setFormData] = useState({
@@ -51,10 +75,12 @@ const Customers = () => {
         email: '',
         vehicle_plate: '',
         vehicle_model: '',
-        points: 0
+        points: 0,
+        membership_id: ''
     });
 
     const openModal = (customer) => {
+        const activeSub = customer ? activeMemberships[customer.id] : null;
         if (customer) {
             setEditingCustomer(customer);
             setFormData({
@@ -63,11 +89,12 @@ const Customers = () => {
                 email: customer.email || '',
                 vehicle_plate: customer.vehicle_plate || '',
                 vehicle_model: customer.vehicle_model || '',
-                points: customer.points || 0
+                points: customer.points || 0,
+                membership_id: activeSub ? activeSub.membership_id : ''
             });
         } else {
             setEditingCustomer(null);
-            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0 });
+            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '' });
         }
         setIsModalOpen(true);
     };
@@ -82,10 +109,37 @@ const Customers = () => {
 
             if (editingCustomer) {
                 await update(editingCustomer.id, customerData);
+                // Handle Membership Assignment
+                if (formData.membership_id) {
+                    await supabase.from('customer_memberships').upsert({
+                        customer_id: editingCustomer.id,
+                        membership_id: formData.membership_id,
+                        status: 'active'
+                    }, { onConflict: 'customer_id' }); // Assuming one active membership per customer
+                } else {
+                    // If empty, we could deactivate or ignore. Let's ignore for now.
+                }
             } else {
-                await create(customerData);
+                const newCustomer = await create(customerData);
+                if (newCustomer && formData.membership_id) {
+                    await supabase.from('customer_memberships').insert([{
+                        customer_id: newCustomer.id,
+                        membership_id: formData.membership_id,
+                        status: 'active'
+                    }]);
+                }
             }
             setIsModalOpen(false);
+            // Refresh memberships
+            const { data: memberData } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(name, type)')
+                .eq('status', 'active');
+            if (memberData) {
+                const map = {};
+                memberData.forEach(m => map[m.customer_id] = m);
+                setActiveMemberships(map);
+            }
         } catch (error) {
             alert('Error al guardar cliente: ' + error.message);
         }
@@ -182,6 +236,19 @@ const Customers = () => {
                                     }}>
                                         🌟 {customer.points || 0} Pts
                                     </span>
+                                    {activeMemberships[customer.id] && (
+                                        <span style={{
+                                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                            color: '#22C55E',
+                                            padding: '0.1rem 0.5rem',
+                                            borderRadius: '1rem',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.8rem',
+                                            border: '1px solid rgba(34, 197, 94, 0.3)'
+                                        }}>
+                                            💎 {activeMemberships[customer.id].memberships.name}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -296,14 +363,36 @@ const Customers = () => {
                             {/* Puntos (Solo Admin/Manager) */}
                             {(userRole === 'admin' || userRole === 'manager') && (
                                 <div style={{ marginBottom: '1rem' }}>
-                                    <label className="label">Puntos de Lealtad</label>
-                                    <input
-                                        type="number"
-                                        className="input"
-                                        value={formData.points}
-                                        onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 0 })}
-                                    />
                                 </div>
+                            )}
+
+                            {/* Puntos y Membresía (Solo Admin/Manager) */}
+                            {(userRole === 'admin' || userRole === 'manager') && (
+                                <>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label className="label">Puntos de Lealtad</label>
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            value={formData.points}
+                                            onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label className="label">Plan de Membresía</label>
+                                        <select
+                                            className="input"
+                                            value={formData.membership_id}
+                                            onChange={(e) => setFormData({ ...formData, membership_id: e.target.value })}
+                                            style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                        >
+                                            <option value="">-- Sin Membresía --</option>
+                                            {availablePlans.map(plan => (
+                                                <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

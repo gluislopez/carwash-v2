@@ -16,6 +16,7 @@ import Promotions from './pages/Promotions';
 import CustomerFeedback from './pages/CustomerFeedback';
 import CustomerPortal from './pages/CustomerPortal';
 import SmartRoot from './pages/SmartRoot';
+import MembershipSettings from './pages/MembershipSettings';
 
 import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
@@ -182,6 +183,7 @@ const AppRoot = () => {
                                     <Route path="/inventory" element={<Inventory />} />
                                     <Route path="/gamification-settings" element={<GamificationSettings />} />
                                     <Route path="/promotions" element={<Promotions />} />
+                                    <Route path="/memberships" element={<MembershipSettings />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                             </Layout>
