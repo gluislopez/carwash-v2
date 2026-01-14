@@ -200,11 +200,15 @@ const Reports = () => {
 
     const dateFilteredTxs = getDateFilteredTransactions();
     const totalCash = dateFilteredTxs
-        .filter(t => t.payment_method === 'cash')
+        .filter(t => t.payment_method === 'cash' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const totalTransfer = dateFilteredTxs
-        .filter(t => t.payment_method === 'transfer')
+        .filter(t => t.payment_method === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+
+    const totalPending = dateFilteredTxs
+        .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const getFilteredExpenses = () => {
@@ -742,6 +746,19 @@ const Reports = () => {
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
                     </button>
+
+                    <div style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        padding: '0.3rem 0.8rem',
+                        border: '1px solid #6366F1',
+                        borderRadius: '6px',
+                        backgroundColor: 'transparent',
+                        color: '#6366F1',
+                        cursor: 'default'
+                    }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>PENDIENTE</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalPending.toFixed(2)}</span>
+                    </div>
                 </div>
             )}
 
