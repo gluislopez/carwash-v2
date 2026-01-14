@@ -102,8 +102,9 @@ const Customers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const { membership_id, ...pureCustomerData } = formData;
             const customerData = {
-                ...formData,
+                ...pureCustomerData,
                 email: formData.email.trim() === '' ? null : formData.email.trim()
             };
 
