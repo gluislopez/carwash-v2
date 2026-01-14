@@ -36,7 +36,8 @@ const Login = () => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            height: '100vh',
+            minHeight: '100vh',
+            width: '100%',
             backgroundColor: '#0f172a',
             color: 'white'
         }}>

@@ -265,7 +265,9 @@ const Reports = () => {
         return sum + (1 / count);
     }, 0);
 
-    const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+    const totalIncome = filteredTransactions
+        .filter(t => t.status === 'completed' || t.status === 'paid')
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
         const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
@@ -317,14 +319,19 @@ const Reports = () => {
         filteredTransactions.forEach(t => {
             const dateKey = getPRDateString(t.date);
             if (!groups[dateKey]) {
-                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
+                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0 };
             }
 
-            const txIncome = (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0); // User requested Tips included in Income
+            const isPaid = t.status === 'completed' || t.status === 'paid';
+            const isPending = t.status === 'ready' || t.status === 'in_progress' || t.status === 'waiting';
+
+            const txIncome = isPaid ? (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0) : 0;
+            const txPending = isPending ? (parseFloat(t.price) || 0) : 0;
             const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
 
             groups[dateKey].count += 1;
             groups[dateKey].income += txIncome;
+            groups[dateKey].pending += txPending;
             groups[dateKey].commissions += txCommission;
         });
 
@@ -1023,13 +1030,14 @@ const Reports = () => {
                 userRole === 'admin' && (
                     <div className="card" style={{ marginBottom: '2rem' }}>
                         <h3 className="label" style={{ marginBottom: '1rem' }}>Desglose Financiero</h3>
-                        <div style={{ overflowX: 'auto' }}>
+                        <div className="mobile-hide">
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
                                         <th style={{ padding: '1rem' }}>Fecha</th>
                                         <th style={{ padding: '1rem' }}>Autos</th>
                                         <th style={{ padding: '1rem', color: 'var(--success)' }}>Ingresos (+)</th>
+                                        <th style={{ padding: '1rem', color: '#6366F1' }}>Pendiente</th>
                                         <th style={{ padding: '1rem', color: 'var(--warning)' }}>Comisiones (-)</th>
                                         <th style={{ padding: '1rem', color: 'var(--danger)' }}>Compras (-)</th>
                                         <th style={{ padding: '1rem' }}>Neto (=)</th>
@@ -1041,6 +1049,7 @@ const Reports = () => {
                                             <td style={{ padding: '1rem' }}>{row.date}</td>
                                             <td style={{ padding: '1rem' }}>{row.count}</td>
                                             <td style={{ padding: '1rem', color: 'var(--success)' }}>${row.income.toFixed(2)}</td>
+                                            <td style={{ padding: '1rem', color: '#6366F1' }}>${row.pending.toFixed(2)}</td>
                                             <td style={{ padding: '1rem', color: 'var(--warning)' }}>${row.commissions.toFixed(2)}</td>
                                             <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.productExpenses.toFixed(2)}</td>
                                             <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.commissions - row.productExpenses).toFixed(2)}</td>
@@ -1049,6 +1058,29 @@ const Reports = () => {
                                 </tbody>
                             </table>
                         </div>
+
+                        <div className="mobile-only">
+                            <div className="mobile-card-list">
+                                {breakdownData.map(row => (
+                                    <div key={row.date} className="mobile-card-item">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontWeight: 'bold' }}>{row.date}</span>
+                                            <span style={{ color: 'var(--text-muted)' }}>{row.count} Autos</span>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
+                                            <div style={{ color: 'var(--success)' }}>Ingresos: ${row.income.toFixed(2)}</div>
+                                            <div style={{ color: '#6366F1' }}>Pendiente: ${row.pending.toFixed(2)}</div>
+                                            <div style={{ color: 'var(--warning)' }}>Comisiones: ${row.commissions.toFixed(2)}</div>
+                                            <div style={{ color: 'var(--danger)' }}>Compras: ${row.productExpenses.toFixed(2)}</div>
+                                        </div>
+                                        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 'bold' }}>Neto:</span>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>${(row.income - row.commissions - row.productExpenses).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )
             }
@@ -1056,184 +1088,262 @@ const Reports = () => {
             {/* DETAILED TABLE */}
             <div className="card">
                 <h3 className="label" style={{ marginBottom: '1rem' }}>Detalle de Operaciones</h3>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '1rem' }}>#</th>
-                                <th style={{ padding: '1rem' }}>Fecha</th>
-                                <th style={{ padding: '1rem' }}>Cliente</th>
-                                <th style={{ padding: '1rem' }}>Servicio</th>
-                                <th style={{ padding: '1rem' }}>Duración</th>
-                                <th style={{ padding: '1rem' }}>Empleados</th>
-                                <th style={{ padding: '1rem' }}>Método</th>
-                                <th style={{ padding: '1rem' }}>{userRole === 'admin' ? 'Total Venta' : 'Mi Comisión'}</th>
-                                {(userRole === 'admin' || userRole === 'manager') && <th style={{ padding: '1rem' }}>Recibo</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredTransactions.map((t, index) => (
-                                <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{filteredTransactions.length - index}</td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {new Date(t.date).toLocaleDateString('es-PR')} <br />
-                                        <small style={{ color: 'var(--text-muted)' }}>
-                                            {new Date(t.date).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
-                                        </small>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {userRole === 'admin' ? (
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="mobile-hide">
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                                    <th style={{ padding: '1rem' }}>#</th>
+                                    <th style={{ padding: '1rem' }}>Fecha</th>
+                                    <th style={{ padding: '1rem' }}>Cliente</th>
+                                    <th style={{ padding: '1rem' }}>Servicio</th>
+                                    <th style={{ padding: '1rem' }}>Duración</th>
+                                    <th style={{ padding: '1rem' }}>Empleados</th>
+                                    <th style={{ padding: '1rem' }}>Método</th>
+                                    <th style={{ padding: '1rem' }}>{userRole === 'admin' ? 'Total Venta' : 'Mi Comisión'}</th>
+                                    {(userRole === 'admin' || userRole === 'manager') && <th style={{ padding: '1rem' }}>Recibo</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredTransactions.map((t, index) => (
+                                    <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{filteredTransactions.length - index}</td>
+                                        <td style={{ padding: '1rem' }}>
+                                            {new Date(t.date).toLocaleDateString('es-PR')} <br />
+                                            <small style={{ color: 'var(--text-muted)' }}>
+                                                {new Date(t.date).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
+                                            </small>
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            {userRole === 'admin' ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            const cust = customersList.find(c => c.id === t.customer_id);
+                                                            if (cust) setSelectedCustomer(cust);
+                                                        }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: 'var(--primary)',
+                                                            textDecoration: 'underline',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 'bold',
+                                                            fontSize: 'inherit',
+                                                            textAlign: 'left',
+                                                            padding: 0
+                                                        }}
+                                                    >
+                                                        {getCustomerName(t.customer_id, customersList)}
+                                                    </button>
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        {getVehicleInfo(t, vehiclesList, customersList)}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span>{getCustomerName(t.customer_id, customersList)}</span>
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        {getVehicleInfo(t, vehiclesList, customersList)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            {getServiceName(t.service_id, servicesList)}
+                                            {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
+                                            {(t.transaction_assignments?.length || 1) > 1 && (
+                                                <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                                    (1/{t.transaction_assignments.length})
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            {(t.status === 'completed' || t.status === 'paid' || t.status === 'ready') ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                                        {(() => {
+                                                            if (!t.finished_at) return '--';
+                                                            const diffMs = new Date(t.finished_at) - new Date(t.started_at || t.created_at);
+                                                            const totalMins = Math.round(diffMs / 60000);
+                                                            return formatDuration(totalMins);
+                                                        })()}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>En Curso</span>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            {t.transaction_assignments && t.transaction_assignments.length > 0
+                                                ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id, employeesList)).join(', ')
+                                                : getEmployeeName(t.employee_id, employeesList)
+                                            }
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            {editingTransactionId === t.id ? (
+                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                    <button onClick={() => handlePaymentMethodUpdate(t.id, 'cash')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #10B981', background: '#10B981', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Efec</button>
+                                                    <button onClick={() => handlePaymentMethodUpdate(t.id, 'card')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #3B82F6', background: '#3B82F6', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Tarj</button>
+                                                    <button onClick={() => handlePaymentMethodUpdate(t.id, 'transfer')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #F59E0B', background: '#F59E0B', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>ATH</button>
+                                                    <button onClick={() => setEditingTransactionId(null)} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #666', background: '#666', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>X</button>
+                                                </div>
+                                            ) : (
                                                 <button
-                                                    onClick={() => {
-                                                        const cust = customersList.find(c => c.id === t.customer_id);
-                                                        if (cust) setSelectedCustomer(cust);
+                                                    onClick={() => userRole === 'admin' && setEditingTransactionId(t.id)}
+                                                    disabled={userRole !== 'admin'}
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        padding: '0.1rem 0.4rem',
+                                                        borderRadius: '4px',
+                                                        backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                        color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
+                                                        border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`,
+                                                        cursor: userRole === 'admin' ? 'pointer' : 'default',
+                                                        background: 'none', // Reset button default
+                                                        // Re-apply background manually since button resets it or combine
                                                     }}
+                                                    className={userRole === 'admin' ? "hover:opacity-80" : ""}
+                                                >
+                                                    <span style={{
+                                                        // Move styles here to ensure they apply inside the button or just style the button
+                                                    }}>
+                                                        {getPaymentMethodLabel(t.payment_method)}
+                                                    </span>
+                                                </button>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                                            {userRole === 'admin' ? (
+                                                `$${t.price.toFixed(2)}`
+                                            ) : (
+                                                (() => {
+                                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                    const tip = (parseFloat(t.tip) || 0);
+                                                    const count = (t.transaction_assignments?.length) || 1;
+
+                                                    const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                    const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                    const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                    const sharedShare = sharedPool / count;
+                                                    const tipShare = tip / count;
+
+                                                    const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                    const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                    return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
+                                                })()
+                                            )}
+                                        </td>
+                                        {(userRole === 'admin' || userRole === 'manager') && (
+                                            <td style={{ padding: '1rem' }}>
+                                                <button
+                                                    onClick={() => setEditingTransactionId(t.id)}
                                                     style={{
                                                         background: 'none',
                                                         border: 'none',
-                                                        color: 'var(--primary)',
-                                                        textDecoration: 'underline',
+                                                        color: 'var(--success)',
                                                         cursor: 'pointer',
-                                                        fontWeight: 'bold',
-                                                        fontSize: 'inherit',
-                                                        textAlign: 'left',
-                                                        padding: 0
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.2rem',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 'bold'
                                                     }}
                                                 >
-                                                    {getCustomerName(t.customer_id, customersList)}
+                                                    <DollarSign size={14} /> Recibo
                                                 </button>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {getVehicleInfo(t, vehiclesList, customersList)}
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span>{getCustomerName(t.customer_id, customersList)}</span>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {getVehicleInfo(t, vehiclesList, customersList)}
-                                                </span>
-                                            </div>
+                                            </td>
                                         )}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {getServiceName(t.service_id, servicesList)}
-                                        {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
-                                        {(t.transaction_assignments?.length || 1) > 1 && (
-                                            <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                                                (1/{t.transaction_assignments.length})
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {(t.status === 'completed' || t.status === 'paid' || t.status === 'ready') ? (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                                    {(() => {
-                                                        if (!t.finished_at) return '--';
-                                                        const diffMs = new Date(t.finished_at) - new Date(t.started_at || t.created_at);
-                                                        const totalMins = Math.round(diffMs / 60000);
-                                                        return formatDuration(totalMins);
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>En Curso</span>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
+                                    </tr>
+                                ))}
+                                {filteredTransactions.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            No hay datos para este periodo
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="mobile-only">
+                    <div className="mobile-card-list">
+                        {filteredTransactions.map((t, index) => (
+                            <div key={t.id} className="mobile-card-item">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{getCustomerName(t.customer_id, customersList)}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{getVehicleInfo(t, vehiclesList, customersList)}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '1.1rem' }}>
+                                            {userRole === 'admin' ? (
+                                                `$${(parseFloat(t.price) || 0).toFixed(2)}`
+                                            ) : (
+                                                (() => {
+                                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                    const tip = (parseFloat(t.tip) || 0);
+                                                    const count = (t.transaction_assignments?.length) || 1;
+                                                    const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                    const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+                                                    const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                    const sharedShare = sharedPool / count;
+                                                    const tipShare = tip / count;
+                                                    return `$${(sharedShare + tipShare).toFixed(2)}`;
+                                                })()
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{getPaymentMethodLabel(t.payment_method)}</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                    <span>{getServiceName(t.service_id, servicesList)}</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>
+                                        {new Date(t.date).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                         {t.transaction_assignments && t.transaction_assignments.length > 0
                                             ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id, employeesList)).join(', ')
                                             : getEmployeeName(t.employee_id, employeesList)
                                         }
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {editingTransactionId === t.id ? (
-                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                <button onClick={() => handlePaymentMethodUpdate(t.id, 'cash')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #10B981', background: '#10B981', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Efec</button>
-                                                <button onClick={() => handlePaymentMethodUpdate(t.id, 'card')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #3B82F6', background: '#3B82F6', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Tarj</button>
-                                                <button onClick={() => handlePaymentMethodUpdate(t.id, 'transfer')} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #F59E0B', background: '#F59E0B', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>ATH</button>
-                                                <button onClick={() => setEditingTransactionId(null)} style={{ fontSize: '0.7rem', padding: '2px 4px', border: '1px solid #666', background: '#666', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>X</button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => userRole === 'admin' && setEditingTransactionId(t.id)}
-                                                disabled={userRole !== 'admin'}
-                                                style={{
-                                                    fontSize: '0.75rem',
-                                                    padding: '0.1rem 0.4rem',
-                                                    borderRadius: '4px',
-                                                    backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                                                    color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
-                                                    border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`,
-                                                    cursor: userRole === 'admin' ? 'pointer' : 'default',
-                                                    background: 'none', // Reset button default
-                                                    // Re-apply background manually since button resets it or combine
-                                                }}
-                                                className={userRole === 'admin' ? "hover:opacity-80" : ""}
-                                            >
-                                                <span style={{
-                                                    // Move styles here to ensure they apply inside the button or just style the button
-                                                }}>
-                                                    {getPaymentMethodLabel(t.payment_method)}
-                                                </span>
-                                            </button>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                                        {userRole === 'admin' ? (
-                                            `$${t.price.toFixed(2)}`
-                                        ) : (
-                                            (() => {
-                                                const txTotalCommission = (parseFloat(t.commission_amount) || 0);
-                                                const tip = (parseFloat(t.tip) || 0);
-                                                const count = (t.transaction_assignments?.length) || 1;
-
-                                                const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
-
-                                                const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                const sharedShare = sharedPool / count;
-                                                const tipShare = tip / count;
-
-                                                const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
-                                                const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
-
-                                                return `$${(sharedShare + tipShare + myExtrasCommission).toFixed(2)}`;
-                                            })()
-                                        )}
-                                    </td>
+                                    </div>
                                     {(userRole === 'admin' || userRole === 'manager') && (
-                                        <td style={{ padding: '1rem' }}>
-                                            <button
-                                                onClick={() => setEditingTransactionId(t.id)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: 'var(--success)',
-                                                    cursor: 'pointer',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.2rem',
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 'bold'
-                                                }}
-                                            >
-                                                <DollarSign size={14} /> Recibo
-                                            </button>
-                                        </td>
+                                        <button
+                                            onClick={() => {
+                                                import('../utils/pdfGenerator').then(mod => {
+                                                    const vehicle = vehiclesList.find(v => v.id === t.vehicle_id);
+                                                    const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Modelo N/A');
+                                                    const empNames = t.transaction_assignments && t.transaction_assignments.length > 0
+                                                        ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id, employeesList)).join(', ')
+                                                        : getEmployeeName(t.employee_id, employeesList);
+
+                                                    mod.generateReceiptPDF(
+                                                        t,
+                                                        getServiceName(t.service_id, servicesList),
+                                                        t.extras || [],
+                                                        t.price,
+                                                        t.tip || 0,
+                                                        empNames,
+                                                        reviewLink
+                                                    );
+                                                });
+                                            }}
+                                            className="btn btn-primary"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                        >
+                                            Recibo PDF
+                                        </button>
                                     )}
-                                </tr>
-                            ))}
-                            {filteredTransactions.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        No hay datos para este periodo
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 

@@ -2241,7 +2241,7 @@ const Dashboard = () => {
                                         {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? (
                                             <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
                                         ) : (
-                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                            <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
                                                 {statsTransactions.filter(t => t.status === 'waiting').map(t => {
                                                     const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                                     let vehicleDisplayName = 'Modelo N/A';
@@ -2254,7 +2254,7 @@ const Dashboard = () => {
                                                     }
 
                                                     return (
-                                                        <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                        <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                 <div>
                                                                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
@@ -2305,7 +2305,7 @@ const Dashboard = () => {
                                 {activeDetailModal === 'in_progress_list' && (
                                     <div>
                                         {statsTransactions.filter(t => t.status === 'in_progress').length === 0 ? <p>No hay autos lavándose.</p> : (
-                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                            <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
                                                 {statsTransactions
                                                     .filter(t => t.status === 'in_progress')
                                                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -2330,7 +2330,7 @@ const Dashboard = () => {
                                                         const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
                                                         return (
-                                                            <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                            <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                     <div>
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
@@ -2403,7 +2403,7 @@ const Dashboard = () => {
                                 {activeDetailModal === 'ready_list' && (
                                     <div>
                                         {statsTransactions.filter(t => t.status === 'ready').length === 0 ? <p>No hay autos listos para recoger.</p> : (
-                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                            <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
                                                 {statsTransactions
                                                     .filter(t => t.status === 'ready')
                                                     .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
@@ -2411,7 +2411,7 @@ const Dashboard = () => {
                                                         const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                                         const vehicleModel = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Modelo N/A');
                                                         return (
-                                                            <li key={t.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
+                                                            <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                     <div>
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
