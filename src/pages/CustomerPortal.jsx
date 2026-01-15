@@ -688,7 +688,7 @@ const CustomerPortal = () => {
                             <>
                                 <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />
                                 <a
-                                    href={stripeLink}
+                                    href={`${stripeLink}${stripeLink.includes('?') ? '&' : '?'}__prefilled_amount=${Math.round(((parseFloat(activeService?.price || 0) + (activeService?.extras?.reduce((sum, e) => sum + e.price, 0) || 0)) * 1.03) * 100)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{
