@@ -628,11 +628,11 @@ const CustomerPortal = () => {
                         {/* TOTAL COST DISPLAY */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: '0.8rem' }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#10b981' }}>
-                                Total: ${(parseFloat(activeService.price || 0) + (activeService.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}
+                                Total: ${parseFloat(activeService.price || 0).toFixed(2)}
                             </div>
                             {stripeLink && (
                                 <div style={{ fontSize: '0.9rem', color: '#6366f1', fontWeight: '600' }}>
-                                    Con Tarjeta (3% incl.): ${((parseFloat(activeService.price || 0) + (activeService.extras?.reduce((sum, e) => sum + e.price, 0) || 0)) * 1.03).toFixed(2)}
+                                    Con Tarjeta (3% incl.): ${(parseFloat(activeService.price || 0) * 1.03).toFixed(2)}
                                 </div>
                             )}
                         </div>
@@ -688,7 +688,7 @@ const CustomerPortal = () => {
                             <>
                                 <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />
                                 <a
-                                    href={`${stripeLink}${stripeLink.includes('?') ? '&' : '?'}__prefilled_amount=${Math.round(((parseFloat(activeService?.price || 0) + (activeService?.extras?.reduce((sum, e) => sum + e.price, 0) || 0)) * 1.03) * 100)}`}
+                                    href={`${stripeLink}${stripeLink.includes('?') ? '&' : '?'}__prefilled_amount=${Math.round((parseFloat(activeService?.price || 0) * 1.03) * 100)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{
@@ -708,7 +708,7 @@ const CustomerPortal = () => {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>Pagar con Tarjeta</div>
                                         <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
-                                            Total: ${((parseFloat(activeService?.price || 0) + (activeService?.extras?.reduce((sum, e) => sum + e.price, 0) || 0)) * 1.03).toFixed(2)} (incl. 3%)
+                                            Total: ${(parseFloat(activeService?.price || 0) * 1.03).toFixed(2)} (incl. 3%)
                                         </div>
                                     </div>
                                     <div style={{ fontSize: '1.2rem', opacity: 0.7 }}>&rarr;</div>
