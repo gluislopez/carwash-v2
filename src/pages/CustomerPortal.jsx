@@ -612,7 +612,7 @@ const CustomerPortal = () => {
 
                         {/* Vehicle Info */}
                         <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            🚗 {activeService.vehicles?.model ? `${activeService.vehicles.brand} ${activeService.vehicles.model}` : activeService.extras?.vehicle_model || 'Vehículo'}
+                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : '') + (activeService.vehicles?.model || activeService.extras?.vehicle_model || 'Vehículo')}
                             <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
                                 {activeService.vehicles?.plate || activeService.extras?.vehicle_plate}
                             </span>
@@ -750,7 +750,7 @@ const CustomerPortal = () => {
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                {tx.vehicles?.model ? `${tx.vehicles.brand} ${tx.vehicles.model}` : tx.extras?.vehicle_model || 'Vehículo'}
+                                {(tx.vehicles?.brand && tx.vehicles.brand !== 'null' ? tx.vehicles.brand + ' ' : '') + (tx.vehicles?.model || tx.extras?.vehicle_model || 'Vehículo')}
                             </div>
                             <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b' }}>
                                 {tx.status === 'completed' || tx.status === 'paid' ? 'Completado' : 'En Proceso'}
@@ -780,7 +780,7 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.25rem' }}>Vehículo</div>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                    {selectedTransaction.vehicles?.model ? `${selectedTransaction.vehicles.brand} ${selectedTransaction.vehicles.model}` : selectedTransaction.extras?.vehicle_model || 'Vehículo'}
+                                    {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : '') + (selectedTransaction.vehicles?.model || selectedTransaction.extras?.vehicle_model || 'Vehículo')}
                                 </div>
                                 <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>{selectedTransaction.vehicles?.plate || selectedTransaction.extras?.vehicle_plate || ''}</div>
                             </div>

@@ -446,6 +446,7 @@ const Dashboard = () => {
         name: '',
         phone: '',
         vehicle_plate: '',
+        vehicle_brand: '',
         vehicle_model: '',
         email: '' // Optional
     });
@@ -547,7 +548,7 @@ const Dashboard = () => {
                     const [newV] = await createVehicle({
                         customer_id: existingCustomer.id,
                         plate: cleanPlate,
-                        brand: '', // Could be extracted from model if needed
+                        brand: newCustomer.vehicle_brand || '',
                         model: newCustomer.vehicle_model,
                         color: ''
                     });
@@ -555,6 +556,7 @@ const Dashboard = () => {
                     // Update legacy fields in customer record for compatibility
                     await updateCustomer(existingCustomer.id, {
                         vehicle_plate: cleanPlate,
+                        vehicle_brand: newCustomer.vehicle_brand,
                         vehicle_model: newCustomer.vehicle_model
                     });
 
@@ -564,14 +566,16 @@ const Dashboard = () => {
                 }
 
                 setIsAddingCustomer(false);
-                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_model: '', email: '' });
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_brand: '', vehicle_model: '', email: '' });
                 return;
             }
 
             // 4. Truly New Customer
             const [created] = await createCustomer({
                 ...newCustomer,
-                vehicle_plate: cleanPlate
+                vehicle_plate: cleanPlate,
+                vehicle_brand: newCustomer.vehicle_brand,
+                vehicle_model: newCustomer.vehicle_model
             });
 
             if (created) {
@@ -579,6 +583,7 @@ const Dashboard = () => {
                 const [newV] = await createVehicle({
                     customer_id: created.id,
                     plate: cleanPlate,
+                    brand: newCustomer.vehicle_brand || '',
                     model: newCustomer.vehicle_model
                 });
 
@@ -591,7 +596,7 @@ const Dashboard = () => {
                     vehicleId: newV.id
                 });
                 setIsAddingCustomer(false);
-                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_model: '', email: '' });
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_brand: '', vehicle_model: '', email: '' });
                 alert("¡Cliente y Vehículo registrados!");
             }
         } catch (error) {
@@ -1431,9 +1436,9 @@ const Dashboard = () => {
                                     // 2.3 DETALLE DE AUTOS
                                     const txBody = completedTxs.map(t => {
                                         const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                        const serviceName = services.find(s => s.id === t.service_id)?.name || 'Servicio';
-                                        const vehicle = vehicles.find(v => v.id === t.vehicle_id);
-                                        const vehicleStr = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Auto');
+                                        const brand = t.vehicles?.brand && t.vehicles.brand !== 'null' ? t.vehicles.brand : '';
+                                        const model = t.vehicles?.model || t.customers?.vehicle_model || 'Auto';
+                                        const vehicleStr = `${brand} ${model}`.trim();
                                         const clientName = t.customers?.name || 'Cliente';
                                         const price = `$${parseFloat(t.price).toFixed(2)}`;
                                         return [time, clientName, vehicleStr, serviceName, price];
@@ -2386,8 +2391,8 @@ const Dashboard = () => {
                                                     let vehicleDisplayName = 'Modelo N/A';
 
                                                     if (vehicle) {
-                                                        const brand = vehicle.brand === 'Generico' || vehicle.brand === 'Generic' ? '' : vehicle.brand;
-                                                        vehicleDisplayName = `${brand} ${vehicle.model}`.trim();
+                                                        const brand = (vehicle.brand === 'Generico' || vehicle.brand === 'Generic' || vehicle.brand === 'null') ? '' : (vehicle.brand || '');
+                                                        vehicleDisplayName = `${brand} ${vehicle.model || ''}`.trim();
                                                     } else if (t.customers?.vehicle_model) {
                                                         vehicleDisplayName = t.customers.vehicle_model;
                                                     }
@@ -2453,8 +2458,8 @@ const Dashboard = () => {
                                                         let vehicleDisplayName = 'Modelo N/A';
 
                                                         if (vehicle) {
-                                                            const brand = vehicle.brand === 'Generico' || vehicle.brand === 'Generic' ? '' : vehicle.brand;
-                                                            vehicleDisplayName = `${brand} ${vehicle.model}`.trim();
+                                                            const brand = (vehicle.brand === 'Generico' || vehicle.brand === 'Generic' || vehicle.brand === 'null') ? '' : (vehicle.brand || '');
+                                                            vehicleDisplayName = `${brand} ${vehicle.model || ''}`.trim();
                                                         } else if (t.customers?.vehicle_model) {
                                                             vehicleDisplayName = t.customers.vehicle_model;
                                                         }
@@ -2548,7 +2553,9 @@ const Dashboard = () => {
                                                     .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
                                                     .map(t => {
                                                         const vehicle = vehicles.find(v => v.id === t.vehicle_id);
-                                                        const vehicleModel = vehicle ? `${vehicle.brand} ${vehicle.model}` : (t.customers?.vehicle_model || 'Modelo N/A');
+                                                        const brand = t.vehicles?.brand && t.vehicles.brand !== 'null' ? t.vehicles.brand : '';
+                                                        const model = t.vehicles?.model || t.customers?.vehicle_model || 'Modelo N/A';
+                                                        const vehicleModel = `${brand} ${model}`.trim();
                                                         return (
                                                             <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -3023,7 +3030,14 @@ const Dashboard = () => {
                                                     <input
                                                         type="text"
                                                         className="input"
-                                                        placeholder="Modelo (e.g. Toyota)"
+                                                        placeholder="Marca"
+                                                        value={newCustomer.vehicle_brand}
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_brand: e.target.value })}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="Modelo"
                                                         value={newCustomer.vehicle_model}
                                                         onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
                                                     />
