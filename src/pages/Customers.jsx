@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 import QRCode from 'react-qr-code';
@@ -16,6 +16,35 @@ const Customers = () => {
     const [visitCounts, setVisitCounts] = useState({});
     const [activeMemberships, setActiveMemberships] = useState({});
     const [availablePlans, setAvailablePlans] = useState([]);
+
+    // HISTORY MODAL STATE
+    const [selectedHistoryCustomer, setSelectedHistoryCustomer] = useState(null);
+    const [customerHistory, setCustomerHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const openHistory = async (customer) => {
+        setSelectedHistoryCustomer(customer);
+        setLoadingHistory(true);
+        setCustomerHistory([]);
+        try {
+            const { data, error } = await supabase
+                .from('transactions')
+                .select(`
+                    *,
+                    services(name),
+                    vehicles(plate, model)
+                `)
+                .eq('customer_id', customer.id)
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            setCustomerHistory(data || []);
+        } catch (error) {
+            console.error('Error fetching history:', error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
 
     // DUPLICATE DETECTION STATE
     const [duplicateGroups, setDuplicateGroups] = useState([]);
@@ -455,6 +484,9 @@ const Customers = () => {
 
                         {userRole === 'admin' && (
                             <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => openHistory(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }} title="Ver Historial">
+                                    <History size={18} />
+                                </button>
                                 <button onClick={() => setSelectedQrCustomer(customer)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Ver QR">
                                     <QrCode size={18} />
                                 </button>
@@ -658,6 +690,57 @@ const Customers = () => {
                     </div>
                 )
             }
+
+            {/* CUSTOMER HISTORY MODAL */}
+            {selectedHistoryCustomer && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000
+                }} onClick={() => setSelectedHistoryCustomer(null)}>
+                    <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>Historial: {selectedHistoryCustomer.name}</h3>
+                            <button onClick={() => setSelectedHistoryCustomer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {loadingHistory ? (
+                            <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando historial...</div>
+                        ) : customerHistory.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {customerHistory.map(tx => (
+                                    <div key={tx.id} style={{ padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+                                                {tx.services?.name || 'Servicio Desconocido'}
+                                            </span>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                {new Date(tx.date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                            <span>
+                                                🚗 {tx.vehicles?.plate ? `${tx.vehicles.plate} (${tx.vehicles.model || ''})` : 'Sin Placa'}
+                                            </span>
+                                            <span style={{ fontWeight: 'bold' }}>${tx.price}</span>
+                                        </div>
+                                        <div style={{ marginTop: '0.5rem' }}>
+                                            <span className={`badge badge-${tx.status}`} style={{ fontSize: '0.7rem' }}>
+                                                {tx.status.toUpperCase()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                No hay servicios registrados para este cliente.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
