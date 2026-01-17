@@ -1125,6 +1125,15 @@ const Dashboard = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!formData.customerId || formData.customerId === '') {
+            alert('Por favor selecciona un cliente.');
+            return;
+        }
+        if (!formData.serviceId || formData.serviceId === '') {
+            alert('Por favor selecciona un servicio.');
+            return;
+        }
+
         const basePrice = parseFloat(formData.price) || 0;
         const transactionDate = new Date();
         const [hours, minutes] = formData.serviceTime.split(':');
@@ -1133,9 +1142,9 @@ const Dashboard = () => {
         // NEW FLOW: Register -> Waiting (No Employee Assigned Yet)
         const newTransaction = {
             date: transactionDate.toISOString(),
-            customer_id: formData.customerId,
+            customer_id: formData.customerId || null,
             vehicle_id: formData.vehicleId || null, // Add vehicle_id
-            service_id: formData.serviceId,
+            service_id: formData.serviceId || null,
             employee_id: null, // No assigned yet
             price: isMembershipUsage ? 0 : basePrice,
             commission_amount: (parseFloat(formData.commissionAmount) || 0) + (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0),
