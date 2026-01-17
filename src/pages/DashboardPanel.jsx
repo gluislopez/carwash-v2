@@ -1452,10 +1452,12 @@ const Dashboard = () => {
                                     const txBody = completedTxs.map(t => {
                                         const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                         const brand = t.vehicles?.brand && t.vehicles.brand !== 'null' ? t.vehicles.brand : '';
-                                        const model = t.vehicles?.model || t.customers?.vehicle_model || 'Auto';
-                                        const vehicleStr = `${brand} ${model}`.trim();
+                                        const model = t.vehicles?.model || t.customers?.vehicle_model || (t.extras && t.extras.vehicle_model) || 'Auto';
+                                        const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (t.extras && t.extras.vehicle_plate) || '';
+                                        const vehicleStr = `${brand} ${model} ${plate ? `(${plate})` : ''}`.trim();
                                         const clientName = t.customers?.name || 'Cliente';
                                         const price = `$${parseFloat(t.price).toFixed(2)}`;
+                                        const serviceName = getServiceName(t.service_id);
                                         return [time, clientName, vehicleStr, serviceName, price];
                                     });
 
@@ -2423,6 +2425,8 @@ const Dashboard = () => {
                                                         vehicleDisplayName = `${brand} ${vehicle.model || ''}`.trim();
                                                     } else if (t.customers?.vehicle_model) {
                                                         vehicleDisplayName = t.customers.vehicle_model;
+                                                    } else if (t.extras?.vehicle_model) {
+                                                        vehicleDisplayName = t.extras.vehicle_model;
                                                     }
 
                                                     return (
@@ -2432,7 +2436,7 @@ const Dashboard = () => {
                                                                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
                                                                     <div style={{ color: 'var(--text-muted)' }}>
                                                                         {t.customers?.name}
-                                                                        {(t.vehicles?.plate || t.customers?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate})</span>}
+                                                                        {(t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate})</span>}
                                                                     </div>
                                                                     <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
                                                                     <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
@@ -2490,6 +2494,8 @@ const Dashboard = () => {
                                                             vehicleDisplayName = `${brand} ${vehicle.model || ''}`.trim();
                                                         } else if (t.customers?.vehicle_model) {
                                                             vehicleDisplayName = t.customers.vehicle_model;
+                                                        } else if (t.extras?.vehicle_model) {
+                                                            vehicleDisplayName = t.extras.vehicle_model;
                                                         }
 
                                                         // Calculate Wash Time (Current - Started)
@@ -2582,14 +2588,14 @@ const Dashboard = () => {
                                                     .map(t => {
                                                         const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                                         const brand = t.vehicles?.brand && t.vehicles.brand !== 'null' ? t.vehicles.brand : '';
-                                                        const model = t.vehicles?.model || t.customers?.vehicle_model || 'Modelo N/A';
+                                                        const model = t.vehicles?.model || t.customers?.vehicle_model || t.extras?.vehicle_model || 'Modelo N/A';
                                                         const vehicleModel = `${brand} ${model}`.trim();
                                                         return (
                                                             <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                     <div>
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
-                                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t.vehicles?.plate || 'Sin Placa'}</div>
+                                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate || 'Sin Placa'})</div>
                                                                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
                                                                         <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
 
