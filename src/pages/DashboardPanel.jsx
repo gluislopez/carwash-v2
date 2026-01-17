@@ -146,7 +146,7 @@ const Dashboard = () => {
     const { data: vehiclesData, create: createVehicle, refresh: refreshVehicles } = useSupabase('vehicles');
     const vehicles = vehiclesData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, vehicle_plate, vehicle_model, phone), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
     // Auto-refresh transactions every 2 seconds
@@ -256,7 +256,7 @@ const Dashboard = () => {
         }
 
         const customerName = transaction.customers.name.split(' ')[0]; // First name
-        const vehicle = `${transaction.customers.vehicle_plate} (${transaction.customers.vehicle_model || ''})`;
+        const vehicle = `${transaction.vehicles?.plate || transaction.customers?.vehicle_plate || ''} (${transaction.vehicles?.model || transaction.customers?.vehicle_model || ''})`;
 
         // Calculate Total
         const extrasTotal = transaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0;
@@ -553,12 +553,14 @@ const Dashboard = () => {
                         color: ''
                     });
 
-                    // Update legacy fields in customer record for compatibility
+                    // No longer updating legacy fields in customers table
+                    /*
                     await updateCustomer(existingCustomer.id, {
                         vehicle_plate: cleanPlate,
                         vehicle_brand: newCustomer.vehicle_brand,
                         vehicle_model: newCustomer.vehicle_model
                     });
+                    */
 
                     await refreshVehicles();
                     await refreshCustomers();
@@ -572,10 +574,9 @@ const Dashboard = () => {
 
             // 4. Truly New Customer
             const [created] = await createCustomer({
-                ...newCustomer,
-                vehicle_plate: cleanPlate,
-                vehicle_brand: newCustomer.vehicle_brand,
-                vehicle_model: newCustomer.vehicle_model
+                name: newCustomer.name,
+                phone: cleanPhone,
+                email: newCustomer.email
             });
 
             if (created) {
@@ -609,11 +610,11 @@ const Dashboard = () => {
         if (e.key !== 'Enter' || !plateSearch.trim()) return;
 
         const plate = plateSearch.trim().toUpperCase();
-        const found = customers.find(c => c.vehicle_plate?.toUpperCase() === plate);
+        const found = vehicles.find(v => v.plate?.toUpperCase() === plate);
 
         if (found) {
-            setFormData({ ...formData, customerId: found.id });
-            handleCustomerSelect(found.id);
+            setFormData({ ...formData, customerId: found.customer_id, vehicleId: found.id });
+            handleCustomerSelect(found.customer_id);
             setIsModalOpen(true);
             setPlateSearch('');
         } else {
@@ -1785,29 +1786,42 @@ const Dashboard = () => {
             </div>
 
             <div className="uniform-3-col-grid" style={{ marginBottom: '1.5rem' }}>
-                {/* NUEVO: TOTAL REGISTRADOS (Todos) - Solo Admin/Manager */}
-                {(userRole === 'admin' || userRole === 'manager') && (
-                    <div
-                        className="card"
-                        style={{ padding: '1.25rem', backgroundColor: 'var(--bg-card)' }}
-                    >
-                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Total Registrados</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <Car size={24} style={{ color: 'var(--text-muted)' }} />
-                            <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                                {statsTransactions.length}
-                            </p>
-                        </div>
+                {/* TOTAL REGISTRADOS / MIS SERVICIOS */}
+                <div
+                    className="card"
+                    onClick={() => setActiveDetailModal('cars')}
+                    style={{
+                        padding: '1.25rem',
+                        backgroundColor: 'var(--bg-card)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s',
+                        border: activeDetailModal === 'cars' ? '2px solid var(--primary)' : '1px solid var(--border-color)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                        {userRole === 'admin' || userRole === 'manager' ? 'Total Registrados' : 'Mis Servicios'}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Car size={24} style={{ color: 'var(--text-muted)' }} />
+                        <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                            {userRole === 'admin' || userRole === 'manager'
+                                ? statsTransactions.length
+                                : statsTransactions.filter(t => t.status !== 'waiting').length}
+                        </p>
                     </div>
-                )}
+                </div>
 
                 <div
                     className="card"
-                    onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('cars')}
+                    onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('income')}
                     style={{
                         cursor: (userRole === 'admin' || userRole === 'manager') ? 'pointer' : 'default',
                         transition: 'transform 0.2s',
-                        padding: '1.25rem'
+                        padding: '1.25rem',
+                        backgroundColor: 'var(--bg-card)',
+                        border: activeDetailModal === 'income' ? '2px solid var(--primary)' : '1px solid var(--border-color)'
                     }}
                     onMouseEnter={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1.02)')}
                     onMouseLeave={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1)')}
@@ -2248,9 +2262,9 @@ const Dashboard = () => {
                                                                 }}>
                                                                     <div>
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                                                            {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                            {t.vehicles?.plate || t.customers?.vehicle_plate || 'Sin Placa'}
                                                                             <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                                                                                ({t.customers?.vehicle_model} - {t.customers?.name})
+                                                                                ({t.vehicles?.model || t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
                                                                             </span>
                                                                         </div>
                                                                         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.9rem' }}>
@@ -2331,9 +2345,9 @@ const Dashboard = () => {
                                                                 <div style={{ fontWeight: 'bold' }}>
                                                                     {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
                                                                     <span style={{ margin: '0 0.5rem' }}>-</span>
-                                                                    {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                    {t.vehicles?.plate || t.customers?.vehicle_plate || 'Sin Placa'}
                                                                     <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem' }}>
-                                                                        ({t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
+                                                                        ({t.vehicles?.model || t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
                                                                     </span>
                                                                 </div>
                                                                 {t.finished_at && (
@@ -2404,7 +2418,7 @@ const Dashboard = () => {
                                                                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
                                                                     <div style={{ color: 'var(--text-muted)' }}>
                                                                         {t.customers?.name}
-                                                                        {t.customers?.vehicle_plate && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.customers.vehicle_plate})</span>}
+                                                                        {(t.vehicles?.plate || t.customers?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate})</span>}
                                                                     </div>
                                                                     <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
                                                                     <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
@@ -2480,7 +2494,7 @@ const Dashboard = () => {
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
                                                                         <div style={{ color: 'var(--text-muted)' }}>
                                                                             {t.customers?.name}
-                                                                            {t.customers?.vehicle_plate && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.customers.vehicle_plate})</span>}
+                                                                            {(t.vehicles?.plate || t.customers?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate})</span>}
                                                                         </div>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
                                                                             <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>{getServiceName(t.service_id)}</div>
@@ -2561,7 +2575,7 @@ const Dashboard = () => {
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                     <div>
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
-                                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t.customers?.vehicle_plate || 'Sin Placa'}</div>
+                                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t.vehicles?.plate || 'Sin Placa'}</div>
                                                                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
                                                                         <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
 

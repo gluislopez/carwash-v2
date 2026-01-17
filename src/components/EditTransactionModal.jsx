@@ -359,7 +359,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                 <div style={{ fontSize: '0.8rem', color: '#3B82F6', fontWeight: 'bold' }}>CLIENTE ASIGNADO</div>
                                 <div style={{ fontWeight: 'bold' }}>{transaction.customers.name}</div>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                    {transaction.customers.vehicle_model} {transaction.customers.vehicle_plate && `(${transaction.customers.vehicle_plate})`}
+                                    {transaction.vehicles?.model || transaction.customers?.vehicle_model} {(transaction.vehicles?.plate || transaction.customers?.vehicle_plate) && `(${transaction.vehicles?.plate || transaction.customers?.vehicle_plate})`}
                                 </div>
                             </div>
                         </div>
