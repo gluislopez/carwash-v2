@@ -1,2 +1,2 @@
-Force Deployment Retry 24
-TRIGGER_DEPLOY_PUBLIC_ACCESS
+Force redeploy for receipt restrictions - 2026-01-17
+V2 implementation approved.
