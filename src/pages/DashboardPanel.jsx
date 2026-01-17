@@ -3306,7 +3306,7 @@ const Dashboard = () => {
                                             <div>
                                                 <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
                                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                                    🚗 {t.customers?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.customers?.vehicle_plate || 'Sin Placa'})</span>
+                                                    🚗 {t.vehicles?.model || t.customers?.vehicle_model || t.extras?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate || 'Sin Placa'})</span>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                                     <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
