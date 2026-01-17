@@ -2385,23 +2385,25 @@ const Dashboard = () => {
                                                                     {getPaymentMethodLabel(t.payment_method)}
                                                                 </span>
                                                                 <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
-                                                                <button
-                                                                    onClick={() => handlePayment(t)}
-                                                                    style={{
-                                                                        marginLeft: '1rem',
-                                                                        background: 'none',
-                                                                        border: 'none',
-                                                                        color: 'var(--success)',
-                                                                        cursor: 'pointer',
-                                                                        display: 'inline-flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '0.2rem',
-                                                                        fontSize: '0.8rem',
-                                                                        fontWeight: 'bold'
-                                                                    }}
-                                                                >
-                                                                    <DollarSign size={14} /> Recibo
-                                                                </button>
+                                                                {(userRole === 'admin' || userRole === 'manager') && (
+                                                                    <button
+                                                                        onClick={() => handlePayment(t)}
+                                                                        style={{
+                                                                            marginLeft: '1rem',
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            color: 'var(--success)',
+                                                                            cursor: 'pointer',
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '0.2rem',
+                                                                            fontSize: '0.8rem',
+                                                                            fontWeight: 'bold'
+                                                                        }}
+                                                                    >
+                                                                        <DollarSign size={14} /> Recibo
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </li>
                                                     ))}

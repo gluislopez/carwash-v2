@@ -510,8 +510,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             <input
                                 type="number"
                                 className="input"
+                                style={{
+                                    backgroundColor: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 'var(--bg-input)' : 'var(--bg-secondary)',
+                                    opacity: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 1 : 0.7
+                                }}
                                 value={formData.price}
                                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                readOnly={userRole !== 'admin' && userRole !== 'manager' && (transaction.status === 'paid' || transaction.status === 'completed')}
                             />
                         </div>
                         <div>
@@ -534,8 +539,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             <input
                                 type="number"
                                 className="input"
+                                style={{
+                                    backgroundColor: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 'var(--bg-input)' : 'var(--bg-secondary)',
+                                    opacity: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 1 : 0.7
+                                }}
                                 value={formData.tip}
                                 onChange={(e) => setFormData({ ...formData, tip: e.target.value })}
+                                readOnly={userRole !== 'admin' && userRole !== 'manager' && (transaction.status === 'paid' || transaction.status === 'completed')}
                             />
                         </div>
                     </div>
@@ -545,7 +555,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                             <button
                                 type="button"
-                                onClick={() => setFormData({ ...formData, paymentMethod: 'cash' })}
+                                onClick={() => (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) && setFormData({ ...formData, paymentMethod: 'cash' })}
                                 style={{
                                     padding: '0.75rem',
                                     borderRadius: '0.5rem',
@@ -553,15 +563,16 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                     backgroundColor: formData.paymentMethod === 'cash' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
                                     color: formData.paymentMethod === 'cash' ? '#10B981' : 'var(--text-muted)',
                                     fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
+                                    cursor: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s',
+                                    opacity: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 1 : 0.6
                                 }}
                             >
                                 💵 Efectivo
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setFormData({ ...formData, paymentMethod: 'card' })}
+                                onClick={() => (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) && setFormData({ ...formData, paymentMethod: 'card' })}
                                 style={{
                                     padding: '0.75rem',
                                     borderRadius: '0.5rem',
@@ -569,15 +580,16 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                     backgroundColor: formData.paymentMethod === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
                                     color: formData.paymentMethod === 'card' ? '#3B82F6' : 'var(--text-muted)',
                                     fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
+                                    cursor: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s',
+                                    opacity: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 1 : 0.6
                                 }}
                             >
                                 💳 Tarjeta
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setFormData({ ...formData, paymentMethod: 'transfer' })}
+                                onClick={() => (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) && setFormData({ ...formData, paymentMethod: 'transfer' })}
                                 style={{
                                     padding: '0.75rem',
                                     borderRadius: '0.5rem',
@@ -585,8 +597,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                     backgroundColor: formData.paymentMethod === 'transfer' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
                                     color: formData.paymentMethod === 'transfer' ? '#F59E0B' : 'var(--text-muted)',
                                     fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
+                                    cursor: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 'pointer' : 'not-allowed',
+                                    transition: 'all 0.2s',
+                                    opacity: (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) ? 1 : 0.6
                                 }}
                             >
                                 📱 Ath Móvil
@@ -594,8 +607,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         </div>
                     </div>
 
-                    {/* WHATSAPP CHECKBOX */}
-                    {transaction.customers?.phone && (
+                    {/* WHATSAPP CHECKBOX (Admin/Manager only) */}
+                    {(userRole === 'admin' || userRole === 'manager') && transaction.customers?.phone && (
                         <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: 'rgba(37, 211, 102, 0.1)', borderRadius: '0.5rem', border: '1px solid #25D366', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <input
                                 type="checkbox"
@@ -630,36 +643,38 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             <button type="button" onClick={onClose} className="btn" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                                 Cancelar
                             </button>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    try {
-                                        const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
-                                        const assignedNames = employees
-                                            .filter(e => selectedEmployeeIds.includes(e.id))
-                                            .map(e => e.name)
-                                            .join(', ');
+                            {(userRole === 'admin' || userRole === 'manager') && (
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            const serviceName = services.find(s => s.id === formData.serviceId)?.name || 'Servicio';
+                                            const assignedNames = employees
+                                                .filter(e => selectedEmployeeIds.includes(e.id))
+                                                .map(e => e.name)
+                                                .join(', ');
 
-                                        const { doc } = await generateReceiptPDF(
-                                            transaction,
-                                            serviceName,
-                                            extras,
-                                            formData.price,
-                                            formData.tip || 0,
-                                            assignedNames,
-                                            reviewLink
-                                        );
-                                        doc.save(`recibo_${transaction.customers?.vehicle_plate || 'car'}.pdf`);
-                                    } catch (error) {
-                                        console.error("Error generating/downloading PDF:", error);
-                                        alert("Error al generar PDF: " + error.message);
-                                    }
-                                }}
-                                className="btn"
-                                style={{ backgroundColor: 'var(--success)', color: 'white' }}
-                            >
-                                <Droplets size={18} style={{ marginRight: '0.5rem' }} /> Descargar PDF
-                            </button>
+                                            const { doc } = await generateReceiptPDF(
+                                                transaction,
+                                                serviceName,
+                                                extras,
+                                                formData.price,
+                                                formData.tip || 0,
+                                                assignedNames,
+                                                reviewLink
+                                            );
+                                            doc.save(`recibo_${transaction.customers?.vehicle_plate || 'car'}.pdf`);
+                                        } catch (error) {
+                                            console.error("Error generating/downloading PDF:", error);
+                                            alert("Error al generar PDF: " + error.message);
+                                        }
+                                    }}
+                                    className="btn"
+                                    style={{ backgroundColor: 'var(--success)', color: 'white' }}
+                                >
+                                    <Droplets size={18} style={{ marginRight: '0.5rem' }} /> Descargar PDF
+                                </button>
+                            )}
                             <button type="button" onClick={handleSaveClick} className="btn btn-primary" disabled={isUploading}>
                                 {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
                                 {isUploading ? ' Procesando...' : 'Guardar'}
