@@ -17,6 +17,52 @@ const Customers = () => {
     const [activeMemberships, setActiveMemberships] = useState({});
     const [availablePlans, setAvailablePlans] = useState([]);
 
+    // DUPLICATE DETECTION STATE
+    const [duplicateGroups, setDuplicateGroups] = useState([]);
+    const [isScanning, setIsScanning] = useState(false);
+    const [showDuplicateResults, setShowDuplicateResults] = useState(false);
+
+    const handleScanDuplicates = () => {
+        setIsScanning(true);
+        const groups = [];
+        const processedIds = new Set();
+
+        customers.forEach(c1 => {
+            if (processedIds.has(c1.id)) return;
+
+            const group = [c1];
+            const cleanName1 = c1.name.trim().toLowerCase();
+            const cleanPhone1 = c1.phone ? c1.phone.replace(/\D/g, '') : null;
+
+            customers.forEach(c2 => {
+                if (c1.id === c2.id || processedIds.has(c2.id)) return;
+
+                const cleanName2 = c2.name.trim().toLowerCase();
+                const cleanPhone2 = c2.phone ? c2.phone.replace(/\D/g, '') : null;
+
+                const nameMatch = cleanName1 === cleanName2 && cleanName1 !== '';
+                const phoneMatch = cleanPhone1 && cleanPhone2 && cleanPhone1 === cleanPhone2;
+
+                if (nameMatch || phoneMatch) {
+                    group.push(c2);
+                    processedIds.add(c2.id);
+                }
+            });
+
+            if (group.length > 1) {
+                processedIds.add(c1.id);
+                groups.push({
+                    reason: cleanName1 === group[1].name.trim().toLowerCase() ? 'Nombre Idéntico' : 'Teléfono Idéntico',
+                    customers: group
+                });
+            }
+        });
+
+        setDuplicateGroups(groups);
+        setShowDuplicateResults(true);
+        setIsScanning(false);
+    };
+
     // Obtener el rol del usuario actual y conteo de visitas
     useEffect(() => {
         const getUserRole = async () => {
@@ -168,13 +214,25 @@ const Customers = () => {
                         <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p>
                     </div>
 
-                    {/* SOLO ADMIN PUEDE CREAR */}
-                    {userRole === 'admin' && (
-                        <button className="btn btn-primary" onClick={() => openModal()}>
-                            <Plus size={20} />
-                            Nuevo Cliente
-                        </button>
-                    )}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {userRole === 'admin' && (
+                            <button
+                                className="btn"
+                                onClick={handleScanDuplicates}
+                                style={{ backgroundColor: 'orange', color: 'black' }}
+                                disabled={isScanning}
+                            >
+                                {isScanning ? 'Escaneando...' : '🔍 Detectar Duplicados'}
+                            </button>
+                        )}
+                        {/* SOLO ADMIN PUEDE CREAR */}
+                        {userRole === 'admin' && (
+                            <button className="btn btn-primary" onClick={() => openModal()}>
+                                <Plus size={20} />
+                                Nuevo Cliente
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* SEARCH BAR */}
@@ -198,6 +256,50 @@ const Customers = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
+
+                {/* DUPLICATE RESULTS ALERT */}
+                {showDuplicateResults && (
+                    <div style={{
+                        backgroundColor: 'rgba(255, 165, 0, 0.1)',
+                        border: '2px solid orange',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        animation: 'fadeIn 0.3s'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ color: 'orange', margin: 0 }}>⚠️ Posibles Duplicados Detectados ({duplicateGroups.length})</h3>
+                            <button className="btn btn-sm" onClick={() => setShowDuplicateResults(false)} style={{ backgroundColor: 'transparent', color: 'white' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {duplicateGroups.length === 0 ? (
+                            <p>No se encontraron duplicados evidentes.</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {duplicateGroups.map((group, idx) => (
+                                    <div key={idx} style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '0.4rem', borderLeft: '4px solid orange' }}>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
+                                            Razón: {group.reason}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                            {group.customers.map(c => (
+                                                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span style={{ fontWeight: 'bold' }}>{c.name}</span>
+                                                    <span style={{ fontSize: '0.8rem' }}>({c.phone || 'Sin tel'})</span>
+                                                    <button onClick={() => openModal(c)} className="btn btn-sm" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem' }}>Editar</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                    Nota: Para eliminar un duplicado, usa el botón de borrar abajo en la tarjeta del cliente correspondiente.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
