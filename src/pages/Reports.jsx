@@ -319,7 +319,7 @@ const Reports = () => {
         filteredTransactions.forEach(t => {
             const dateKey = getPRDateString(t.date);
             if (!groups[dateKey]) {
-                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0 };
+                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0 };
             }
 
             const isPaid = t.status === 'completed' || t.status === 'paid';
@@ -333,6 +333,12 @@ const Reports = () => {
             groups[dateKey].income += txIncome;
             groups[dateKey].pending += txPending;
             groups[dateKey].commissions += txCommission;
+
+            if (isPaid) {
+                if (t.payment_method === 'cash') groups[dateKey].cashIncome += txIncome;
+                else if (t.payment_method === 'transfer') groups[dateKey].transferIncome += txIncome;
+                else if (t.payment_method === 'card') groups[dateKey].cardIncome += txIncome;
+            }
         });
 
         // 2. Add Expenses (Products AND Lunches) to breakdown
@@ -340,7 +346,7 @@ const Reports = () => {
             filteredExpenses.forEach(e => {
                 const dateKey = getPRDateString(e.date);
                 if (!groups[dateKey]) {
-                    groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0 };
+                    groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, pending: 0 };
                 }
 
                 if (e.category === 'product') {
@@ -360,6 +366,18 @@ const Reports = () => {
     };
 
     const breakdownData = getBreakdownData();
+
+    // TOTALS CALCULATION
+    const totals = breakdownData.reduce((acc, row) => ({
+        count: acc.count + (row.count || 0),
+        income: acc.income + (row.income || 0),
+        cashIncome: acc.cashIncome + (row.cashIncome || 0),
+        transferIncome: acc.transferIncome + (row.transferIncome || 0),
+        pending: acc.pending + (row.pending || 0),
+        commissions: acc.commissions + (row.commissions || 0),
+        productExpenses: acc.productExpenses + (row.productExpenses || 0),
+        net: acc.net + ((row.income || 0) - (row.commissions || 0) - (row.productExpenses || 0))
+    }), { count: 0, income: 0, cashIncome: 0, transferIncome: 0, pending: 0, commissions: 0, productExpenses: 0, net: 0 });
 
     // Handlers
     const handlePaymentMethodUpdate = async (transactionId, newMethod) => {
@@ -663,30 +681,49 @@ const Reports = () => {
 
                         if (dateRange !== 'week') return null; // Only show for week for now as per "Pestañas con los días de la semana"
 
-                        return days.map(d => {
-                            const dateStr = getPRDateString(d);
-                            const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' });
-                            const dayNum = d.getDate();
-                            const isSelected = selectedDay === dateStr;
-                            const isToday = getPRDateString(new Date()) === dateStr;
-
-                            return (
+                        return (
+                            <>
+                                {/* "Whole Week" Button */}
                                 <button
-                                    key={dateStr}
-                                    onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                                    onClick={() => setSelectedDay(null)}
                                     style={{
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '60px',
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px',
                                         padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)',
-                                        backgroundColor: isSelected ? 'var(--primary)' : (isToday ? 'rgba(37, 99, 235, 0.1)' : 'var(--bg-card)'),
-                                        color: isSelected ? 'white' : 'var(--text-primary)',
-                                        cursor: 'pointer', flexShrink: 0
+                                        backgroundColor: selectedDay === null ? 'var(--primary)' : 'var(--bg-card)',
+                                        color: selectedDay === null ? 'white' : 'var(--text-primary)',
+                                        cursor: 'pointer', flexShrink: 0, justifyContent: 'center', fontWeight: 'bold'
                                     }}
                                 >
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase' }}>{dayName}</span>
-                                    <span style={{ fontSize: '1.2rem' }}>{dayNum}</span>
+                                    <span style={{ fontSize: '0.8rem' }}>📅 ESTA</span>
+                                    <span style={{ fontSize: '1rem' }}>SEMANA</span>
                                 </button>
-                            );
-                        });
+
+                                {days.map(d => {
+                                    const dateStr = getPRDateString(d);
+                                    const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' });
+                                    const dayNum = d.getDate();
+                                    const isSelected = selectedDay === dateStr;
+                                    const isToday = getPRDateString(new Date()) === dateStr;
+
+                                    return (
+                                        <button
+                                            key={dateStr}
+                                            onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                                            style={{
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '60px',
+                                                padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)',
+                                                backgroundColor: isSelected ? 'var(--primary)' : (isToday ? 'rgba(37, 99, 235, 0.1)' : 'var(--bg-card)'),
+                                                color: isSelected ? 'white' : 'var(--text-primary)',
+                                                cursor: 'pointer', flexShrink: 0
+                                            }}
+                                        >
+                                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase' }}>{dayName}</span>
+                                            <span style={{ fontSize: '1.2rem' }}>{dayNum}</span>
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        );
                     })()}
                 </div>
             )}
@@ -1033,28 +1070,47 @@ const Reports = () => {
                         <div className="mobile-hide">
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                        <th style={{ padding: '1rem' }}>Fecha</th>
-                                        <th style={{ padding: '1rem' }}>Autos</th>
-                                        <th style={{ padding: '1rem', color: 'var(--success)' }}>Ingresos (+)</th>
-                                        <th style={{ padding: '1rem', color: '#6366F1' }}>Pendiente</th>
-                                        <th style={{ padding: '1rem', color: 'var(--warning)' }}>Comisiones (-)</th>
-                                        <th style={{ padding: '1rem', color: 'var(--danger)' }}>Compras (-)</th>
-                                        <th style={{ padding: '1rem' }}>Neto (=)</th>
+                                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', fontSize: '0.85rem' }}>
+                                        <th style={{ padding: '0.75rem' }}>Fecha</th>
+                                        <th style={{ padding: '0.75rem' }}>Autos</th>
+                                        <th style={{ padding: '0.75rem', color: 'var(--success)' }}>Efectivo</th>
+                                        <th style={{ padding: '0.75rem', color: '#3B82F6' }}>Tarjeta</th>
+                                        <th style={{ padding: '0.75rem', color: 'var(--warning)' }}>ATH Móvil</th>
+                                        <th style={{ padding: '0.75rem', color: 'var(--success)', fontWeight: 'bold' }}>Total Ingresos (+)</th>
+                                        <th style={{ padding: '0.75rem', color: '#6366F1' }}>Pendiente</th>
+                                        <th style={{ padding: '0.75rem', color: 'var(--warning)' }}>Comisiones (-)</th>
+                                        <th style={{ padding: '0.75rem', color: 'var(--danger)' }}>Compras (-)</th>
+                                        <th style={{ padding: '0.75rem' }}>Neto (=)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {breakdownData.map(row => (
-                                        <tr key={row.date} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                            <td style={{ padding: '1rem' }}>{row.date}</td>
-                                            <td style={{ padding: '1rem' }}>{row.count}</td>
-                                            <td style={{ padding: '1rem', color: 'var(--success)' }}>${row.income.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', color: '#6366F1' }}>${row.pending.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', color: 'var(--warning)' }}>${row.commissions.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', color: 'var(--danger)' }}>${row.productExpenses.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>${(row.income - row.commissions - row.productExpenses).toFixed(2)}</td>
+                                        <tr key={row.date} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
+                                            <td style={{ padding: '0.75rem' }}>{row.date}</td>
+                                            <td style={{ padding: '0.75rem' }}>{row.count}</td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--success)' }}>${(row.cashIncome || 0).toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: '#3B82F6' }}>${(row.cardIncome || 0).toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${(row.transferIncome || 0).toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--success)', fontWeight: 'bold' }}>${row.income.toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: '#6366F1' }}>${row.pending.toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${row.commissions.toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--danger)' }}>${row.productExpenses.toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>${(row.income - row.commissions - row.productExpenses).toFixed(2)}</td>
                                         </tr>
                                     ))}
+                                    {/* TOTALS ROW */}
+                                    <tr style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', fontWeight: 'bold', borderTop: '2px solid var(--primary)' }}>
+                                        <td style={{ padding: '0.75rem' }}>TOTAL</td>
+                                        <td style={{ padding: '0.75rem' }}>{totals.count}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--success)' }}>${totals.cashIncome.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: '#3B82F6' }}>${(totals.cardIncome || 0).toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${totals.transferIncome.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--success)' }}>${totals.income.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: '#6366F1' }}>${totals.pending.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${totals.commissions.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--danger)' }}>${totals.productExpenses.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--primary)', fontSize: '1.1rem' }}>${totals.net.toFixed(2)}</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1068,7 +1124,10 @@ const Reports = () => {
                                             <span style={{ color: 'var(--text-muted)' }}>{row.count} Autos</span>
                                         </div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-                                            <div style={{ color: 'var(--success)' }}>Ingresos: ${row.income.toFixed(2)}</div>
+                                            <div style={{ color: 'var(--success)' }}>Efectivo: ${(row.cashIncome || 0).toFixed(2)}</div>
+                                            <div style={{ color: '#3B82F6' }}>Tarjeta: ${(row.cardIncome || 0).toFixed(2)}</div>
+                                            <div style={{ color: 'var(--warning)' }}>ATH Móvil: ${(row.transferIncome || 0).toFixed(2)}</div>
+                                            <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>Ingresos: ${row.income.toFixed(2)}</div>
                                             <div style={{ color: '#6366F1' }}>Pendiente: ${row.pending.toFixed(2)}</div>
                                             <div style={{ color: 'var(--warning)' }}>Comisiones: ${row.commissions.toFixed(2)}</div>
                                             <div style={{ color: 'var(--danger)' }}>Compras: ${row.productExpenses.toFixed(2)}</div>
