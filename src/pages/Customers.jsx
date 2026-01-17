@@ -63,6 +63,58 @@ const Customers = () => {
         setIsScanning(false);
     };
 
+    const handleMergeCustomers = async (keepCustomer, duplicates) => {
+        const duplicateIds = duplicates.map(d => d.id);
+        const confirmMsg = `¿Estás seguro de fusionar estos ${duplicates.length + 1} registros?\n\nSe mantendrá a: ${keepCustomer.name}\nSe eliminarán los otros y sus vehículos/ventas se moverán a este cliente.\n\nESTA ACCIÓN NO SE PUEDE DESHACER.`;
+
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsScanning(true);
+        try {
+            // 1. Move Vehicles
+            const { error: vErr } = await supabase
+                .from('vehicles')
+                .update({ customer_id: keepCustomer.id })
+                .in('customer_id', duplicateIds);
+            if (vErr) throw vErr;
+
+            // 2. Move Transactions
+            const { error: tErr } = await supabase
+                .from('transactions')
+                .update({ customer_id: keepCustomer.id })
+                .in('customer_id', duplicateIds);
+            if (tErr) throw tErr;
+
+            // 3. Move Memberships
+            await supabase
+                .from('customer_memberships')
+                .update({ customer_id: keepCustomer.id })
+                .in('customer_id', duplicateIds);
+
+            // 4. Move Feedback
+            await supabase
+                .from('customer_feedback')
+                .update({ customer_id: keepCustomer.id })
+                .in('customer_id', duplicateIds);
+
+            // 5. Delete Duplicates
+            const { error: dErr } = await supabase
+                .from('customers')
+                .delete()
+                .in('id', duplicateIds);
+            if (dErr) throw dErr;
+
+            alert('✅ Fusión completada con éxito.');
+            setShowDuplicateResults(false);
+            window.location.reload(); // Quickest way to refresh all complex state (visit counts, memberships, etc)
+        } catch (error) {
+            console.error('Merge error:', error);
+            alert('Error al fusionar: ' + error.message);
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
     // Obtener el rol del usuario actual y conteo de visitas
     useEffect(() => {
         const getUserRole = async () => {
@@ -284,17 +336,42 @@ const Customers = () => {
                                         </div>
                                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                             {group.customers.map(c => (
-                                                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <span style={{ fontWeight: 'bold' }}>{c.name}</span>
-                                                    <span style={{ fontSize: '0.8rem' }}>({c.phone || 'Sin tel'})</span>
-                                                    <button onClick={() => openModal(c)} className="btn btn-sm" style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem' }}>Editar</button>
+                                                <div key={c.id} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                                    padding: '0.4rem 0.6rem',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{c.name}</span>
+                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.phone || 'Sin tel'}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                        <button
+                                                            onClick={() => openModal(c)}
+                                                            className="btn btn-sm"
+                                                            style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', backgroundColor: 'var(--bg-secondary)' }}
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMergeCustomers(c, group.customers.filter(other => other.id !== c.id))}
+                                                            className="btn btn-sm"
+                                                            style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', backgroundColor: 'var(--primary)', color: 'white' }}
+                                                            title="Mantener este y fusionar el resto"
+                                                        >
+                                                            Mantener este
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 ))}
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                    Nota: Para eliminar un duplicado, usa el botón de borrar abajo en la tarjeta del cliente correspondiente.
+                                <p style={{ fontSize: '0.8rem', color: 'orange', marginTop: '0.5rem', fontWeight: 'bold' }}>
+                                    ⚠️ Al presionar "Mantener este", el sistema moverá automáticamente todos sus vehículos y transacciones al perfil seleccionado y borrará los duplicados.
                                 </p>
                             </div>
                         )}
