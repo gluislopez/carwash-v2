@@ -32,7 +32,8 @@ const Customers = () => {
                 .select(`
                     *,
                     services(name),
-                    vehicles(plate, model)
+                    vehicles(plate, model),
+                    customers(vehicle_plate, vehicle_model)
                 `)
                 .eq('customer_id', customer.id)
                 .order('date', { ascending: false });
@@ -721,7 +722,11 @@ const Customers = () => {
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                                             <span>
-                                                🚗 {tx.vehicles?.plate ? `${tx.vehicles.plate} (${tx.vehicles.model || ''})` : 'Sin Placa'}
+                                                🚗 {tx.vehicles?.plate
+                                                    ? `${tx.vehicles.plate} (${tx.vehicles.model || ''})`
+                                                    : (tx.customers?.vehicle_plate
+                                                        ? `${tx.customers.vehicle_plate} (${tx.customers.vehicle_model || ''})`
+                                                        : 'Sin Placa')}
                                             </span>
                                             <span style={{ fontWeight: 'bold' }}>${tx.price}</span>
                                         </div>
