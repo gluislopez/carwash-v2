@@ -193,6 +193,12 @@ const Reports = () => {
 
         return allTransactions.filter(t => {
             const tDateStr = getPRDateString(t.date);
+
+            // If a specific day is selected, only return that day
+            if (selectedDay) {
+                return tDateStr === selectedDay;
+            }
+
             if (dateRange === 'today') return tDateStr === startStr;
             return tDateStr >= startStr && tDateStr <= endStr;
         });
@@ -239,8 +245,14 @@ const Reports = () => {
 
         return expenses.filter(e => {
             const eDateStr = getPRDateString(e.date);
-            const dateInRange = eDateStr >= startStr && eDateStr <= endStr;
-            if (!dateInRange) return false;
+
+            // If a specific day is selected, ONLY show that day
+            if (selectedDay) {
+                if (eDateStr !== selectedDay) return false;
+            } else {
+                const dateInRange = eDateStr >= startStr && eDateStr <= endStr;
+                if (!dateInRange) return false;
+            }
 
             // Role Filter for Expenses
             if (userRole === 'admin') return true; // Admin sees all expenses
