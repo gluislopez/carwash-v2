@@ -525,16 +525,21 @@ const Dashboard = () => {
         const cleanPhone = newCustomer.phone.replace(/\D/g, '');
 
         try {
-            // 1. Check if customer exists by phone
+            // 1. Check if customer exists by phone OR name (if phone empty)
             let existingCustomer = null;
             if (cleanPhone) {
                 existingCustomer = customers.find(c => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
             }
 
+            // If not found by phone, try by name (exact match)
+            if (!existingCustomer) {
+                existingCustomer = customers.find(c => c.name.trim().toLowerCase() === newCustomer.name.trim().toLowerCase());
+            }
+
             if (existingCustomer) {
                 // 2. Customer exists, check if vehicle exists for them
                 const existingVehicle = vehicles.find(v =>
-                    v.customer_id === existingCustomer.id &&
+                    v.customer_id == existingCustomer.id &&
                     v.plate.trim().toUpperCase() === cleanPlate
                 );
 
