@@ -720,7 +720,7 @@ const CustomerPortal = () => {
                     <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderTop: '5px solid #EAB308' }}>
                         <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
                         <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                            Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
+                            Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}).
                         </p>
 
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -745,7 +745,7 @@ const CustomerPortal = () => {
                                     disabled={submittingFeedback}
                                     style={{ width: '100%', padding: '0.75rem', backgroundColor: '#EAB308', color: 'white', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
                                 >
-                                    {submittingFeedback ? 'Enviando...' : 'Enviar y Ganar 🎁'}
+                                    {submittingFeedback ? 'Enviando...' : 'Enviar Calificación'}
                                 </button>
                             </div>
                         )}
