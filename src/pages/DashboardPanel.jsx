@@ -3543,6 +3543,11 @@ const Dashboard = () => {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                                     <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
                                                     <span>•</span>
+                                                    {/* DEBUG INFO */}
+                                                    <span style={{ fontSize: '0.7rem', color: 'orange', border: '1px solid orange', padding: '0 4px', borderRadius: '4px' }}>
+                                                        vID: {t.vehicle_id || 'NULL'} | Joined: {t.vehicles ? 'OK' : 'NULL'}
+                                                    </span>
+                                                    <span>•</span>
                                                     <span style={{
                                                         padding: '0.1rem 0.5rem',
                                                         borderRadius: '9999px',
