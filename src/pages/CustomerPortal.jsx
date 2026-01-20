@@ -314,10 +314,14 @@ const CustomerPortal = () => {
     return (
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
             {/* HERDER */}
-            <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img src="/logo.jpg" alt="Express CarWash" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', border: '3px solid rgba(255,255,255,0.2)' }} />
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
+            <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '1.5rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <img src="/logo.jpg" alt="Express CarWash" style={{ width: '60px', height: '60px', borderRadius: '1rem', marginBottom: '0.75rem', border: '3px solid rgba(255,255,255,0.2)' }} />
+                <h1 style={{ fontSize: '1.6rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>Express CarWash</h1>
+                <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Centro de Cuidado Automotriz</p>
+            </div>
 
+            {/* NAVIGATION TABS */}
+            <div style={{ backgroundColor: '#1e293b', padding: '0.8rem 1rem', display: 'flex', justifyContent: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 100, borderTop: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
                 {/* QUEUE COUNTER */}
                 <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
                     <div style={{ textAlign: 'center' }}>
@@ -412,18 +416,18 @@ const CustomerPortal = () => {
                 </div>
             )}
 
-            <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
+            <div style={{ maxWidth: '600px', margin: '-1.25rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
                 {/* CUSTOMER GREETING & STATS (MOVED TO TOP) */}
-                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
-                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.5rem' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
+                    <div style={{ marginTop: '0.8rem', display: 'flex', gap: '1.5rem' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
+                            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
+                            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
                         </div>
                     </div>
@@ -433,7 +437,7 @@ const CustomerPortal = () => {
                 {activeService && (
                     <div
                         onClick={() => setSelectedTxId(activeService.id)}
-                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
+                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
                     >
                         <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                             SERVICIO EN CURSO
@@ -543,7 +547,7 @@ const CustomerPortal = () => {
                         onClick={() => setShowCouponModal(true)}
                         style={{
                             backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
-                            borderRadius: '1rem', marginBottom: '1rem',
+                            borderRadius: '1rem', marginBottom: '0.75rem',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
                             cursor: 'pointer'
@@ -562,7 +566,7 @@ const CustomerPortal = () => {
                 ) : (
                     <div style={{
                         backgroundColor: 'white', color: '#64748b', padding: '1rem',
-                        borderRadius: '1rem', marginBottom: '1rem',
+                        borderRadius: '1rem', marginBottom: '0.75rem',
                         display: 'flex', alignItems: 'center', gap: '1rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
                     }}>
@@ -585,9 +589,9 @@ const CustomerPortal = () => {
                     <div style={{
                         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                         color: 'white',
-                        padding: '1.5rem',
+                        padding: '1rem',
                         borderRadius: '1rem',
-                        marginBottom: '1rem',
+                        marginBottom: '0.75rem',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         position: 'relative',
@@ -719,7 +723,7 @@ const CustomerPortal = () => {
 
                 {/* PROMO WINNER CARD */}
                 {showPromo && (
-                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
+                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1rem', marginBottom: '0.75rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>¡Gracias x tu Feedback!</h2>
                         <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Tienes un</p>
@@ -732,7 +736,7 @@ const CustomerPortal = () => {
 
                 {/* FEEDBACK CARD (If available and not rated yet) */}
                 {!showPromo && !hasRated && latestTx && (
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderTop: '5px solid #EAB308' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderTop: '5px solid #EAB308' }}>
                         <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
                         <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
                             Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
@@ -772,7 +776,7 @@ const CustomerPortal = () => {
                 {/* REFERRAL SYSTEM SECTION */}
                 <div style={{
                     backgroundColor: '#10b981', color: 'white', borderRadius: '1rem',
-                    padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
+                    padding: '1rem', marginBottom: '0.75rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
                     position: 'relative', overflow: 'hidden'
                 }}>
                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
@@ -804,7 +808,7 @@ const CustomerPortal = () => {
 
 
                 {/* PAYMENT METHODS CARD */}
-                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
+                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
                     <h3 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.2rem' }}>
                         💳 Métodos de Pago
                     </h3>
@@ -872,13 +876,13 @@ const CustomerPortal = () => {
                 </div>
 
                 {/* HISTORY LIST */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Historial Reciente</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.75rem', paddingLeft: '0.5rem' }}>Historial Reciente</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     {history.map(tx => (
                         <div
                             key={tx.id}
                             onClick={() => setSelectedTxId(tx.id)}
-                            style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
+                            style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '0.75rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
                                 <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{tx.services?.name || 'Servicio'}</span>
@@ -905,33 +909,33 @@ const CustomerPortal = () => {
                         backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000,
                         padding: '1rem'
                     }} onClick={() => setSelectedTxId(null)}>
-                        <div style={{ backgroundColor: 'white', width: '100%', maxWidth: '400px', borderRadius: '1rem', padding: '1.5rem', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ backgroundColor: 'white', width: '100%', maxWidth: '400px', borderRadius: '1rem', padding: '1rem', position: 'relative' }} onClick={e => e.stopPropagation()}>
                             <button onClick={() => setSelectedTxId(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
                                 &times;
                             </button>
 
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem' }}>Detalle del Servicio</h2>
-                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>{new Date(selectedTransaction.created_at).toLocaleString()}</p>
+                            <p style={{ color: '#64748b', marginBottom: '1rem' }}>{new Date(selectedTransaction.created_at).toLocaleString()}</p>
 
-                            <div style={{ marginBottom: '1.5rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+                            <div style={{ marginBottom: '1rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehículo</div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#1e293b' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b' }}>
                                     {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : '') + (selectedTransaction.vehicles?.model || customer?.vehicle_model || (selectedTransaction.extras && !Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.vehicle_model : '') || 'Vehículo')}
                                 </div>
-                                <div style={{ fontSize: '1rem', color: '#3b82f6', fontWeight: '600', marginTop: '0.2rem' }}>
+                                <div style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: '600', marginTop: '0.1rem' }}>
                                     {selectedTransaction.vehicles?.plate || customer?.vehicle_plate || (selectedTransaction.extras && !Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.vehicle_plate : '') || 'Sin Placa'}
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Servicios Realizados</div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Servicios Realizados</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', backgroundColor: '#eff6ff', borderRadius: '0.5rem', borderLeft: '4px solid #3b82f6' }}>
-                                        <span style={{ fontWeight: 'bold', color: '#1e40af' }}>{selectedTransaction.services?.name || 'Lavado'}</span>
-                                        <span style={{ fontWeight: 'bold', color: '#1e40af' }}>${parseFloat(selectedTransaction.price || 0).toFixed(2)}</span>
+                                        <span style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '0.9rem' }}>{selectedTransaction.services?.name || 'Lavado'}</span>
+                                        <span style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '0.9rem' }}>${parseFloat(selectedTransaction.price || 0).toFixed(2)}</span>
                                     </div>
                                     {Array.isArray(selectedTransaction.extras) && selectedTransaction.extras.map((extra, idx) => (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', borderLeft: '4px solid #94a3b8', fontSize: '0.9rem' }}>
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.5rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', borderLeft: '4px solid #94a3b8', fontSize: '0.85rem' }}>
                                             <span style={{ color: '#475569' }}>{extra.description || 'Servicio Extra'}</span>
                                             <span style={{ fontWeight: '600', color: '#475569' }}>${parseFloat(extra.price || 0).toFixed(2)}</span>
                                         </div>
@@ -939,22 +943,22 @@ const CustomerPortal = () => {
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ marginBottom: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                                 <div>
-                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inicio</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#000' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inicio</div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#000' }}>
                                         {selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
                                             (selectedTransaction.status === 'waiting' ? 'Pendiente' :
                                                 new Date(selectedTransaction.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}
                                     </div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fin</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#000' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'ready' ? '---' : 'En proceso')}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fin</div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#000' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'ready' ? '---' : 'En proceso')}</div>
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
-                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiempo en Proceso</div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#000' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiempo en Proceso</div>
+                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#000' }}>
                                         {formatDuration(selectedTransaction.started_at || selectedTransaction.created_at, selectedTransaction.finished_at) || (selectedTransaction.status === 'waiting' ? '---' : 'Calculando...')}
                                     </div>
                                 </div>
@@ -962,17 +966,17 @@ const CustomerPortal = () => {
 
                             {/* PROGRESS BAR IN MODAL */}
                             {(selectedTransaction.status === 'in_progress' || selectedTransaction.status === 'waiting' || selectedTransaction.status === 'ready') && (
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Progreso</span>
-                                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#3b82f6' }}>{calculateProgress(selectedTransaction)}%</span>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Progreso</span>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#3b82f6' }}>{calculateProgress(selectedTransaction)}%</span>
                                     </div>
-                                    <div style={{ width: '100%', height: '12px', backgroundColor: '#e2e8f0', borderRadius: '6px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                    <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
                                         <div style={{
                                             width: `${calculateProgress(selectedTransaction)}%`,
                                             height: '100%',
                                             backgroundColor: calculateProgress(selectedTransaction) === 100 ? '#10b981' : '#3b82f6',
-                                            borderRadius: '6px',
+                                            borderRadius: '5px',
                                             transition: 'width 1s ease-in-out',
                                             backgroundImage: calculateProgress(selectedTransaction) < 100 ? 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)' : 'none',
                                             backgroundSize: '1rem 1rem',
@@ -982,8 +986,8 @@ const CustomerPortal = () => {
                                 </div>
                             )}
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Atendido por:</div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Atendido por:</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0 ? (
                                         selectedTransaction.transaction_assignments.map((assign, idx) => (
