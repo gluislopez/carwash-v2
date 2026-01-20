@@ -186,25 +186,11 @@ const Dashboard = () => {
     }, [services, transactions]);
 
     const [verifyingTransaction, setVerifyingTransaction] = useState(null);
-    const [verificationChecks, setVerificationChecks] = useState({
-        cristales: false,
-        entrePuertas: false,
-        baul: false,
-        dash: false,
-        portaVasos: false,
-        manchas: false
-    });
+    const [hasConsentedVerification, setHasConsentedVerification] = useState(false);
 
     const handleOpenVerification = (transaction) => {
         setVerifyingTransaction(transaction);
-        setVerificationChecks({
-            cristales: false,
-            entrePuertas: false,
-            baul: false,
-            dash: false,
-            portaVasos: false,
-            manchas: false
-        });
+        setHasConsentedVerification(false);
     };
 
     const handleConfirmReady = async () => {
@@ -3708,26 +3694,36 @@ const Dashboard = () => {
                                 Confirma que todo esté listo para {verifyingTransaction.customers?.vehicle_plate}:
                             </p>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-                                {[
-                                    { key: 'cristales', label: 'Cristales' },
-                                    { key: 'entrePuertas', label: 'Entre puertas' },
-                                    { key: 'baul', label: 'Baúl' },
-                                    { key: 'dash', label: 'Dash' },
-                                    { key: 'portaVasos', label: 'Porta vasos' },
-                                    { key: 'manchas', label: 'Manchas' }
-                                ].map(item => (
-                                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '1.1rem' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={verificationChecks[item.key]}
-                                            onChange={(e) => setVerificationChecks({ ...verificationChecks, [item.key]: e.target.checked })}
-                                            style={{ width: '20px', height: '20px', accentColor: 'var(--primary)' }}
-                                        />
-                                        {item.label}
-                                    </label>
-                                ))}
+                            <div style={{
+                                backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                                border: '1px solid var(--warning)',
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1.5rem',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.95rem',
+                                lineHeight: '1.4'
+                            }}>
+                                <div style={{ fontWeight: 'bold', color: 'var(--warning)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    ⚠️ ADVERTENCIA DE RESPONSABILIDAD
+                                </div>
+                                <p style={{ margin: 0 }}>
+                                    Al marcar este servicio como <strong>LISTO</strong>, el empleado asegura haber verificado la calidad total del trabajo.
+                                </p>
+                                <p style={{ marginTop: '0.75rem', marginBottom: 0, fontSize: '0.85rem', fontStyle: 'italic' }}>
+                                    * Si el cliente regresa con servicios no terminados, no se cobrará la comisión por este servicio.
+                                </p>
                             </div>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '1.1rem', marginBottom: '2rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={hasConsentedVerification}
+                                    onChange={(e) => setHasConsentedVerification(e.target.checked)}
+                                    style={{ width: '22px', height: '22px', accentColor: 'var(--primary)' }}
+                                />
+                                <span>He verificado el auto</span>
+                            </label>
 
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button
@@ -3740,7 +3736,7 @@ const Dashboard = () => {
                                 <button
                                     className="btn btn-primary"
                                     style={{ flex: 1 }}
-                                    disabled={!Object.values(verificationChecks).every(Boolean)}
+                                    disabled={!hasConsentedVerification}
                                     onClick={handleConfirmReady}
                                 >
                                     Confirmar y Enviar
