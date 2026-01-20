@@ -41,6 +41,7 @@ const CustomerPortal = () => {
     const [nextCouponIndex, setNextCouponIndex] = useState(0);
     const [showCouponModal, setShowCouponModal] = useState(false);
     const [showVehiclesModal, setShowVehiclesModal] = useState(false); // NEW MODAL STATE
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false); // NEW MODAL FOR FEEDBACK
 
     // PWA State
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -533,61 +534,43 @@ const CustomerPortal = () => {
 
                 {/* VEHICLE SELECTOR (TABS) */}
                 {vehicles.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <div style={{
-                            display: 'flex', gap: '0.8rem', overflowX: 'auto', flex: 1,
-                            padding: '0.5rem 0.2rem 1rem',
-                            scrollbarWidth: 'none', msOverflowStyle: 'none'
-                        }} className="no-scrollbar">
+                    <div style={{
+                        display: 'flex', gap: '0.8rem', overflowX: 'auto',
+                        padding: '0.5rem 0.2rem 1rem', marginBottom: '0.5rem',
+                        scrollbarWidth: 'none', msOverflowStyle: 'none'
+                    }} className="no-scrollbar">
+                        <button
+                            onClick={() => setSelectedVehicleId(null)}
+                            style={{
+                                flexShrink: 0, padding: '0.6rem 1.2rem',
+                                borderRadius: '2rem', border: 'none',
+                                backgroundColor: selectedVehicleId === null ? '#3b82f6' : 'white',
+                                color: selectedVehicleId === null ? 'white' : '#64748b',
+                                fontWeight: 'bold', fontSize: '0.9rem',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            📦 Todos
+                        </button>
+                        {vehicles.map(v => (
                             <button
-                                onClick={() => setSelectedVehicleId(null)}
+                                key={v.id}
+                                onClick={() => setSelectedVehicleId(v.id)}
                                 style={{
                                     flexShrink: 0, padding: '0.6rem 1.2rem',
                                     borderRadius: '2rem', border: 'none',
-                                    backgroundColor: selectedVehicleId === null ? '#3b82f6' : 'white',
-                                    color: selectedVehicleId === null ? 'white' : '#64748b',
+                                    backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
+                                    color: selectedVehicleId === v.id ? 'white' : '#64748b',
                                     fontWeight: 'bold', fontSize: '0.9rem',
                                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
                                     transition: 'all 0.2s'
                                 }}
                             >
-                                📦 Todos
+                                🚗 {v.plate}
                             </button>
-                            {vehicles.map(v => (
-                                <button
-                                    key={v.id}
-                                    onClick={() => setSelectedVehicleId(v.id)}
-                                    style={{
-                                        flexShrink: 0, padding: '0.6rem 1.2rem',
-                                        borderRadius: '2rem', border: 'none',
-                                        backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
-                                        color: selectedVehicleId === v.id ? 'white' : '#64748b',
-                                        fontWeight: 'bold', fontSize: '0.9rem',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    🚗 {v.plate}
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => setShowVehiclesModal(true)}
-                            style={{
-                                padding: '0.6rem', // Square button
-                                borderRadius: '50%', border: 'none',
-                                backgroundColor: 'white', color: '#3b82f6',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                cursor: 'pointer', flexShrink: 0,
-                                marginBottom: '0.5rem' // Align with scrollbar padding
-                            }}
-                            title="Ver Lista de Vehículos"
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <List size={20} />
-                            </div>
-                        </button>
+                        ))}
                     </div>
                 )}
 
@@ -629,6 +612,76 @@ const CustomerPortal = () => {
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* --- NEW GRID LAYOUT (SQUARES OF 3) --- */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+
+                    {/* 1. VEHICLES CARD */}
+                    <div
+                        onClick={() => setShowVehiclesModal(true)}
+                        style={{
+                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', height: '100px', transition: 'transform 0.1s'
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <div style={{ backgroundColor: '#eff6ff', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <List size={22} color="#3b82f6" />
+                        </div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>Mis Autos</div>
+                    </div>
+
+                    {/* 2. FEEDBACK CARD */}
+                    <div
+                        onClick={() => {
+                            if (!hasRated && latestTx) {
+                                setShowFeedbackModal(true);
+                            }
+                        }}
+                        style={{
+                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', height: '100px', transition: 'transform 0.1s',
+                            opacity: (hasRated || !latestTx) ? 0.6 : 1
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <div style={{ backgroundColor: '#fef9c3', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '1.2rem' }}>⭐</span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>
+                            {hasRated ? 'Calificado' : 'Opinar'}
+                        </div>
+                    </div>
+
+                    {/* 3. REFERRAL CARD */}
+                    <div
+                        onClick={() => {
+                            const message = `¡Hola! Te recomiendo Express CarWash. Si vas, diles que te refirió *${customer.name}*. ¡Gracias! 🚗✨`;
+                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                            window.open(whatsappUrl, '_blank');
+                        }}
+                        style={{
+                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', height: '100px', transition: 'transform 0.1s'
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <div style={{ backgroundColor: '#dcfce7', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <Gift size={22} color="#10b981" />
+                        </div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>Referir</div>
+                    </div>
+
                 </div>
 
                 {/* ACTIVE SERVICE (MOVED TO TOP) */}
@@ -903,75 +956,63 @@ const CustomerPortal = () => {
                 )}
 
                 {/* FEEDBACK CARD (If available and not rated yet) */}
-                {!showPromo && !hasRated && latestTx && (
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderTop: '5px solid #EAB308' }}>
-                        <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
-                        <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                            Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}).
-                        </p>
+                {/* FEEDBACK MODAL (Replaces the inline card) */}
+                {showFeedbackModal && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999,
+                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        padding: '1rem'
+                    }} onClick={() => setShowFeedbackModal(false)}>
+                        <div style={{
+                            backgroundColor: 'white', padding: '1.5rem',
+                            borderRadius: '1rem', width: '100%', maxWidth: '400px',
+                            textAlign: 'center'
+                        }} onClick={e => e.stopPropagation()}>
+                            <h3 style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem', fontSize: '1.2rem' }}>¡Tu Opinión Cuenta!</h3>
+                            <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                                ¿Qué tal estuvo tu servicio de hoy?
+                            </p>
 
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <button key={star} onClick={() => setRating(star)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', transition: 'transform 0.2s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.2)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'}>
-                                    {star <= rating ? '⭐' : '☆'}
-                                </button>
-                            ))}
-                        </div>
-
-                        {rating > 0 && (
-                            <div style={{ animation: 'fadeIn 0.5s' }}>
-                                <textarea
-                                    placeholder="¿Algún comentario extra?"
-                                    value={comment}
-                                    onChange={e => setComment(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb', marginBottom: '1rem', fontFamily: 'inherit' }}
-                                    rows="3"
-                                />
-                                <button
-                                    onClick={submitFeedback}
-                                    disabled={submittingFeedback}
-                                    style={{ width: '100%', padding: '0.75rem', backgroundColor: '#EAB308', color: 'white', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
-                                >
-                                    {submittingFeedback ? 'Enviando...' : 'Enviar Calificación'}
-                                </button>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                                {[1, 2, 3, 4, 5].map(star => (
+                                    <button key={star} onClick={() => setRating(star)} style={{ background: 'none', border: 'none', fontSize: '2.5rem', cursor: 'pointer', transition: 'transform 0.1s' }} onMouseDown={e => e.target.style.transform = 'scale(0.9)'} onMouseUp={e => e.target.style.transform = 'scale(1)'}>
+                                        {star <= rating ? '⭐' : '☆'}
+                                    </button>
+                                ))}
                             </div>
-                        )}
+
+                            {rating > 0 && (
+                                <div style={{ animation: 'fadeIn 0.5s', textAlign: 'left' }}>
+                                    <textarea
+                                        placeholder="¿Algún comentario extra?"
+                                        value={comment}
+                                        onChange={e => setComment(e.target.value)}
+                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb', marginBottom: '1rem', fontFamily: 'inherit' }}
+                                        rows="3"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            submitFeedback();
+                                            setShowFeedbackModal(false);
+                                        }}
+                                        disabled={submittingFeedback}
+                                        style={{ width: '100%', padding: '0.8rem', backgroundColor: '#EAB308', color: 'white', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
+                                    >
+                                        {submittingFeedback ? 'Enviando...' : 'Enviar Calificación'}
+                                    </button>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => setShowFeedbackModal(false)}
+                                style={{ marginTop: '1rem', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
                 )}
-
-
-
-                {/* REFERRAL SYSTEM SECTION */}
-                <div style={{
-                    backgroundColor: '#10b981', color: 'white', borderRadius: '1rem',
-                    padding: '1rem', marginBottom: '0.75rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
-                    position: 'relative', overflow: 'hidden'
-                }}>
-                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
-                        <Share size={80} />
-                    </div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        🎁 Trae un Amigo
-                    </h3>
-                    <p style={{ fontSize: '0.85rem', marginBottom: '1.2rem', opacity: 0.9, lineHeight: '1.4' }}>
-                        ¡Gana <strong>2 puntos extra</strong> por cada referido! Comparte tu link y cuando ellos laven su auto, sumas puntos para tu próximo descuento.
-                    </p>
-                    <button
-                        onClick={() => {
-                            const message = `¡Hola! Te recomiendo Express CarWash. Es el mejor lugar para cuidar tu auto. Si vas, diles que te refirió *${customer.name}* para que me ayudes a ganar puntos para mi próximo descuento. ¡Gracias! 🚗✨`;
-                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                            window.open(whatsappUrl, '_blank');
-                        }}
-                        style={{
-                            width: '100%', padding: '0.8rem', backgroundColor: 'white', color: '#10b981',
-                            fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            fontSize: '0.95rem'
-                        }}
-                    >
-                        <Share size={18} /> Compartir por WhatsApp
-                    </button>
-                </div>
 
 
 
