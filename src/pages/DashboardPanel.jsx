@@ -2181,6 +2181,7 @@ const Dashboard = () => {
                         transaction={transactions.find(t => t.id === editingTransactionId)}
                         services={services}
                         employees={employees}
+                        vehicles={vehicles}
                         onClose={() => setEditingTransactionId(null)}
                         onUpdate={handleUpdateTransaction}
                         onDelete={handleDeleteTransactionV2}

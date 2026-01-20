@@ -4,7 +4,7 @@ import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
 import { calculateSharedCommission } from '../utils/commissionRules';
 
-const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, onUpdate, userRole, reviewLink }) => {
+const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, vehicles = [], onUpdate, userRole, reviewLink }) => {
     if (!isOpen || !transaction) return null;
 
     const [extras, setExtras] = useState(transaction.extras || []);
@@ -16,7 +16,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         paymentMethod: transaction.payment_method || 'cash',
         tip: transaction.tip || 0,
         commissionAmount: transaction.commission_amount || 0,
-        status: transaction.status || 'pending'
+        commissionAmount: transaction.commission_amount || 0,
+        status: transaction.status || 'pending',
+        vehicleId: transaction.vehicle_id || ''
     });
 
     const [sendReceipt, setSendReceipt] = useState(true); // WhatsApp Checkbox State (Default TRUE)
@@ -221,7 +223,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 commission_amount: finalCommission,
                 status: newStatus,
                 extras: extras,
-                employee_id: selectedEmployeeIds[0] || null
+                status: newStatus,
+                extras: extras,
+                employee_id: selectedEmployeeIds[0] || null,
+                vehicle_id: formData.vehicleId || null
             });
 
         } catch (error) {
@@ -352,16 +357,43 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 {/* REMOVED FORM TAG TO PREVENT SUBMIT ISSUES */}
                 <div id="edit-transaction-form">
 
-                    {/* CLIENTE ASIGNADO */}
+                    {/* CLIENTE Y VEHÍCULO */}
                     {transaction.customers && (
-                        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '0.5rem', border: '1px solid #3B82F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <div style={{ fontSize: '0.8rem', color: '#3B82F6', fontWeight: 'bold' }}>CLIENTE ASIGNADO</div>
-                                <div style={{ fontWeight: 'bold' }}>{transaction.customers.name}</div>
+                        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '0.5rem', border: '1px solid #3B82F6' }}>
+                            <div style={{ fontSize: '0.8rem', color: '#3B82F6', fontWeight: 'bold', marginBottom: '0.25rem' }}>CLIENTE ASIGNADO</div>
+                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>{transaction.customers.name}</div>
+
+                            {/* VEHICLE SELECTOR (Admin/Manager) */}
+                            {(userRole === 'admin' || userRole === 'manager') ? (
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Vehículo (Editar)</label>
+                                    <select
+                                        className="input"
+                                        style={{ width: '100%', fontSize: '0.9rem', padding: '0.4rem' }}
+                                        value={formData.vehicleId}
+                                        onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
+                                    >
+                                        <option value="">-- Sin Vehículo --</option>
+                                        {vehicles
+                                            .filter(v => v.customer_id === transaction.customer_id)
+                                            .map(v => (
+                                                <option key={v.id} value={v.id}>
+                                                    {v.brand} {v.model} ({v.plate})
+                                                </option>
+                                            ))
+                                        }
+                                        <option disabled>──────</option>
+                                        <option value="other">Otro (Gestión manual requerida)</option>
+                                    </select>
+                                    {(!formData.vehicleId || formData.vehicleId === '') && (
+                                        <div style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>⚠️ Advertencia: Guardar sin vehículo puede causar pérdida de datos.</div>
+                                    )}
+                                </div>
+                            ) : (
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                     {transaction.vehicles?.model || transaction.customers?.vehicle_model} {(transaction.vehicles?.plate || transaction.customers?.vehicle_plate) && `(${transaction.vehicles?.plate || transaction.customers?.vehicle_plate})`}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
 
