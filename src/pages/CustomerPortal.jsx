@@ -201,9 +201,8 @@ const CustomerPortal = () => {
 
             if (vData) {
                 setVehicles(vData);
-                if (vData.length > 0 && !selectedVehicleId) {
-                    setSelectedVehicleId(vData[0].id);
-                }
+                // Default to null (All Vehicles)
+                setSelectedVehicleId(null);
             }
 
             // 3. Fetch History & Check Feedback
@@ -446,12 +445,26 @@ const CustomerPortal = () => {
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
                 {/* VEHICLE SELECTOR (TABS) */}
-                {vehicles.length > 1 && (
+                {vehicles.length > 0 && (
                     <div style={{
                         display: 'flex', gap: '0.8rem', overflowX: 'auto',
                         padding: '0.5rem 0.2rem 1rem', marginBottom: '0.5rem',
                         scrollbarWidth: 'none', msOverflowStyle: 'none'
                     }} className="no-scrollbar">
+                        <button
+                            onClick={() => setSelectedVehicleId(null)}
+                            style={{
+                                flexShrink: 0, padding: '0.6rem 1.2rem',
+                                borderRadius: '2rem', border: 'none',
+                                backgroundColor: selectedVehicleId === null ? '#3b82f6' : 'white',
+                                color: selectedVehicleId === null ? 'white' : '#64748b',
+                                fontWeight: 'bold', fontSize: '0.9rem',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            📦 Todos
+                        </button>
                         {vehicles.map(v => (
                             <button
                                 key={v.id}
@@ -477,15 +490,13 @@ const CustomerPortal = () => {
                 <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
-                        {selectedVehicle && (
-                            <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
-                                {selectedVehicle.brand} {selectedVehicle.model}
-                            </div>
-                        )}
+                        <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
+                            {selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'Vista General'}
+                        </div>
                     </div>
                     <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{filteredHistory.length}</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{selectedVehicleId ? filteredHistory.length : history.length}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
                         <div style={{ textAlign: 'center', flex: 1 }}>
