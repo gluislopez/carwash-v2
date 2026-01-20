@@ -735,7 +735,7 @@ const CustomerPortal = () => {
                     <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderTop: '5px solid #EAB308' }}>
                         <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
                         <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                            Califica tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
+                            Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
                         </p>
 
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -782,11 +782,11 @@ const CustomerPortal = () => {
                         🎁 Trae un Amigo
                     </h3>
                     <p style={{ fontSize: '0.85rem', marginBottom: '1.2rem', opacity: 0.9, lineHeight: '1.4' }}>
-                        ¡Gana <strong>2 puntos extra</strong> por cada referido! Comparte tu link y cuando ellos laven su auto, sumas puntos para tu próximo lavado gratis.
+                        ¡Gana <strong>2 puntos extra</strong> por cada referido! Comparte tu link y cuando ellos laven su auto, sumas puntos para tu próximo descuento.
                     </p>
                     <button
                         onClick={() => {
-                            const message = `¡Hola! Te recomiendo Express CarWash. Es el mejor lugar para cuidar tu auto. Si vas, diles que te refirió *${customer.name}* para que me ayudes a ganar puntos. ¡Gracias! 🚗✨`;
+                            const message = `¡Hola! Te recomiendo Express CarWash. Es el mejor lugar para cuidar tu auto. Si vas, diles que te refirió *${customer.name}* para que me ayudes a ganar puntos para mi próximo descuento. ¡Gracias! 🚗✨`;
                             const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
                             window.open(whatsappUrl, '_blank');
                         }}
@@ -942,7 +942,7 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inicio</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#000' }}>
                                         {selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
                                             (selectedTransaction.status === 'waiting' ? 'Pendiente' :
                                                 new Date(selectedTransaction.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}
@@ -950,11 +950,11 @@ const CustomerPortal = () => {
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fin</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'ready' ? '---' : 'En proceso')}</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#000' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'ready' ? '---' : 'En proceso')}</div>
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiempo en Proceso</div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#000' }}>
                                         {formatDuration(selectedTransaction.started_at || selectedTransaction.created_at, selectedTransaction.finished_at) || (selectedTransaction.status === 'waiting' ? '---' : 'Calculando...')}
                                     </div>
                                 </div>
