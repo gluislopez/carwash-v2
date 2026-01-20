@@ -414,6 +414,24 @@ const Dashboard = () => {
             setCustomerMembership(null);
             setIsMembershipUsage(false);
         }
+
+        // 5. Fetch Vehicles (Directly from DB to ensure completeness)
+        const { data: vehiclesData } = await supabase
+            .from('vehicles')
+            .select('*')
+            .eq('customer_id', customerId);
+
+        if (vehiclesData) {
+            setCustomerVehicles(vehiclesData);
+            // Auto-select the first one if none selected
+            if (vehiclesData.length > 0) {
+                // Check if current ID is in list, if not, pick first
+                // (We might have set it via lastService or manually)
+                // Just ensure formData has A valid vehicle
+            }
+        } else {
+            setCustomerVehicles([]);
+        }
     };
 
     const applyLastService = () => {
@@ -448,6 +466,7 @@ const Dashboard = () => {
         email: '', // Optional
         referrer_id: ''
     });
+    const [customerVehicles, setCustomerVehicles] = useState([]); // NEW: Local state for selected customer's vehicles
     const [referrerSearch, setReferrerSearch] = useState('');
     const [showReferrerSearch, setShowReferrerSearch] = useState(false);
 
@@ -3053,7 +3072,7 @@ const Dashboard = () => {
                                                                     }}
                                                                     style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
                                                                 >
-                                                                    {vehicles.filter(v => v.customer_id == formData.customerId).map(v => (
+                                                                    {customerVehicles.map(v => (
                                                                         <option key={v.id} value={v.id}>
                                                                             🚗 {v.brand} {v.model} ({v.plate})
                                                                         </option>
