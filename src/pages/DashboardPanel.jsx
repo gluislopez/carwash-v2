@@ -448,8 +448,11 @@ const Dashboard = () => {
         vehicle_plate: '',
         vehicle_brand: '',
         vehicle_model: '',
-        email: '' // Optional
+        email: '', // Optional
+        referrer_id: ''
     });
+    const [referrerSearch, setReferrerSearch] = useState('');
+    const [showReferrerSearch, setShowReferrerSearch] = useState(false);
 
     // ASSIGNMENT MODAL STATE (Missing in previous deploy)
     const [assigningTransactionId, setAssigningTransactionId] = useState(null);
@@ -573,7 +576,8 @@ const Dashboard = () => {
                 }
 
                 setIsAddingCustomer(false);
-                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_brand: '', vehicle_model: '', email: '' });
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_brand: '', vehicle_model: '', email: '', referrer_id: '' });
+                setReferrerSearch('');
                 return;
             }
 
@@ -585,6 +589,21 @@ const Dashboard = () => {
             });
 
             if (created) {
+                // 5. Handle Referral Points (+2 for referrer)
+                if (newCustomer.referrer_id) {
+                    const referrer = customers.find(c => c.id == newCustomer.referrer_id);
+                    if (referrer) {
+                        const { error: pointError } = await supabase
+                            .from('customers')
+                            .update({ points: (referrer.points || 0) + 2 })
+                            .eq('id', referrer.id);
+
+                        if (!pointError) {
+                            console.log(`Puntos de referido (+2) otorgados a: ${referrer.name}`);
+                        }
+                    }
+                }
+
                 // Also create initial vehicle record
                 const [newV] = await createVehicle({
                     customer_id: created.id,
@@ -602,7 +621,8 @@ const Dashboard = () => {
                     vehicleId: newV.id
                 });
                 setIsAddingCustomer(false);
-                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_brand: '', vehicle_model: '', email: '' });
+                setNewCustomer({ name: '', phone: '', vehicle_plate: '', vehicle_brand: '', vehicle_model: '', email: '', referrer_id: '' });
+                setReferrerSearch('');
                 alert("¡Cliente y Vehículo registrados!");
             }
         } catch (error) {
@@ -3077,6 +3097,49 @@ const Dashboard = () => {
                                                         value={newCustomer.vehicle_model}
                                                         onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
                                                     />
+                                                </div>
+
+                                                {/* REFERRER SEARCH FIELD */}
+                                                <div style={{ marginTop: '0.75rem', position: 'relative' }}>
+                                                    <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="🔍 Buscar cliente referente..."
+                                                        value={referrerSearch}
+                                                        onChange={(e) => {
+                                                            setReferrerSearch(e.target.value);
+                                                            setShowReferrerSearch(true);
+                                                        }}
+                                                        style={{ fontSize: '0.85rem', height: '36px' }}
+                                                    />
+                                                    {showReferrerSearch && referrerSearch.length > 0 && (
+                                                        <div style={{
+                                                            position: 'absolute', bottom: '100%', left: 0, right: 0,
+                                                            backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                                            borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
+                                                            boxShadow: '0 -4px 6px rgba(0,0,0,0.2)'
+                                                        }}>
+                                                            {customers
+                                                                .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()))
+                                                                .slice(0, 10)
+                                                                .map(c => (
+                                                                    <div
+                                                                        key={c.id}
+                                                                        onClick={() => {
+                                                                            setNewCustomer({ ...newCustomer, referrer_id: c.id });
+                                                                            setReferrerSearch(c.name);
+                                                                            setShowReferrerSearch(false);
+                                                                        }}
+                                                                        style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
+                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    >
+                                                                        {c.name}
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                     <button

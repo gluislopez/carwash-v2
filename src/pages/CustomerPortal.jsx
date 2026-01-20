@@ -586,12 +586,48 @@ const CustomerPortal = () => {
                 {/* CUSTOMER CARD */}
                 <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', color: '#64748b' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <CheckCircle size={18} />
-                            <span>{history.length} Visitas</span>
+                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.5rem' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
                         </div>
                     </div>
+                </div>
+
+                {/* REFERRAL SYSTEM SECTION */}
+                <div style={{
+                    backgroundColor: '#10b981', color: 'white', borderRadius: '1rem',
+                    padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
+                    position: 'relative', overflow: 'hidden'
+                }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
+                        <Share size={80} />
+                    </div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        🎁 Trae un Amigo
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', marginBottom: '1.2rem', opacity: 0.9, lineHeight: '1.4' }}>
+                        ¡Gana <strong>2 puntos extra</strong> por cada referido! Comparte tu link y cuando ellos laven su auto, sumas puntos para tu próximo lavado gratis.
+                    </p>
+                    <button
+                        onClick={() => {
+                            const message = `¡Hola! Te recomiendo Express CarWash. Es el mejor lugar para cuidar tu auto. Si vas, diles que te refirió *${customer.name}* para que me ayudes a ganar puntos. ¡Gracias! 🚗✨`;
+                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                            window.open(whatsappUrl, '_blank');
+                        }}
+                        style={{
+                            width: '100%', padding: '0.8rem', backgroundColor: 'white', color: '#10b981',
+                            fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                            fontSize: '0.95rem'
+                        }}
+                    >
+                        <Share size={18} /> Compartir por WhatsApp
+                    </button>
                 </div>
 
                 {/* ACTIVE SERVICE */}
