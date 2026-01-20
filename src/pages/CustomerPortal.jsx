@@ -568,7 +568,7 @@ const CustomerPortal = () => {
                                     transition: 'all 0.2s'
                                 }}
                             >
-                                🚗 {v.plate}
+                                🚗 {v.brand} {v.model}
                             </button>
                         ))}
                     </div>
