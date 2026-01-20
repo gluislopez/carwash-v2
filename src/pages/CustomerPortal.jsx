@@ -438,7 +438,7 @@ const CustomerPortal = () => {
                 {activeService && (
                     <div
                         onClick={() => setSelectedTxId(activeService.id)}
-                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
+                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.6rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
                     >
                         <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                             SERVICIO EN CURSO
@@ -460,8 +460,8 @@ const CustomerPortal = () => {
 
                         {/* Extras Count & Text */}
                         {activeService.extras && activeService.extras.length > 0 && (
-                            <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                                + {activeService.extras.length} servicios extra <span style={{ fontSize: '0.8rem' }}>({activeService.extras.map(e => e.description).join(', ')})</span>
+                            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.4rem' }}>
+                                + {activeService.extras.length} extras <span style={{ fontSize: '0.75rem' }}>({activeService.extras.map(e => e.description).join(', ')})</span>
                             </div>
                         )}
 
@@ -547,39 +547,35 @@ const CustomerPortal = () => {
                     <div
                         onClick={() => setShowCouponModal(true)}
                         style={{
-                            backgroundColor: '#4f46e5', color: 'white', padding: '1.25rem',
-                            borderRadius: '1rem', marginBottom: '1rem',
+                            backgroundColor: '#4f46e5', color: 'white', padding: '0.85rem',
+                            borderRadius: '1rem', marginBottom: '0.6rem',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
                             cursor: 'pointer'
                         }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ fontSize: '1.5rem' }}>🎟️</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ fontSize: '1.2rem' }}>🎟️</div>
                             <div>
-                                <div style={{ fontWeight: 'bold' }}>¡TIENES 50% OFF!</div>
-                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Cupón por tus {customer.points} puntos</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>¡TIENES 50% OFF!</div>
+                                <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Cupón por tus {customer.points} puntos</div>
                             </div>
                         </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.8rem', borderRadius: '0.5rem' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
                             USAR
                         </div>
                     </div>
                 ) : (
                     <div style={{
-                        backgroundColor: 'white', color: '#64748b', padding: '1.25rem',
-                        borderRadius: '1rem', marginBottom: '1rem',
-                        display: 'flex', alignItems: 'center', gap: '1rem',
+                        backgroundColor: 'white', color: '#64748b', padding: '0.85rem',
+                        borderRadius: '1rem', marginBottom: '0.6rem',
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
                     }}>
-                        <Gift size={24} className="text-purple-500" />
+                        <Gift size={20} className="text-purple-500" />
                         <div>
-                            <div style={{ fontWeight: 'bold', color: '#333' }}>Programa de Lealtad</div>
-                            <div style={{ fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 'bold', color: '#333', fontSize: '0.9rem' }}>Programa de Lealtad</div>
+                            <div style={{ fontSize: '0.8rem' }}>
                                 {10 - (customer.points % 10)} puntos más para tu próximo 50% OFF
-                            </div>
-                            {/* Simple Progress Bar */}
-                            <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', marginTop: '0.5rem' }}>
-                                <div style={{ width: `${(customer.points % 10) * 10}%`, height: '100%', backgroundColor: '#a855f7', borderRadius: '3px' }}></div>
                             </div>
                         </div>
                     </div>
@@ -590,9 +586,9 @@ const CustomerPortal = () => {
                     <div style={{
                         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                         color: 'white',
-                        padding: '1.25rem',
+                        padding: '0.85rem',
                         borderRadius: '1rem',
-                        marginBottom: '1rem',
+                        marginBottom: '0.6rem',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         position: 'relative',
@@ -724,7 +720,7 @@ const CustomerPortal = () => {
 
                 {/* PROMO WINNER CARD */}
                 {showPromo && (
-                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1.25rem', marginBottom: '1rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
+                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '0.85rem', marginBottom: '0.6rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>¡Gracias x tu Feedback!</h2>
                         <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Tienes un</p>
@@ -737,7 +733,7 @@ const CustomerPortal = () => {
 
                 {/* FEEDBACK CARD (If available and not rated yet) */}
                 {!showPromo && !hasRated && latestTx && (
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1rem', borderTop: '5px solid #EAB308' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.6rem', borderTop: '5px solid #EAB308' }}>
                         <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
                         <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
                             Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
@@ -777,7 +773,7 @@ const CustomerPortal = () => {
                 {/* REFERRAL SYSTEM SECTION */}
                 <div style={{
                     backgroundColor: '#10b981', color: 'white', borderRadius: '1rem',
-                    padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
+                    padding: '0.85rem', marginBottom: '0.6rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
                     position: 'relative', overflow: 'hidden'
                 }}>
                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
@@ -809,7 +805,7 @@ const CustomerPortal = () => {
 
 
                 {/* PAYMENT METHODS CARD */}
-                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1rem' }}>
+                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.6rem' }}>
                     <h3 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.2rem' }}>
                         💳 Métodos de Pago
                     </h3>
@@ -901,6 +897,11 @@ const CustomerPortal = () => {
                     {history.length === 0 && (
                         <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No hay historial disponible.</p>
                     )}
+                </div>
+
+                {/* VERSION TAG */}
+                <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
+                    Diseño Optimizado v1.1 • {new Date().toLocaleTimeString()}
                 </div>
 
                 {/* DETAIL MODAL */}
