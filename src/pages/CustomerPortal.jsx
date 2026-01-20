@@ -866,6 +866,29 @@ const CustomerPortal = () => {
                                 <div style={{ fontWeight: 'bold' }}>${membership.memberships.price}</div>
                             </div>
                         </div>
+
+                        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                            <button
+                                onClick={() => {
+                                    const message = `Hola, soy ${customer.name}, me gustaría cancelar mi suscripción ${membership.memberships.name}.`;
+                                    const whatsappUrl = `https://wa.me/17873602859?text=${encodeURIComponent(message)}`;
+                                    window.open(whatsappUrl, '_blank');
+                                }}
+                                style={{
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                    color: '#fca5a5',
+                                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                                    padding: '0.4rem 1rem',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Cancelar Suscripción
+                            </button>
+                        </div>
                     </div>
                 )}
 

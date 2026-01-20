@@ -271,15 +271,40 @@ const MembershipSettings = () => {
                 </>
             ) : (
                 <div>
-                    {/* MRR STATS */}
-                    <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem' }}>
-                        <div style={{ flex: 1, backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                    {/* MRR STATS & ACTIONS */}
+                    <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '250px', backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Ingreso Mensual Estimado (MRR)</div>
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>${mrr.toFixed(2)}</div>
                         </div>
-                        <div style={{ flex: 1, backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                        <div style={{ flex: 1, minWidth: '250px', backgroundColor: 'var(--bg-card)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
                             <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Suscripciones Activas</div>
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{subscriptions.length}</div>
+                        </div>
+
+                        {/* AUTO CHECK BUTTON */}
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <button
+                                onClick={() => {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const overdue = subscriptions.filter(s => s.next_billing_date && s.next_billing_date <= today);
+
+                                    if (overdue.length > 0) {
+                                        alert(`⚠️ HAY ${overdue.length} PAGO(S) VENCIDO(S):\n\n` + overdue.map(s => `- ${s.customers?.name} ($${s.memberships?.price})`).join('\n'));
+                                    } else {
+                                        alert("✅ Todo al día. Ningún pago vencido.");
+                                    }
+                                }}
+                                className="btn"
+                                style={{
+                                    backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)',
+                                    padding: '1rem 2rem', borderRadius: '0.8rem', border: '2px solid var(--primary)',
+                                    fontWeight: 'bold', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center'
+                                }}
+                            >
+                                <CheckCircle size={20} color="var(--primary)" />
+                                Verificar Vencidos
+                            </button>
                         </div>
                     </div>
 
@@ -295,40 +320,46 @@ const MembershipSettings = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {subscriptions.map(sub => (
-                                    <tr key={sub.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div style={{ fontWeight: 'bold' }}>{sub.customers?.name}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{sub.customers?.phone}</div>
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div>{sub.memberships?.name}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>${sub.memberships?.price}/mes</div>
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Calendar size={14} className="text-muted" />
-                                                {sub.next_billing_date || 'Pendiente'}
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            {sub.usage_count} lavados
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <button
-                                                onClick={() => handleCollectPayment(sub)}
-                                                className="btn"
-                                                style={{
-                                                    backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem',
-                                                    borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer',
-                                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
-                                                }}
-                                            >
-                                                <DollarSign size={16} /> Cobrar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {subscriptions.map(sub => {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const isOverdue = sub.next_billing_date && sub.next_billing_date <= today;
+
+                                    return (
+                                        <tr key={sub.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.1)' : 'transparent' }}>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ fontWeight: 'bold' }}>{sub.customers?.name}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{sub.customers?.phone}</div>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div>{sub.memberships?.name}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>${sub.memberships?.price}/mes</div>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: isOverdue ? 'var(--danger)' : 'inherit', fontWeight: isOverdue ? 'bold' : 'normal' }}>
+                                                    <Calendar size={14} className={!isOverdue && "text-muted"} />
+                                                    {sub.next_billing_date || 'Pendiente'}
+                                                    {isOverdue && <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--danger)', color: 'white', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>VENCIDO</span>}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>
+                                                {sub.usage_count} lavados
+                                            </td>
+                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                <button
+                                                    onClick={() => handleCollectPayment(sub)}
+                                                    className="btn"
+                                                    style={{
+                                                        backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem',
+                                                        borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer',
+                                                        display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
+                                                    }}
+                                                >
+                                                    <DollarSign size={16} /> Cobrar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {subscriptions.length === 0 && (
                                     <tr>
                                         <td colSpan="5" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
