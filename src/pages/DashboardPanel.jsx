@@ -3505,14 +3505,24 @@ const Dashboard = () => {
                                                     🚗 {
                                                         (() => {
                                                             // Logic to display vehicle info correctly
-                                                            // Priority 1: Joined Vehicle Data (from t.vehicles)
-                                                            if (t.vehicles && t.vehicles.brand && t.vehicles.model) {
-                                                                return `${t.vehicles.brand} ${t.vehicles.model}`;
+                                                            // Priority 1: Joined Vehicle Data (from t.vehicles) - Allow partials
+                                                            if (t.vehicles) {
+                                                                const brand = t.vehicles.brand;
+                                                                const model = t.vehicles.model;
+                                                                if (brand || model) {
+                                                                    return `${brand || ''} ${model || ''}`.trim();
+                                                                }
                                                             }
+
                                                             // Priority 2: Legacy Customer Fields (from t.customers)
-                                                            if (t.customers && (t.customers.vehicle_brand || t.customers.vehicle_model)) {
-                                                                return `${t.customers.vehicle_brand || ''} ${t.customers.vehicle_model || ''}`.trim();
+                                                            if (t.customers) {
+                                                                const brand = t.customers.vehicle_brand;
+                                                                const model = t.customers.vehicle_model;
+                                                                if (brand || model) {
+                                                                    return `${brand || ''} ${model || ''}`.trim();
+                                                                }
                                                             }
+
                                                             // Priority 3: Extras (if vehicle info stored there)
                                                             if (Array.isArray(t.extras)) {
                                                                 const extraWithVehicle = t.extras.find(e => e.vehicle_model);
