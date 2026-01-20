@@ -906,10 +906,21 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehículo</div>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b' }}>
-                                    {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : '') + (selectedTransaction.vehicles?.model || customer?.vehicle_model || (selectedTransaction.extras && !Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.vehicle_model : '') || 'Vehículo')}
+                                    {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : (customer?.vehicle_brand ? customer.vehicle_brand + ' ' : '')) +
+                                        (selectedTransaction.vehicles?.model ||
+                                            customer?.vehicle_model ||
+                                            (Array.isArray(selectedTransaction.extras) ?
+                                                selectedTransaction.extras.find(e => e.vehicle_model)?.vehicle_model :
+                                                selectedTransaction.extras?.vehicle_model) ||
+                                            'Vehículo')}
                                 </div>
                                 <div style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: '600', marginTop: '0.1rem' }}>
-                                    {selectedTransaction.vehicles?.plate || customer?.vehicle_plate || (selectedTransaction.extras && !Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.vehicle_plate : '') || 'Sin Placa'}
+                                    {selectedTransaction.vehicles?.plate ||
+                                        customer?.vehicle_plate ||
+                                        (Array.isArray(selectedTransaction.extras) ?
+                                            selectedTransaction.extras.find(e => e.vehicle_plate)?.vehicle_plate :
+                                            selectedTransaction.extras?.vehicle_plate) ||
+                                        'Sin Placa'}
                                 </div>
                             </div>
 
