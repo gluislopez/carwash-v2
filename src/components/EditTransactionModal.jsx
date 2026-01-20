@@ -21,6 +21,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         vehicleId: transaction.vehicle_id || ''
     });
 
+    // NEW: State for Quick Vehicle Creation
+    const [newVehicle, setNewVehicle] = useState({ brand: '', model: '', plate: '' });
+
     const [sendReceipt, setSendReceipt] = useState(true); // WhatsApp Checkbox State (Default TRUE)
     const [isUploading, setIsUploading] = useState(false); // Upload Loading State
     const [successUrl, setSuccessUrl] = useState(null); // Success View State
@@ -117,6 +120,40 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         const methodToUse = confirmedMethod || formData.paymentMethod;
 
         setIsUploading(true); // Start loading
+
+        // 0. QUICK VEHICLE CREATION
+        let finalVehicleId = formData.vehicleId;
+        if (finalVehicleId === 'other') {
+            if (!newVehicle.brand || !newVehicle.model || !newVehicle.plate) {
+                alert('⚠️ Por favor completa los datos del nuevo vehículo (Marca, Modelo, Placa).');
+                setIsUploading(false);
+                return;
+            }
+
+            try {
+                const { data: vData, error: vError } = await supabase
+                    .from('vehicles')
+                    .insert([{
+                        customer_id: transaction.customer_id,
+                        brand: newVehicle.brand,
+                        model: newVehicle.model,
+                        plate: newVehicle.plate,
+                        type: 'sedan' // Default type
+                    }])
+                    .select()
+                    .single();
+
+                if (vError) throw vError;
+                finalVehicleId = vData.id; // Use the new ID
+                console.log("New vehicle created:", vData);
+
+            } catch (err) {
+                console.error("Error creating vehicle:", err);
+                alert("Error al guardar el nuevo vehículo: " + err.message);
+                setIsUploading(false);
+                return;
+            }
+        }
 
         // 1. DETERMINE NEW STATUS FIRST
         let newStatus = formData.status;
@@ -223,10 +260,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 commission_amount: finalCommission,
                 status: newStatus,
                 extras: extras,
-                status: newStatus,
-                extras: extras,
                 employee_id: selectedEmployeeIds[0] || null,
-                vehicle_id: formData.vehicleId || null
+                vehicle_id: finalVehicleId || null
             });
 
         } catch (error) {
@@ -387,6 +422,33 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                     </select>
                                     {(!formData.vehicleId || formData.vehicleId === '') && (
                                         <div style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>⚠️ Advertencia: Guardar sin vehículo puede causar pérdida de datos.</div>
+                                    )}
+
+                                    {/* Quick Vehicle Inputs */}
+                                    {formData.vehicleId === 'other' && (
+                                        <div style={{ marginTop: '0.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '0.5rem', borderRadius: '0.25rem' }}>
+                                            <input
+                                                placeholder="Marca (Toyota)"
+                                                className="input"
+                                                style={{ fontSize: '0.8rem', padding: '0.3rem' }}
+                                                value={newVehicle.brand}
+                                                onChange={(e) => setNewVehicle({ ...newVehicle, brand: e.target.value })}
+                                            />
+                                            <input
+                                                placeholder="Modelo (Yaris)"
+                                                className="input"
+                                                style={{ fontSize: '0.8rem', padding: '0.3rem' }}
+                                                value={newVehicle.model}
+                                                onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })}
+                                            />
+                                            <input
+                                                placeholder="Placa (ABC-123)"
+                                                className="input"
+                                                style={{ fontSize: '0.8rem', padding: '0.3rem' }}
+                                                value={newVehicle.plate}
+                                                onChange={(e) => setNewVehicle({ ...newVehicle, plate: e.target.value })}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             ) : (
