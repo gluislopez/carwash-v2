@@ -5,32 +5,32 @@ export const getServiceName = (id, servicesList) => servicesList?.find(s => s.id
 export const getEmployeeName = (id, employeesList) => employeesList?.find(e => e.id === id)?.name || 'Desconocido';
 
 export const getVehicleInfo = (t, vehiclesList, customersList) => {
-    if (!vehiclesList) return '...';
+    if (!vehiclesList && !customersList) return '...';
 
     let vehicle = null;
+    let customer = null;
 
-    // 1. Try by Direct ID
+    // 1. Fetch from vehicles table
     if (t.vehicle_id) {
-        vehicle = vehiclesList.find(v => v.id == t.vehicle_id);
+        vehicle = vehiclesList?.find(v => v.id == t.vehicle_id);
     }
 
-    // 2. Fallback: Try by Customer ID
-    if (!vehicle && t.customer_id) {
-        vehicle = vehiclesList.find(v => v.customer_id == t.customer_id);
+    // 2. Fetch from customers table
+    if (t.customer_id) {
+        customer = customersList?.find(c => c.id == t.customer_id);
     }
 
-    if (vehicle) {
-        const brand = vehicle.brand === 'Generico' || !vehicle.brand ? '' : vehicle.brand;
-        return `${brand} ${vehicle.model || ''}`.trim() || 'Sin Modelo';
-    }
+    if (!vehicle && !customer && !t.extras) return 'Modelo No Registrado';
 
-    // 3. Fallback: Try by Customer ID (Customers Table - Legacy/QuickAdd)
-    if (t.customer_id && customersList) {
-        const customer = customersList.find(c => c.id == t.customer_id);
-        if (customer && (customer.vehicle_model || customer.vehicle_plate)) {
-            return `${customer.vehicle_model || ''} ${customer.vehicle_plate ? `(${customer.vehicle_plate})` : ''}`.trim();
-        }
-    }
+    // 3. Fallback Logic: Brand
+    const brand = (vehicle?.brand && vehicle.brand !== 'null' && vehicle.brand !== 'Generico') ? vehicle.brand : (customer?.vehicle_brand || '');
 
-    return 'Modelo No Registrado';
+    // 4. Fallback Logic: Model
+    const model = vehicle?.model || customer?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Vehículo';
+
+    // 5. Fallback Logic: Plate
+    const plate = vehicle?.plate || customer?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || '';
+
+    const display = `${brand} ${model}`.trim();
+    return plate ? `${display} (${plate})` : display || 'Modelo No Registrado';
 };

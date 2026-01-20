@@ -473,9 +473,20 @@ const CustomerPortal = () => {
 
                         {/* Vehicle Info */}
                         <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : '') + (activeService.vehicles?.model || customer?.vehicle_model || (activeService.extras && !Array.isArray(activeService.extras) ? activeService.extras.vehicle_model : '') || 'Vehículo')}
+                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : (customer?.vehicle_brand ? customer.vehicle_brand + ' ' : '')) +
+                                (activeService.vehicles?.model ||
+                                    customer?.vehicle_model ||
+                                    (Array.isArray(activeService.extras) ?
+                                        activeService.extras.find(e => e.vehicle_model)?.vehicle_model :
+                                        activeService.extras?.vehicle_model) ||
+                                    'Vehículo')}
                             <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {activeService.vehicles?.plate || customer?.vehicle_plate || (activeService.extras && !Array.isArray(activeService.extras) ? activeService.extras.vehicle_plate : '') || 'Sin Placa'}
+                                {activeService.vehicles?.plate ||
+                                    customer?.vehicle_plate ||
+                                    (Array.isArray(activeService.extras) ?
+                                        activeService.extras.find(e => e.vehicle_plate)?.vehicle_plate :
+                                        activeService.extras?.vehicle_plate) ||
+                                    'Sin Placa'}
                             </span>
                         </div>
 
@@ -870,8 +881,19 @@ const CustomerPortal = () => {
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                {(tx.vehicles?.brand && tx.vehicles.brand !== 'null' ? tx.vehicles.brand + ' ' : '') + (tx.vehicles?.model || customer?.vehicle_model || (tx.extras && !Array.isArray(tx.extras) ? tx.extras.vehicle_model : '') || 'Vehículo')}
-                                {(tx.vehicles?.plate || customer?.vehicle_plate || (tx.extras && !Array.isArray(tx.extras) ? tx.extras.vehicle_plate : '')) && ` (${tx.vehicles?.plate || customer?.vehicle_plate || (tx.extras && !Array.isArray(tx.extras) ? tx.extras.vehicle_plate : '')})`}
+                                {(tx.vehicles?.brand && tx.vehicles.brand !== 'null' ? tx.vehicles.brand + ' ' : (customer?.vehicle_brand ? customer.vehicle_brand + ' ' : '')) +
+                                    (tx.vehicles?.model ||
+                                        customer?.vehicle_model ||
+                                        (Array.isArray(tx.extras) ?
+                                            tx.extras.find(e => e.vehicle_model)?.vehicle_model :
+                                            tx.extras?.vehicle_model) ||
+                                        'Vehículo')}
+                                {` (${tx.vehicles?.plate ||
+                                    customer?.vehicle_plate ||
+                                    (Array.isArray(tx.extras) ?
+                                        tx.extras.find(e => e.vehicle_plate)?.vehicle_plate :
+                                        tx.extras?.vehicle_plate) ||
+                                    'Sin Placa'})`}
                             </div>
                             <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b' }}>
                                 {tx.status === 'completed' || tx.status === 'paid' ? 'Completado' : 'En Proceso'}

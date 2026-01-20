@@ -95,14 +95,18 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     const dateStr = dateObj.toLocaleDateString('es-PR');
     const timeStr = dateObj.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' });
 
+    const brand = (transaction.vehicles?.brand && transaction.vehicles.brand !== 'null' && transaction.vehicles.brand !== 'Generico') ? transaction.vehicles.brand : (transaction.customers?.vehicle_brand || '');
+    const model = (transaction.vehicles?.model || transaction.customers?.vehicle_model || (Array.isArray(transaction.extras) ? transaction.extras.find(e => e.vehicle_model)?.vehicle_model : transaction.extras?.vehicle_model) || ' VEHICULO');
+    const plate = (transaction.vehicles?.plate || transaction.customers?.vehicle_plate || (Array.isArray(transaction.extras) ? transaction.extras.find(e => e.vehicle_plate)?.vehicle_plate : transaction.extras?.vehicle_plate) || ' SIN PLACA');
+
     doc.setFontSize(9);
     doc.text(`FECHA: ${dateStr} ${timeStr}`, 5, y);
     y += 5;
-    doc.text(`CLIENTE: ${(transaction.customers?.name || '').toUpperCase()}`, 5, y);
+    doc.text(`CLIENTE: ${(transaction.customers?.name || 'Cliente Casual').toUpperCase()}`, 5, y);
     y += 5;
-    doc.text(`AUTO: ${(transaction.customers?.vehicle_plate || '').toUpperCase()}`, 5, y);
+    doc.text(`AUTO: ${brand.toUpperCase()} ${model.toUpperCase()}`, 5, y);
     y += 4;
-    doc.text(`      (${(transaction.customers?.vehicle_model || '').toUpperCase()})`, 5, y);
+    doc.text(`      (${plate.toUpperCase()})`, 5, y);
     y += 5;
 
     if (employeeNames) {
@@ -259,12 +263,10 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
         const customerName = t.customers?.name || 'Cliente Casual';
         const serviceName = t.services?.name || 'Servicio';
 
-        let vehicleStr = '';
-        if (t.vehicles && t.vehicles.brand !== 'Generico') {
-            vehicleStr = `${t.vehicles.brand || ''} ${t.vehicles.model || ''}`;
-        } else {
-            vehicleStr = t.customers?.vehicle_model || t.customers?.vehicle_plate || '';
-        }
+        const brand = (t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico') ? t.vehicles.brand : (t.customers?.vehicle_brand || '');
+        const model = t.vehicles?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Auto';
+        const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || '';
+        const vehicleStr = `${brand} ${model}${plate ? ` (${plate})` : ''}`.trim();
 
         return [
             dateStr,

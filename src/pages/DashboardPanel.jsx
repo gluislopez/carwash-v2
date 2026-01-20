@@ -1466,9 +1466,9 @@ const Dashboard = () => {
                                     // 2.3 DETALLE DE AUTOS
                                     const txBody = completedTxs.map(t => {
                                         const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                        const brand = t.vehicles?.brand && t.vehicles.brand !== 'null' ? t.vehicles.brand : '';
-                                        const model = t.vehicles?.model || t.customers?.vehicle_model || (t.extras && t.extras.vehicle_model) || 'Auto';
-                                        const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (t.extras && t.extras.vehicle_plate) || '';
+                                        const brand = (t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico') ? t.vehicles.brand : (t.customers?.vehicle_brand || '');
+                                        const model = t.vehicles?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Auto';
+                                        const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || '';
                                         const vehicleStr = `${brand} ${model} ${plate ? `(${plate})` : ''}`.trim();
                                         const clientName = t.customers?.name || 'Cliente';
                                         const price = `$${parseFloat(t.price).toFixed(2)}`;
@@ -2437,14 +2437,9 @@ const Dashboard = () => {
                                                     const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                                     let vehicleDisplayName = 'Modelo N/A';
 
-                                                    if (vehicle) {
-                                                        const brand = (vehicle.brand === 'Generico' || vehicle.brand === 'Generic' || vehicle.brand === 'null') ? '' : (vehicle.brand || '');
-                                                        vehicleDisplayName = `${brand} ${vehicle.model || ''}`.trim();
-                                                    } else if (t.customers?.vehicle_model) {
-                                                        vehicleDisplayName = t.customers.vehicle_model;
-                                                    } else if (t.extras?.vehicle_model) {
-                                                        vehicleDisplayName = t.extras.vehicle_model;
-                                                    }
+                                                    const brand = (vehicle?.brand && vehicle.brand !== 'Generico' && vehicle.brand !== 'Generic' && vehicle.brand !== 'null') ? vehicle.brand : (t.customers?.vehicle_brand || '');
+                                                    const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
+                                                    vehicleDisplayName = `${brand} ${model}`.trim();
 
                                                     return (
                                                         <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
@@ -2506,14 +2501,9 @@ const Dashboard = () => {
                                                         const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                                         let vehicleDisplayName = 'Modelo N/A';
 
-                                                        if (vehicle) {
-                                                            const brand = (vehicle.brand === 'Generico' || vehicle.brand === 'Generic' || vehicle.brand === 'null') ? '' : (vehicle.brand || '');
-                                                            vehicleDisplayName = `${brand} ${vehicle.model || ''}`.trim();
-                                                        } else if (t.customers?.vehicle_model) {
-                                                            vehicleDisplayName = t.customers.vehicle_model;
-                                                        } else if (t.extras?.vehicle_model) {
-                                                            vehicleDisplayName = t.extras.vehicle_model;
-                                                        }
+                                                        const brand = (vehicle?.brand && vehicle.brand !== 'Generico' && vehicle.brand !== 'Generic' && vehicle.brand !== 'null') ? vehicle.brand : (t.customers?.vehicle_brand || '');
+                                                        const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
+                                                        vehicleDisplayName = `${brand} ${model}`.trim();
 
                                                         // Calculate Wash Time (Current - Started)
                                                         const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at); // Fallback to created_at if started_at missing
@@ -2531,7 +2521,10 @@ const Dashboard = () => {
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
                                                                         <div style={{ color: 'var(--text-muted)' }}>
                                                                             {t.customers?.name}
-                                                                            {(t.vehicles?.plate || t.customers?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate})</span>}
+                                                                            {(vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate)) &&
+                                                                                <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>
+                                                                                    ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate)})
+                                                                                </span>}
                                                                         </div>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
                                                                             <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>{getServiceName(t.service_id)}</div>
@@ -2604,15 +2597,17 @@ const Dashboard = () => {
                                                     .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
                                                     .map(t => {
                                                         const vehicle = vehicles.find(v => v.id === t.vehicle_id);
-                                                        const brand = t.vehicles?.brand && t.vehicles.brand !== 'null' ? t.vehicles.brand : '';
-                                                        const model = t.vehicles?.model || t.customers?.vehicle_model || t.extras?.vehicle_model || 'Modelo N/A';
+                                                        const brand = (vehicle?.brand && vehicle.brand !== 'null' && vehicle.brand !== 'Generico') ? vehicle.brand : (t.customers?.vehicle_brand || '');
+                                                        const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
                                                         const vehicleModel = `${brand} ${model}`.trim();
                                                         return (
                                                             <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                     <div>
                                                                         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
-                                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate || 'Sin Placa'})</div>
+                                                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                                            ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || 'Sin Placa'})
+                                                                        </div>
                                                                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
                                                                         <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
 
@@ -3426,7 +3421,21 @@ const Dashboard = () => {
                                             <div>
                                                 <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
                                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                                    🚗 {t.vehicles?.model || t.customers?.vehicle_model || t.extras?.vehicle_model || 'Modelo?'} <span style={{ color: 'var(--text-muted)' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate || 'Sin Placa'})</span>
+                                                    🚗 {(t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico' ? t.vehicles.brand + ' ' : (t.customers?.vehicle_brand ? t.customers.vehicle_brand + ' ' : '')) +
+                                                        (t.vehicles?.model ||
+                                                            t.customers?.vehicle_model ||
+                                                            (Array.isArray(t.extras) ?
+                                                                t.extras.find(e => e.vehicle_model)?.vehicle_model :
+                                                                t.extras?.vehicle_model) ||
+                                                            'Vehículo')}
+                                                    <span style={{ color: 'var(--text-muted)' }}>
+                                                        ({t.vehicles?.plate ||
+                                                            t.customers?.vehicle_plate ||
+                                                            (Array.isArray(t.extras) ?
+                                                                t.extras.find(e => e.vehicle_plate)?.vehicle_plate :
+                                                                t.extras?.vehicle_plate) ||
+                                                            'Sin Placa'})
+                                                    </span>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                                     <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
