@@ -352,7 +352,8 @@ const Dashboard = () => {
         price: '',
         commissionAmount: '',
         serviceTime: new Date().toTimeString().slice(0, 5),
-        extras: [] // Initialize extras
+        extras: [], // Initialize extras
+        referrerId: '' // Added for referral system
     });
 
     // PRODUCTIVITY FEATURES STATE
@@ -1182,11 +1183,16 @@ const Dashboard = () => {
         };
 
         try {
-            // SAFETY NET: If vehicle_id is missing, try to find it one last time
-            if (!newTransaction.vehicle_id && newTransaction.customer_id) {
-                const foundVehicle = vehicles.find(v => v.customer_id == newTransaction.customer_id);
-                if (foundVehicle) {
-                    newTransaction.vehicle_id = foundVehicle.id;
+            // [REFERRAL] Award Points to Referrer (+2)
+            const activeReferrerId = newCustomer.referrer_id || formData.referrerId;
+            if (activeReferrerId) {
+                const referrer = customers.find(c => c.id == activeReferrerId);
+                if (referrer) {
+                    await supabase
+                        .from('customers')
+                        .update({ points: (referrer.points || 0) + 2 })
+                        .eq('id', referrer.id);
+                    console.log(`Puntos de referido (+2) otorgados a: ${referrer.name}`);
                 }
             }
 
@@ -1222,8 +1228,10 @@ const Dashboard = () => {
                 price: '',
                 commissionAmount: '',
                 serviceTime: new Date().toTimeString().slice(0, 5),
-                extras: []
+                extras: [],
+                referrerId: ''
             });
+            setReferrerSearch('');
             // await refreshTransactions(); // Remove explicit refresh if createTransaction updates state, or keep it but ensure no race condition.
             // Actually, useSupabase updates state. refreshTransactions fetches again.
             // To be safe against duplication, let's rely on refreshTransactions but clear the form first.
@@ -3014,6 +3022,66 @@ const Dashboard = () => {
                                                                 </option>
                                                             ))}
                                                         </select>
+
+                                                        {/* REFERRER SEARCH FIELD (Select Mode) */}
+                                                        {formData.customerId && (
+                                                            <div style={{ marginTop: '0.75rem', position: 'relative', width: '100%' }}>
+                                                                <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
+                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="input"
+                                                                        placeholder="🔍 Buscar cliente referente..."
+                                                                        value={referrerSearch}
+                                                                        onChange={(e) => {
+                                                                            setReferrerSearch(e.target.value);
+                                                                            setShowReferrerSearch(true);
+                                                                        }}
+                                                                        style={{ fontSize: '0.85rem', flex: 1 }}
+                                                                    />
+                                                                    {formData.referrerId && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setFormData({ ...formData, referrerId: '' });
+                                                                                setReferrerSearch('');
+                                                                            }}
+                                                                            className="btn"
+                                                                            style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '0 0.5rem' }}
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                {showReferrerSearch && referrerSearch.length > 0 && (
+                                                                    <div style={{
+                                                                        position: 'absolute', top: '100%', left: 0, right: 0,
+                                                                        backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                                                        borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
+                                                                        boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+                                                                    }}>
+                                                                        {customers
+                                                                            .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()) && c.id != formData.customerId)
+                                                                            .slice(0, 10)
+                                                                            .map(c => (
+                                                                                <div
+                                                                                    key={c.id}
+                                                                                    onClick={() => {
+                                                                                        setFormData({ ...formData, referrerId: c.id });
+                                                                                        setReferrerSearch(c.name);
+                                                                                        setShowReferrerSearch(false);
+                                                                                    }}
+                                                                                    style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
+                                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                                >
+                                                                                    {c.name}
+                                                                                </div>
+                                                                            ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
 
                                                         {/* SEARCH TOGGLE BUTTON */}
                                                         <button
