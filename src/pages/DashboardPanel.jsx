@@ -227,9 +227,19 @@ const Dashboard = () => {
 
             // [LOYALTY] Award Point
             if (transaction.customer_id) {
+                // Award to customer (compatibility)
                 const { data: customer } = await supabase.from('customers').select('points').eq('id', transaction.customer_id).single();
                 if (customer) {
                     await supabase.from('customers').update({ points: (customer.points || 0) + 1 }).eq('id', transaction.customer_id);
+                }
+
+                // NEW: Award to vehicle independently
+                if (transaction.vehicle_id) {
+                    const { data: vehicle } = await supabase.from('vehicles').select('points').eq('id', transaction.vehicle_id).single();
+                    if (vehicle) {
+                        await supabase.from('vehicles').update({ points: (vehicle.points || 0) + 1 }).eq('id', transaction.vehicle_id);
+                        console.log(`Point awarded to vehicle ${transaction.vehicle_id}`);
+                    }
                 }
             }
 
@@ -1185,9 +1195,18 @@ const Dashboard = () => {
 
             // [LOYALTY] Deduct Points
             if (isRedemption) {
+                // Deduct from customer (compatibility)
                 const { data: customer } = await supabase.from('customers').select('points').eq('id', formData.customerId).single();
                 if (customer) {
                     await supabase.from('customers').update({ points: Math.max(0, (customer.points || 0) - 10) }).eq('id', formData.customerId);
+                }
+
+                // NEW: Deduct from vehicle independently
+                if (formData.vehicleId) {
+                    const { data: vehicle } = await supabase.from('vehicles').select('points').eq('id', formData.vehicleId).single();
+                    if (vehicle) {
+                        await supabase.from('vehicles').update({ points: Math.max(0, (vehicle.points || 0) - 10) }).eq('id', formData.vehicleId);
+                    }
                 }
             }
 

@@ -23,6 +23,8 @@ const CustomerPortal = () => {
     const [customer, setCustomer] = useState(null);
     const [history, setHistory] = useState([]);
     const [activeService, setActiveService] = useState(null);
+    const [vehicles, setVehicles] = useState([]);
+    const [selectedVehicleId, setSelectedVehicleId] = useState(null);
     const [membership, setMembership] = useState(null);
     const [subPayments, setSubPayments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -76,6 +78,21 @@ const CustomerPortal = () => {
     };
 
     const progress = calculateProgress(activeService);
+
+    // Derived Stats for Multi-Vehicle Support
+    const selectedVehicle = useMemo(() => vehicles.find(v => v.id === selectedVehicleId), [vehicles, selectedVehicleId]);
+    const vehiclePoints = selectedVehicle?.points || 0;
+    const vehicleRedeemed = selectedVehicle?.redeemed_coupons || 0;
+
+    const availableCouponsCount = useMemo(() => {
+        const earned = Math.floor(vehiclePoints / 10);
+        return Math.max(0, earned - vehicleRedeemed);
+    }, [vehiclePoints, vehicleRedeemed]);
+
+    const filteredHistory = useMemo(() => {
+        if (!selectedVehicleId) return history;
+        return history.filter(tx => tx.vehicle_id === selectedVehicleId);
+    }, [history, selectedVehicleId]);
 
     // Timer to update progress bar every minute
     useEffect(() => {
@@ -176,7 +193,20 @@ const CustomerPortal = () => {
             }
             setCustomer(custData);
 
-            // 2. Fetch History & Check Feedback
+            // 2. Fetch Vehicles
+            const { data: vData } = await supabase
+                .from('vehicles')
+                .select('*')
+                .eq('customer_id', customerId);
+
+            if (vData) {
+                setVehicles(vData);
+                if (vData.length > 0 && !selectedVehicleId) {
+                    setSelectedVehicleId(vData[0].id);
+                }
+            }
+
+            // 3. Fetch History & Check Feedback
             const { data: txData, error: txError } = await supabase
                 .from('transactions')
                 .select(`
@@ -195,12 +225,7 @@ const CustomerPortal = () => {
                 setHistory(txData);
 
                 // Loyalty Logic: 10 points = 50% OFF
-                const earned = Math.floor((custData.points || 0) / 10);
-                const redeemed = custData.redeemed_coupons || 0;
-                const available = Math.max(0, earned - redeemed);
-
-                setAvailableCoupons(available);
-                setNextCouponIndex(redeemed + 1);
+                // (Moved to use selectedVehicle points below)
 
                 // Active Service?
                 const active = txData.find(t =>
@@ -420,20 +445,55 @@ const CustomerPortal = () => {
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
+                {/* VEHICLE SELECTOR (TABS) */}
+                {vehicles.length > 1 && (
+                    <div style={{
+                        display: 'flex', gap: '0.8rem', overflowX: 'auto',
+                        padding: '0.5rem 0.2rem 1rem', marginBottom: '0.5rem',
+                        scrollbarWidth: 'none', msOverflowStyle: 'none'
+                    }} className="no-scrollbar">
+                        {vehicles.map(v => (
+                            <button
+                                key={v.id}
+                                onClick={() => setSelectedVehicleId(v.id)}
+                                style={{
+                                    flexShrink: 0, padding: '0.6rem 1.2rem',
+                                    borderRadius: '2rem', border: 'none',
+                                    backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
+                                    color: selectedVehicleId === v.id ? 'white' : '#64748b',
+                                    fontWeight: 'bold', fontSize: '0.9rem',
+                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                🚗 {v.plate}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* CUSTOMER GREETING & STATS (INTEGRATED LOYALTY) */}
                 <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', position: 'relative' }}>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
+                        {selectedVehicle && (
+                            <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
+                                {selectedVehicle.brand} {selectedVehicle.model}
+                            </div>
+                        )}
+                    </div>
                     <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{filteredHistory.length}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{vehiclePoints}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
                         </div>
                         <div style={{ textAlign: 'center', flex: 1.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem' }}>
-                            {availableCoupons > 0 ? (
+                            {availableCouponsCount > 0 ? (
                                 <button
                                     onClick={() => setShowCouponModal(true)}
                                     style={{
@@ -447,7 +507,7 @@ const CustomerPortal = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <div style={{ fontSize: '1.3rem', filter: 'grayscale(0.5)', opacity: 0.8 }}>🎁</div>
                                     <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.2rem' }}>
-                                        {10 - (customer.points % 10)} pts para 50%
+                                        {10 - (vehiclePoints % 10)} pts para 50%
                                     </div>
                                 </div>
                             )}
@@ -870,7 +930,7 @@ const CustomerPortal = () => {
                 {/* HISTORY LIST */}
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Historial Reciente</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                    {history.map(tx => (
+                    {filteredHistory.map(tx => (
                         <div
                             key={tx.id}
                             onClick={() => setSelectedTxId(tx.id)}
@@ -900,8 +960,8 @@ const CustomerPortal = () => {
                             </div>
                         </div>
                     ))}
-                    {history.length === 0 && (
-                        <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No hay historial disponible.</p>
+                    {filteredHistory.length === 0 && (
+                        <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No hay historial disponible para este vehículo.</p>
                     )}
                 </div>
 
