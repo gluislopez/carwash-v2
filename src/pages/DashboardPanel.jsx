@@ -3502,20 +3502,32 @@ const Dashboard = () => {
                                             <div>
                                                 <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
                                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                                    🚗 {(t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico' ? t.vehicles.brand + ' ' : (t.customers?.vehicle_brand ? t.customers.vehicle_brand + ' ' : '')) +
-                                                        (t.vehicles?.model ||
-                                                            t.customers?.vehicle_model ||
-                                                            (Array.isArray(t.extras) ?
-                                                                t.extras.find(e => e.vehicle_model)?.vehicle_model :
-                                                                t.extras?.vehicle_model) ||
-                                                            'Vehículo')}
+                                                    🚗 {
+                                                        (() => {
+                                                            // Logic to display vehicle info correctly
+                                                            // Priority 1: Joined Vehicle Data (from t.vehicles)
+                                                            if (t.vehicles && t.vehicles.brand && t.vehicles.model) {
+                                                                return `${t.vehicles.brand} ${t.vehicles.model}`;
+                                                            }
+                                                            // Priority 2: Legacy Customer Fields (from t.customers)
+                                                            if (t.customers && (t.customers.vehicle_brand || t.customers.vehicle_model)) {
+                                                                return `${t.customers.vehicle_brand || ''} ${t.customers.vehicle_model || ''}`.trim();
+                                                            }
+                                                            // Priority 3: Extras (if vehicle info stored there)
+                                                            if (Array.isArray(t.extras)) {
+                                                                const extraWithVehicle = t.extras.find(e => e.vehicle_model);
+                                                                if (extraWithVehicle) return extraWithVehicle.vehicle_model;
+                                                            }
+                                                            return 'Vehículo';
+                                                        })()
+                                                    }
                                                     <span style={{ color: 'var(--text-muted)' }}>
-                                                        ({t.vehicles?.plate ||
+                                                        {' '}({
+                                                            t.vehicles?.plate ||
                                                             t.customers?.vehicle_plate ||
-                                                            (Array.isArray(t.extras) ?
-                                                                t.extras.find(e => e.vehicle_plate)?.vehicle_plate :
-                                                                t.extras?.vehicle_plate) ||
-                                                            'Sin Placa'})
+                                                            (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : null) ||
+                                                            'Sin Placa'
+                                                        })
                                                     </span>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
