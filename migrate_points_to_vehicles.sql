@@ -4,7 +4,7 @@
 -- 1. Update points for the most recent vehicle of each customer
 WITH latest_vehicles AS (
     SELECT DISTINCT ON (customer_id) 
-        id as vehicle_id, 
+        vehicle_id, 
         customer_id
     FROM transactions
     WHERE customer_id IS NOT NULL 
