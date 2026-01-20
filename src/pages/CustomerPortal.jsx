@@ -315,42 +315,43 @@ const CustomerPortal = () => {
     return (
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
             {/* HERDER */}
-            <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem 3.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <img src="/logo.jpg" alt="Express CarWash" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', border: '3px solid rgba(255,255,255,0.2)' }} />
                 <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
-                <p style={{ fontSize: '1rem', opacity: 0.8 }}>Centro de Cuidado Automotriz</p>
-            </div>
+                <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>Centro de Cuidado Automotriz</p>
 
-            {/* NAVIGATION TABS */}
-            <div style={{ backgroundColor: '#1e293b', padding: '1.25rem 1rem', display: 'flex', justifyContent: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 100, borderTop: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
-                {/* QUEUE COUNTER */}
-                <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
+                {/* QUEUE COUNTER & STATUS (RESTORED TO HEADER) */}
+                <div style={{ display: 'flex', gap: '2.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>{queueCount}</div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Fila de Espera</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#60a5fa' }}>{queueCount}</div>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Fila de Espera</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isBusinessOpen ? '#4ade80' : '#ef4444' }}>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: isBusinessOpen ? '#4ade80' : '#ef4444' }}>
                             {isBusinessOpen ? 'Abierto' : 'Cerrado'}
                         </div>
-                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Estado</div>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>Estado</div>
                     </div>
                 </div>
 
+                {/* SMALLER INSTALL BUTTON */}
                 <div
                     onClick={handleInstallClick}
                     style={{
-                        fontSize: '0.9rem', marginTop: '1.5rem',
+                        fontSize: '0.8rem',
                         opacity: (deferredPrompt || isIOS) ? 1 : 0.5,
                         backgroundColor: (deferredPrompt || isIOS) ? '#4f46e5' : 'rgba(255,255,255,0.1)',
                         color: 'white',
-                        padding: '0.7rem 1.2rem',
-                        borderRadius: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '2rem',
                         cursor: (deferredPrompt || isIOS) ? 'pointer' : 'default',
-                        fontWeight: (deferredPrompt || isIOS) ? 'bold' : 'normal',
-                        transition: 'all 0.2s'
+                        fontWeight: '600',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
                     }}>
-                    📲 {isIOS ? 'Instalar en iPhone (iOS)' : 'Instalar App'}
+                    📲 {isIOS ? 'Instalar App (iOS)' : 'Instalar App'}
                 </div>
             </div>
 
@@ -438,7 +439,7 @@ const CustomerPortal = () => {
                 {activeService && (
                     <div
                         onClick={() => setSelectedTxId(activeService.id)}
-                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.6rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
+                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
                     >
                         <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                             SERVICIO EN CURSO
@@ -547,34 +548,34 @@ const CustomerPortal = () => {
                     <div
                         onClick={() => setShowCouponModal(true)}
                         style={{
-                            backgroundColor: '#4f46e5', color: 'white', padding: '0.85rem',
-                            borderRadius: '1rem', marginBottom: '0.6rem',
+                            backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
+                            borderRadius: '1rem', marginBottom: '0.75rem',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
                             cursor: 'pointer'
                         }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <div style={{ fontSize: '1.2rem' }}>🎟️</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ fontSize: '1.5rem' }}>🎟️</div>
                             <div>
-                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>¡TIENES 50% OFF!</div>
-                                <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Cupón por tus {customer.points} puntos</div>
+                                <div style={{ fontWeight: 'bold' }}>¡TIENES 50% OFF!</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Cupón por tus {customer.points} puntos</div>
                             </div>
                         </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.7rem', borderRadius: '0.5rem' }}>
                             USAR
                         </div>
                     </div>
                 ) : (
                     <div style={{
-                        backgroundColor: 'white', color: '#64748b', padding: '0.85rem',
-                        borderRadius: '1rem', marginBottom: '0.6rem',
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        backgroundColor: 'white', color: '#64748b', padding: '1rem',
+                        borderRadius: '1rem', marginBottom: '0.75rem',
+                        display: 'flex', alignItems: 'center', gap: '1rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
                     }}>
-                        <Gift size={20} className="text-purple-500" />
+                        <Gift size={24} className="text-purple-500" />
                         <div>
-                            <div style={{ fontWeight: 'bold', color: '#333', fontSize: '0.9rem' }}>Programa de Lealtad</div>
-                            <div style={{ fontSize: '0.8rem' }}>
+                            <div style={{ fontWeight: 'bold', color: '#333' }}>Programa de Lealtad</div>
+                            <div style={{ fontSize: '0.85rem' }}>
                                 {10 - (customer.points % 10)} puntos más para tu próximo 50% OFF
                             </div>
                         </div>
@@ -586,9 +587,9 @@ const CustomerPortal = () => {
                     <div style={{
                         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                         color: 'white',
-                        padding: '0.85rem',
+                        padding: '1rem',
                         borderRadius: '1rem',
-                        marginBottom: '0.6rem',
+                        marginBottom: '0.75rem',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         position: 'relative',
@@ -720,7 +721,7 @@ const CustomerPortal = () => {
 
                 {/* PROMO WINNER CARD */}
                 {showPromo && (
-                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '0.85rem', marginBottom: '0.6rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
+                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1rem', marginBottom: '0.75rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>¡Gracias x tu Feedback!</h2>
                         <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Tienes un</p>
@@ -733,7 +734,7 @@ const CustomerPortal = () => {
 
                 {/* FEEDBACK CARD (If available and not rated yet) */}
                 {!showPromo && !hasRated && latestTx && (
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.6rem', borderTop: '5px solid #EAB308' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderTop: '5px solid #EAB308' }}>
                         <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
                         <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
                             Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
@@ -773,7 +774,7 @@ const CustomerPortal = () => {
                 {/* REFERRAL SYSTEM SECTION */}
                 <div style={{
                     backgroundColor: '#10b981', color: 'white', borderRadius: '1rem',
-                    padding: '0.85rem', marginBottom: '0.6rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
+                    padding: '1rem', marginBottom: '0.75rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
                     position: 'relative', overflow: 'hidden'
                 }}>
                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
@@ -805,7 +806,7 @@ const CustomerPortal = () => {
 
 
                 {/* PAYMENT METHODS CARD */}
-                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.6rem' }}>
+                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
                     <h3 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.2rem' }}>
                         💳 Métodos de Pago
                     </h3>
