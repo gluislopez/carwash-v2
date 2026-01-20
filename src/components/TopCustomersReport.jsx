@@ -5,9 +5,18 @@ const TopCustomersReport = ({ transactions, customers }) => {
     const stats = useMemo(() => {
         if (!transactions || !customers) return [];
 
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        const currentMonthTransactions = transactions.filter(t => {
+            const tDate = new Date(t.date); // Assuming date is ISO string or compatible
+            return tDate >= startOfMonth && tDate <= endOfMonth;
+        });
+
         const customerStats = {};
 
-        transactions.forEach(t => {
+        currentMonthTransactions.forEach(t => {
             if (!t.customer_id) return;
 
             // Skip cancelled
@@ -57,7 +66,7 @@ const TopCustomersReport = ({ transactions, customers }) => {
     return (
         <div className="card" style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Award size={20} color="#f59e0b" /> Top Clientes VIP
+                <Award size={20} color="#f59e0b" /> Top Clientes VIP (Mes Actual)
             </h3>
 
             <div style={{ overflowX: 'auto' }}>

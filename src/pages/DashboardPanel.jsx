@@ -1855,7 +1855,7 @@ const Dashboard = () => {
                         <PeakHoursChart transactions={statsTransactions} />
 
                         {/* REPORT: Top Customers (New) */}
-                        <TopCustomersReport transactions={statsTransactions} customers={customers} />
+                        <TopCustomersReport transactions={transactions} customers={customers} />
                     </div>
                 </div>
             ) : (<>
