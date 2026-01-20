@@ -146,7 +146,7 @@ const Dashboard = () => {
     const { data: vehiclesData, create: createVehicle, refresh: refreshVehicles } = useSupabase('vehicles');
     const vehicles = vehiclesData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone, vehicle_brand, vehicle_model, vehicle_plate), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
     // Auto-refresh transactions every 2 seconds

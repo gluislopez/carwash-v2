@@ -81,7 +81,7 @@ const Reports = () => {
     };
 
     // Fetch all transactions with assignments
-    const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, phone, vehicle_brand, vehicle_model, vehicle_plate), services(name), vehicles(brand, model, plate), transaction_assignments(employee_id)');
+    const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), services(name), vehicles(brand, model), transaction_assignments(*)');
 
     const { data: expenses } = useSupabase('expenses');
     const { data: allNotes } = useSupabase('daily_notes');
