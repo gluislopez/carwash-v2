@@ -81,8 +81,8 @@ const CustomerPortal = () => {
 
     // Derived Stats for Multi-Vehicle Support
     const selectedVehicle = useMemo(() => vehicles.find(v => v.id === selectedVehicleId), [vehicles, selectedVehicleId]);
-    const vehiclePoints = selectedVehicle?.points || 0;
-    const vehicleRedeemed = selectedVehicle?.redeemed_coupons || 0;
+    const vehiclePoints = selectedVehicle ? selectedVehicle.points : (customer?.points || 0);
+    const vehicleRedeemed = selectedVehicle ? selectedVehicle.redeemed_coupons : (customer?.redeemed_coupons || 0);
 
     const availableCouponsCount = useMemo(() => {
         const earned = Math.floor(vehiclePoints / 10);
