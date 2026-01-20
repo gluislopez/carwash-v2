@@ -29,6 +29,40 @@ const CustomerPortal = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [isIOS, setIsIOS] = useState(false);
     const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Progress Calculation Logic
+    const calculateProgress = (service) => {
+        if (!service) return 0;
+        if (service.status === 'ready') return 100;
+        if (service.status === 'waiting') return 10;
+
+        if (service.status === 'in_progress') {
+            if (!service.started_at) return 20; // At least started
+
+            const startTime = new Date(service.started_at).getTime();
+            const now = currentTime.getTime();
+            const elapsedMinutes = (now - startTime) / (1000 * 60);
+
+            // Linear progress from 10% to 75% over 30 minutes
+            // Formula: Start + (Elapsed / Target) * (End - Start)
+            const progress = 10 + Math.min(65, (elapsedMinutes / 30) * 65);
+            return Math.floor(progress);
+        }
+        return 0;
+    };
+
+    const progress = calculateProgress(activeService);
+
+    // Timer to update progress bar every minute
+    useEffect(() => {
+        if (activeService && activeService.status === 'in_progress') {
+            const timer = setInterval(() => {
+                setCurrentTime(new Date());
+            }, 60000); // Update every minute
+            return () => clearInterval(timer);
+        }
+    }, [activeService]);
 
     // Business Status
     const [isBusinessOpen, setIsBusinessOpen] = useState(true);
@@ -699,7 +733,40 @@ const CustomerPortal = () => {
                                     {activeService.status === 'in_progress' && '🚿 En Proceso'}
                                     {activeService.status === 'ready' && '✅ Listo para Recoger'}
                                 </span>
+                                <span style={{ fontWeight: 'bold', color: '#3b82f6', fontSize: '1.1rem' }}>
+                                    {progress}%
+                                </span>
                             </div>
+
+                            {/* PROGRESS BAR */}
+                            <div style={{
+                                width: '100%',
+                                height: '10px',
+                                backgroundColor: '#e2e8f0',
+                                borderRadius: '5px',
+                                marginTop: '1rem',
+                                overflow: 'hidden',
+                                border: '1px solid #cbd5e1'
+                            }}>
+                                <div style={{
+                                    width: `${progress}%`,
+                                    height: '100%',
+                                    backgroundColor: progress === 100 ? '#10b981' : '#3b82f6',
+                                    borderRadius: '5px',
+                                    transition: 'width 1s ease-in-out',
+                                    backgroundImage: progress < 100 ? 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)' : 'none',
+                                    backgroundSize: '1rem 1rem',
+                                    animation: progress < 100 ? 'progress-shimmer 2s linear infinite' : 'none'
+                                }}></div>
+                            </div>
+                            <style>
+                                {`
+                                    @keyframes progress-shimmer {
+                                        0% { background-position: 1rem 0; }
+                                        100% { background-position: 0 0; }
+                                    }
+                                `}
+                            </style>
                         </div>
                     </div>
                 )}
