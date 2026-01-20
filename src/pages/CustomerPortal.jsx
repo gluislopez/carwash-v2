@@ -52,6 +52,15 @@ const CustomerPortal = () => {
         return 0;
     };
 
+    const formatDuration = (start, end) => {
+        if (!start) return null;
+        const s = new Date(start);
+        const e = end ? new Date(end) : new Date();
+        const diff = Math.floor((e - s) / (1000 * 60)); // minutes
+        if (diff < 0) return "0 min";
+        return `${diff} min`;
+    };
+
     const progress = calculateProgress(activeService);
 
     // Timer to update progress bar every minute
@@ -419,9 +428,9 @@ const CustomerPortal = () => {
 
                         {/* Vehicle Info */}
                         <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : '') + (activeService.vehicles?.model || activeService.customers?.vehicle_model || activeService.extras?.vehicle_model || 'Vehículo')}
+                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : '') + (activeService.vehicles?.model || customer?.vehicle_model || (activeService.extras && !Array.isArray(activeService.extras) ? activeService.extras.vehicle_model : '') || 'Vehículo')}
                             <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {activeService.vehicles?.plate || activeService.customers?.vehicle_plate || activeService.extras?.vehicle_plate}
+                                {activeService.vehicles?.plate || customer?.vehicle_plate || (activeService.extras && !Array.isArray(activeService.extras) ? activeService.extras.vehicle_plate : '') || 'Sin Placa'}
                             </span>
                         </div>
 
@@ -857,8 +866,8 @@ const CustomerPortal = () => {
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                {(tx.vehicles?.brand && tx.vehicles.brand !== 'null' ? tx.vehicles.brand + ' ' : '') + (tx.vehicles?.model || tx.customers?.vehicle_model || tx.extras?.vehicle_model || 'Vehículo')}
-                                {(tx.vehicles?.plate || tx.customers?.vehicle_plate || tx.extras?.vehicle_plate) && ` (${tx.vehicles?.plate || tx.customers?.vehicle_plate || tx.extras?.vehicle_plate})`}
+                                {(tx.vehicles?.brand && tx.vehicles.brand !== 'null' ? tx.vehicles.brand + ' ' : '') + (tx.vehicles?.model || customer?.vehicle_model || (tx.extras && !Array.isArray(tx.extras) ? tx.extras.vehicle_model : '') || 'Vehículo')}
+                                {(tx.vehicles?.plate || customer?.vehicle_plate || (tx.extras && !Array.isArray(tx.extras) ? tx.extras.vehicle_plate : '')) && ` (${tx.vehicles?.plate || customer?.vehicle_plate || (tx.extras && !Array.isArray(tx.extras) ? tx.extras.vehicle_plate : '')})`}
                             </div>
                             <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b' }}>
                                 {tx.status === 'completed' || tx.status === 'paid' ? 'Completado' : 'En Proceso'}
@@ -885,31 +894,60 @@ const CustomerPortal = () => {
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem' }}>Detalle del Servicio</h2>
                             <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>{new Date(selectedTransaction.created_at).toLocaleString()}</p>
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.25rem' }}>Vehículo</div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                    {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : '') + (selectedTransaction.vehicles?.model || selectedTransaction.customers?.vehicle_model || selectedTransaction.extras?.vehicle_model || 'Vehículo')}
+                            <div style={{ marginBottom: '1.5rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehículo</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#1e293b' }}>
+                                    {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : '') + (selectedTransaction.vehicles?.model || customer?.vehicle_model || (selectedTransaction.extras && !Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.vehicle_model : '') || 'Vehículo')}
                                 </div>
-                                <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>{selectedTransaction.vehicles?.plate || selectedTransaction.customers?.vehicle_plate || selectedTransaction.extras?.vehicle_plate || ''}</div>
-                            </div>
-
-                            <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
-                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.25rem' }}>Servicio</div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#3b82f6' }}>
-                                    {selectedTransaction.services?.name || 'Lavado'}
+                                <div style={{ fontSize: '1rem', color: '#3b82f6', fontWeight: '600', marginTop: '0.2rem' }}>
+                                    {selectedTransaction.vehicles?.plate || customer?.vehicle_plate || (selectedTransaction.extras && !Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.vehicle_plate : '') || 'Sin Placa'}
                                 </div>
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>Atendido por:</div>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Servicios Realizados</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', backgroundColor: '#eff6ff', borderRadius: '0.5rem', borderLeft: '4px solid #3b82f6' }}>
+                                        <span style={{ fontWeight: 'bold', color: '#1e40af' }}>{selectedTransaction.services?.name || 'Lavado'}</span>
+                                        <span style={{ fontWeight: 'bold', color: '#1e40af' }}>${parseFloat(selectedTransaction.price || 0).toFixed(2)}</span>
+                                    </div>
+                                    {Array.isArray(selectedTransaction.extras) && selectedTransaction.extras.map((extra, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', borderLeft: '4px solid #94a3b8', fontSize: '0.9rem' }}>
+                                            <span style={{ color: '#475569' }}>{extra.description || 'Servicio Extra'}</span>
+                                            <span style={{ fontWeight: '600', color: '#475569' }}>${parseFloat(extra.price || 0).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inicio</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fin</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</div>
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiempo en Proceso</div>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>
+                                        {formatDuration(selectedTransaction.started_at, selectedTransaction.finished_at) || 'Calculando...'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Atendido por:</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {selectedTransaction.transaction_assignments && selectedTransaction.transaction_assignments.length > 0 ? (
                                         selectedTransaction.transaction_assignments.map((assign, idx) => (
                                             <span key={idx} style={{
-                                                backgroundColor: '#eff6ff', color: '#1e40af',
+                                                backgroundColor: '#f1f5f9', color: '#334155',
                                                 padding: '0.25rem 0.75rem', borderRadius: '0.5rem',
-                                                fontSize: '0.95rem', fontWeight: '500',
-                                                display: 'flex', alignItems: 'center', gap: '0.4rem'
+                                                fontSize: '0.9rem', fontWeight: '600',
+                                                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                border: '1px solid #e2e8f0'
                                             }}>
                                                 👤 {assign.employees?.name || 'Empleado'}
                                             </span>
@@ -922,7 +960,7 @@ const CustomerPortal = () => {
 
                             <button
                                 onClick={() => setSelectedTransaction(null)}
-                                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f1f5f9', color: '#334155', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}
+                                style={{ width: '100%', padding: '0.85rem', backgroundColor: '#1e293b', color: 'white', fontWeight: 'bold', borderRadius: '0.75rem', border: 'none', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
                                 Cerrar
                             </button>
