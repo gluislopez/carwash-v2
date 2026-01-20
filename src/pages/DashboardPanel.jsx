@@ -3024,6 +3024,47 @@ const Dashboard = () => {
                                                             ))}
                                                         </select>
 
+                                                        {/* VEHICLE SELECTOR (Added for Multi-Vehicle Support) */}
+                                                        {formData.customerId && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                                                                <select
+                                                                    className="input"
+                                                                    required
+                                                                    value={formData.vehicleId}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.value === 'new_vehicle') {
+                                                                            // Trigger Add New Vehicle Logic
+                                                                            const customer = customers.find(c => c.id == formData.customerId);
+                                                                            if (customer) {
+                                                                                setNewCustomer({
+                                                                                    ...newCustomer,
+                                                                                    name: customer.name,
+                                                                                    phone: customer.phone,
+                                                                                    email: customer.email,
+                                                                                    vehicle_plate: '', // Reset for new entry
+                                                                                    vehicle_brand: '',
+                                                                                    vehicle_model: ''
+                                                                                });
+                                                                                setIsAddingCustomer(true);
+                                                                            }
+                                                                        } else {
+                                                                            setFormData({ ...formData, vehicleId: e.target.value });
+                                                                        }
+                                                                    }}
+                                                                    style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
+                                                                >
+                                                                    {vehicles.filter(v => v.customer_id == formData.customerId).map(v => (
+                                                                        <option key={v.id} value={v.id}>
+                                                                            🚗 {v.brand} {v.model} ({v.plate})
+                                                                        </option>
+                                                                    ))}
+                                                                    <option value="new_vehicle" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+                                                                        + Agregar Otro Vehículo
+                                                                    </option>
+                                                                </select>
+                                                            </div>
+                                                        )}
+
                                                         {/* REFERRER SEARCH FIELD (Select Mode) */}
                                                         {formData.customerId && (
                                                             <div style={{ marginTop: '0.75rem', position: 'relative', width: '100%' }}>
