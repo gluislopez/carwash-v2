@@ -1167,8 +1167,14 @@ const Dashboard = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+
         if (!formData.customerId || formData.customerId === '') {
             alert('Por favor selecciona un cliente.');
+            return;
+        }
+        // VALIDATION: Vehicle is now mandatory
+        if (!formData.vehicleId || formData.vehicleId === '') {
+            alert('Por favor selecciona un vehículo.');
             return;
         }
         if (!formData.serviceId || formData.serviceId === '') {
@@ -3542,11 +3548,6 @@ const Dashboard = () => {
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                                     <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
-                                                    <span>•</span>
-                                                    {/* DEBUG INFO */}
-                                                    <span style={{ fontSize: '0.7rem', color: 'orange', border: '1px solid orange', padding: '0 4px', borderRadius: '4px' }}>
-                                                        vID: {t.vehicle_id || 'NULL'} | Joined: {t.vehicles ? 'OK' : 'NULL'}
-                                                    </span>
                                                     <span>•</span>
                                                     <span style={{
                                                         padding: '0.1rem 0.5rem',
