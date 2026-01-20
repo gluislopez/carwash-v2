@@ -1,3 +1,4 @@
+// Customer Portal - Last Updated: 2026-01-20
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
