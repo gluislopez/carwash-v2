@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard } from 'lucide-react';
+import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard, List } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
@@ -40,6 +40,7 @@ const CustomerPortal = () => {
     const [availableCoupons, setAvailableCoupons] = useState(0);
     const [nextCouponIndex, setNextCouponIndex] = useState(0);
     const [showCouponModal, setShowCouponModal] = useState(false);
+    const [showVehiclesModal, setShowVehiclesModal] = useState(false); // NEW MODAL STATE
 
     // PWA State
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -447,47 +448,146 @@ const CustomerPortal = () => {
                 </div>
             )}
 
+            {/* VEHICLES LIST MODAL */}
+            {showVehiclesModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    padding: '1rem'
+                }} onClick={() => setShowVehiclesModal(false)}>
+                    <div style={{
+                        backgroundColor: 'white', padding: '1.5rem',
+                        borderRadius: '1rem', width: '100%', maxWidth: '450px',
+                        maxHeight: '80vh', overflowY: 'auto'
+                    }} onClick={e => e.stopPropagation()}>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b' }}>Mis Vehículos y Puntos</h2>
+                            <button onClick={() => setShowVehiclesModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {vehicles.map(v => (
+                                <div key={v.id} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '1rem', borderRadius: '0.8rem',
+                                    backgroundColor: selectedVehicleId === v.id ? '#eff6ff' : '#f8fafc',
+                                    border: selectedVehicleId === v.id ? '2px solid #3b82f6' : '1px solid #e2e8f0'
+                                }}>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1rem' }}>
+                                            {v.brand} {v.model}
+                                        </div>
+                                        <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                                            {v.plate}
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
+                                            {v.points || 0} pts
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedVehicleId(v.id);
+                                                setShowVehiclesModal(false);
+                                            }}
+                                            style={{
+                                                fontSize: '0.75rem', padding: '0.3rem 0.6rem',
+                                                backgroundColor: '#3b82f6', color: 'white',
+                                                border: 'none', borderRadius: '0.4rem',
+                                                marginTop: '0.2rem', cursor: 'pointer'
+                                            }}
+                                        >
+                                            Ver Historial
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                            <button
+                                onClick={() => {
+                                    setSelectedVehicleId(null);
+                                    setShowVehiclesModal(false);
+                                }}
+                                style={{
+                                    width: '100%', padding: '0.8rem',
+                                    backgroundColor: '#94a3b8', color: 'white',
+                                    border: 'none', borderRadius: '0.8rem',
+                                    fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer'
+                                }}
+                            >
+                                Ver Resumen General (Todos)
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
                 {/* VEHICLE SELECTOR (TABS) */}
                 {vehicles.length > 0 && (
-                    <div style={{
-                        display: 'flex', gap: '0.8rem', overflowX: 'auto',
-                        padding: '0.5rem 0.2rem 1rem', marginBottom: '0.5rem',
-                        scrollbarWidth: 'none', msOverflowStyle: 'none'
-                    }} className="no-scrollbar">
-                        <button
-                            onClick={() => setSelectedVehicleId(null)}
-                            style={{
-                                flexShrink: 0, padding: '0.6rem 1.2rem',
-                                borderRadius: '2rem', border: 'none',
-                                backgroundColor: selectedVehicleId === null ? '#3b82f6' : 'white',
-                                color: selectedVehicleId === null ? 'white' : '#64748b',
-                                fontWeight: 'bold', fontSize: '0.9rem',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            📦 Todos
-                        </button>
-                        {vehicles.map(v => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <div style={{
+                            display: 'flex', gap: '0.8rem', overflowX: 'auto', flex: 1,
+                            padding: '0.5rem 0.2rem 1rem',
+                            scrollbarWidth: 'none', msOverflowStyle: 'none'
+                        }} className="no-scrollbar">
                             <button
-                                key={v.id}
-                                onClick={() => setSelectedVehicleId(v.id)}
+                                onClick={() => setSelectedVehicleId(null)}
                                 style={{
                                     flexShrink: 0, padding: '0.6rem 1.2rem',
                                     borderRadius: '2rem', border: 'none',
-                                    backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
-                                    color: selectedVehicleId === v.id ? 'white' : '#64748b',
+                                    backgroundColor: selectedVehicleId === null ? '#3b82f6' : 'white',
+                                    color: selectedVehicleId === null ? 'white' : '#64748b',
                                     fontWeight: 'bold', fontSize: '0.9rem',
                                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
                                     transition: 'all 0.2s'
                                 }}
                             >
-                                🚗 {v.plate}
+                                📦 Todos
                             </button>
-                        ))}
+                            {vehicles.map(v => (
+                                <button
+                                    key={v.id}
+                                    onClick={() => setSelectedVehicleId(v.id)}
+                                    style={{
+                                        flexShrink: 0, padding: '0.6rem 1.2rem',
+                                        borderRadius: '2rem', border: 'none',
+                                        backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
+                                        color: selectedVehicleId === v.id ? 'white' : '#64748b',
+                                        fontWeight: 'bold', fontSize: '0.9rem',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🚗 {v.plate}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setShowVehiclesModal(true)}
+                            style={{
+                                padding: '0.6rem', // Square button
+                                borderRadius: '50%', border: 'none',
+                                backgroundColor: 'white', color: '#3b82f6',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                cursor: 'pointer', flexShrink: 0,
+                                marginBottom: '0.5rem' // Align with scrollbar padding
+                            }}
+                            title="Ver Lista de Vehículos"
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <List size={20} />
+                            </div>
+                        </button>
                     </div>
                 )}
 
