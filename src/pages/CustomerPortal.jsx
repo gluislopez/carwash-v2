@@ -314,14 +314,14 @@ const CustomerPortal = () => {
     return (
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
             {/* HERDER */}
-            <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '1.5rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img src="/logo.jpg" alt="Express CarWash" style={{ width: '60px', height: '60px', borderRadius: '1rem', marginBottom: '0.75rem', border: '3px solid rgba(255,255,255,0.2)' }} />
-                <h1 style={{ fontSize: '1.6rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>Express CarWash</h1>
-                <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Centro de Cuidado Automotriz</p>
+            <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <img src="/logo.jpg" alt="Express CarWash" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', border: '3px solid rgba(255,255,255,0.2)' }} />
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
+                <p style={{ fontSize: '1rem', opacity: 0.8 }}>Centro de Cuidado Automotriz</p>
             </div>
 
             {/* NAVIGATION TABS */}
-            <div style={{ backgroundColor: '#1e293b', padding: '0.8rem 1rem', display: 'flex', justifyContent: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 100, borderTop: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
+            <div style={{ backgroundColor: '#1e293b', padding: '1.25rem 1rem', display: 'flex', justifyContent: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 100, borderTop: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
                 {/* QUEUE COUNTER */}
                 <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
                     <div style={{ textAlign: 'center' }}>
@@ -416,18 +416,18 @@ const CustomerPortal = () => {
                 </div>
             )}
 
-            <div style={{ maxWidth: '600px', margin: '-1.25rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
+            <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
                 {/* CUSTOMER GREETING & STATS (MOVED TO TOP) */}
-                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
-                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
-                    <div style={{ marginTop: '0.8rem', display: 'flex', gap: '1.5rem' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
+                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.5rem' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
                         </div>
                     </div>
@@ -437,7 +437,7 @@ const CustomerPortal = () => {
                 {activeService && (
                     <div
                         onClick={() => setSelectedTxId(activeService.id)}
-                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
+                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
                     >
                         <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                             SERVICIO EN CURSO
@@ -546,8 +546,8 @@ const CustomerPortal = () => {
                     <div
                         onClick={() => setShowCouponModal(true)}
                         style={{
-                            backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
-                            borderRadius: '1rem', marginBottom: '0.75rem',
+                            backgroundColor: '#4f46e5', color: 'white', padding: '1.25rem',
+                            borderRadius: '1rem', marginBottom: '1rem',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
                             cursor: 'pointer'
@@ -565,8 +565,8 @@ const CustomerPortal = () => {
                     </div>
                 ) : (
                     <div style={{
-                        backgroundColor: 'white', color: '#64748b', padding: '1rem',
-                        borderRadius: '1rem', marginBottom: '0.75rem',
+                        backgroundColor: 'white', color: '#64748b', padding: '1.25rem',
+                        borderRadius: '1rem', marginBottom: '1rem',
                         display: 'flex', alignItems: 'center', gap: '1rem',
                         boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
                     }}>
@@ -589,9 +589,9 @@ const CustomerPortal = () => {
                     <div style={{
                         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
                         color: 'white',
-                        padding: '1rem',
+                        padding: '1.25rem',
                         borderRadius: '1rem',
-                        marginBottom: '0.75rem',
+                        marginBottom: '1rem',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         position: 'relative',
@@ -723,7 +723,7 @@ const CustomerPortal = () => {
 
                 {/* PROMO WINNER CARD */}
                 {showPromo && (
-                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1rem', marginBottom: '0.75rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
+                    <div style={{ backgroundColor: '#4f46e5', color: 'white', borderRadius: '1rem', padding: '1.25rem', marginBottom: '1rem', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>¡Gracias x tu Feedback!</h2>
                         <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Tienes un</p>
@@ -736,7 +736,7 @@ const CustomerPortal = () => {
 
                 {/* FEEDBACK CARD (If available and not rated yet) */}
                 {!showPromo && !hasRated && latestTx && (
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem', borderTop: '5px solid #EAB308' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1rem', borderTop: '5px solid #EAB308' }}>
                         <h3 style={{ fontWeight: 'bold', color: '#CA8A04', marginBottom: '0.5rem' }}>¡Tu Opinión Cuenta!</h3>
                         <p style={{ color: '#4B5563', marginBottom: '1rem', fontSize: '0.9rem' }}>
                             Califica y comenta lo bueno y las recomendaciones para tu servicio de hoy ({latestTx.services?.name}) y <strong>gana un descuento</strong>.
@@ -776,7 +776,7 @@ const CustomerPortal = () => {
                 {/* REFERRAL SYSTEM SECTION */}
                 <div style={{
                     backgroundColor: '#10b981', color: 'white', borderRadius: '1rem',
-                    padding: '1rem', marginBottom: '0.75rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
+                    padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)',
                     position: 'relative', overflow: 'hidden'
                 }}>
                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.15 }}>
@@ -808,7 +808,7 @@ const CustomerPortal = () => {
 
 
                 {/* PAYMENT METHODS CARD */}
-                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
+                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1.25rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1rem' }}>
                     <h3 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.2rem' }}>
                         💳 Métodos de Pago
                     </h3>
@@ -876,13 +876,13 @@ const CustomerPortal = () => {
                 </div>
 
                 {/* HISTORY LIST */}
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.75rem', paddingLeft: '0.5rem' }}>Historial Reciente</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Historial Reciente</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                     {history.map(tx => (
                         <div
                             key={tx.id}
                             onClick={() => setSelectedTxId(tx.id)}
-                            style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '0.75rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
+                            style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
                                 <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{tx.services?.name || 'Servicio'}</span>
