@@ -64,46 +64,46 @@ const ServiceAnalyticsChart = ({ transactions }) => {
     }, [transactions, timeRange]);
 
     return (
-        <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Resumen de Servicios</h3>
-                <div style={{ display: 'flex', gap: '0.5rem', backgroundColor: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '0.5rem' }}>
+        <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>Resumen de Servicios</h3>
+                <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '0.5rem' }}>
                     {['day', 'week', 'month', 'year'].map(range => (
                         <button
                             key={range}
                             onClick={() => setTimeRange(range)}
                             style={{
-                                padding: '0.25rem 0.75rem',
+                                padding: '0.2rem 0.5rem',
                                 borderRadius: '0.25rem',
                                 border: 'none',
                                 backgroundColor: timeRange === range ? 'var(--primary)' : 'transparent',
                                 color: timeRange === range ? 'white' : 'var(--text-muted)',
                                 cursor: 'pointer',
-                                fontSize: '0.85rem',
+                                fontSize: '0.75rem',
                                 fontWeight: '500',
                                 transition: 'all 0.2s'
                             }}
                         >
-                            {range === 'day' ? 'Día' : range === 'week' ? 'Semana' : range === 'month' ? 'Mes' : 'Año'}
+                            {range === 'day' ? 'Día' : range === 'week' ? 'Sem' : range === 'month' ? 'Mes' : 'Año'}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div style={{ height: '300px', width: '100%' }}>
+            <div style={{ height: '250px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
                         <XAxis
                             dataKey="name"
                             stroke="var(--text-muted)"
-                            fontSize={12}
+                            fontSize={11}
                             tickLine={false}
                             axisLine={false}
                         />
                         <YAxis
                             stroke="var(--text-muted)"
-                            fontSize={12}
+                            fontSize={11}
                             tickLine={false}
                             axisLine={false}
                             allowDecimals={false}

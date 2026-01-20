@@ -1832,7 +1832,7 @@ const Dashboard = () => {
                 <div style={{ padding: '1rem' }}>
 
                     {/* KPI CARDS */}
-                    <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                    <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                         <div className="card" style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: '1rem', borderLeft: '4px solid #10b981' }}>
                             <div style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 'bold' }}>Ticket Promedio</div>
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e293b' }}>${averageTicket.toFixed(2)}</div>
@@ -1847,7 +1847,7 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                         {/* CHART 1: Service Analytics (Existing) */}
                         <ServiceAnalyticsChart transactions={statsTransactions} />
 

@@ -64,59 +64,60 @@ const TopCustomersReport = ({ transactions, customers }) => {
     };
 
     return (
-        <div className="card" style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Award size={20} color="#f59e0b" /> Top Clientes VIP (Mes Actual)
+        <div className="card" style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Award size={18} color="#f59e0b" /> Top Clientes VIP (Mes Actual)
             </h3>
 
             <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left', color: '#64748b', fontSize: '0.85rem' }}>
-                            <th style={{ padding: '0.75rem' }}>Cliente</th>
-                            <th style={{ padding: '0.75rem' }}>Visitas</th>
-                            <th style={{ padding: '0.75rem' }}>Total Gastado</th>
-                            <th style={{ padding: '0.75rem' }}>Última Visita</th>
-                            <th style={{ padding: '0.75rem', textAlign: 'right' }}>Acción</th>
+                        <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left', color: '#64748b', fontSize: '0.75rem' }}>
+                            <th style={{ padding: '0.5rem' }}>Cliente</th>
+                            <th style={{ padding: '0.5rem' }}>Visitas</th>
+                            <th style={{ padding: '0.5rem' }}>Gastado</th>
+                            <th style={{ padding: '0.5rem' }}>Ult. Visita</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         {stats.map((c, idx) => (
-                            <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}>
-                                <td style={{ padding: '0.75rem', fontWeight: '500' }}>
+                            <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+                                <td style={{ padding: '0.5rem', fontWeight: '500' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <span style={{
-                                            width: '24px', height: '24px', borderRadius: '50%', backgroundColor: idx < 3 ? '#fbbf24' : '#f1f5f9',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', color: idx < 3 ? 'white' : '#64748b'
+                                            width: '20px', height: '20px', borderRadius: '50%', backgroundColor: idx < 3 ? '#fbbf24' : '#f1f5f9',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold', color: idx < 3 ? 'white' : '#64748b',
+                                            flexShrink: 0
                                         }}>
                                             {idx + 1}
                                         </span>
                                         <span style={{ color: 'black' }}>{c.name}</span>
                                     </div>
-                                    {c.phone && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '2rem' }}>{c.phone}</div>}
+                                    {c.phone && <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '1.8rem' }}>{c.phone}</div>}
                                 </td>
-                                <td style={{ padding: '0.75rem' }}>
-                                    <span style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                <td style={{ padding: '0.5rem' }}>
+                                    <span style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.5rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 'bold' }}>
                                         {c.visits}
                                     </span>
                                 </td>
-                                <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#10b981' }}>
+                                <td style={{ padding: '0.5rem', fontWeight: 'bold', color: '#10b981' }}>
                                     ${c.spent.toFixed(2)}
                                 </td>
-                                <td style={{ padding: '0.75rem', color: '#64748b', fontSize: '0.85rem' }}>
+                                <td style={{ padding: '0.5rem', color: '#64748b', fontSize: '0.8rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                        <Calendar size={14} />
+                                        <Calendar size={12} />
                                         {c.lastVisit?.toLocaleDateString()}
                                     </div>
                                 </td>
-                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                                     {c.phone && (
                                         <button
                                             onClick={() => handleCopyPhone(c.phone)}
-                                            style={{ border: '1px solid #e2e8f0', background: 'white', padding: '0.4rem', borderRadius: '0.4rem', cursor: 'pointer', color: '#64748b' }}
+                                            style={{ border: '1px solid #e2e8f0', background: 'white', padding: '0.3rem', borderRadius: '0.3rem', cursor: 'pointer', color: '#64748b' }}
                                             title="Copiar Teléfono"
                                         >
-                                            <Phone size={16} />
+                                            <Phone size={14} />
                                         </button>
                                     )}
                                 </td>

@@ -29,25 +29,25 @@ const PeakHoursChart = ({ transactions }) => {
     }, [transactions]);
 
     return (
-        <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'white', borderRadius: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#1e293b' }}>
-                🔥 Horas Pico (Tráfico Promedio)
+        <div className="card" style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'white', borderRadius: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#1e293b' }}>
+                🔥 Horas Pico
             </h3>
 
-            <div style={{ height: '300px', width: '100%' }}>
+            <div style={{ height: '250px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                         <XAxis
                             dataKey="label"
                             stroke="#64748b"
-                            fontSize={12}
+                            fontSize={11}
                             tickLine={false}
                             axisLine={false}
                         />
                         <YAxis
                             stroke="#64748b"
-                            fontSize={12}
+                            fontSize={11}
                             tickLine={false}
                             axisLine={false}
                             allowDecimals={false}
@@ -65,8 +65,8 @@ const PeakHoursChart = ({ transactions }) => {
                     </BarChart>
                 </ResponsiveContainer>
             </div>
-            <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
-                * Rojo: Muy Alto tráfico | Amarillo: Moderado | Azul: Normal
+            <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center' }}>
+                * Rojo: Muy Alto | Amarillo: Moderado | Azul: Normal
             </p>
         </div>
     );
