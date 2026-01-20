@@ -86,8 +86,8 @@ const CustomerPortal = () => {
     const totalVehiclePoints = useMemo(() => vehicles.reduce((sum, v) => sum + (v.points || 0), 0), [vehicles]);
     const totalVehicleRedeemed = useMemo(() => vehicles.reduce((sum, v) => sum + (v.redeemed_coupons || 0), 0), [vehicles]);
 
-    const vehiclePoints = selectedVehicle ? selectedVehicle.points : totalVehiclePoints;
-    const vehicleRedeemed = selectedVehicle ? selectedVehicle.redeemed_coupons : totalVehicleRedeemed;
+    const vehiclePoints = selectedVehicle ? selectedVehicle.points : (customer?.points || totalVehiclePoints || 0);
+    const vehicleRedeemed = selectedVehicle ? selectedVehicle.redeemed_coupons : (customer?.redeemed_coupons || totalVehicleRedeemed || 0);
 
     const availableCouponsCount = useMemo(() => {
         const earned = Math.floor(vehiclePoints / 10);
@@ -958,12 +958,12 @@ const CustomerPortal = () => {
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
                                 {(() => {
-                                    // 1. Linked Vehicle
+                                    // 1. Linked Vehicle (FROM JOIN)
                                     if (tx.vehicles && tx.vehicles.brand && tx.vehicles.brand !== 'null') {
                                         return `${tx.vehicles.brand} ${tx.vehicles.model || ''} (${tx.vehicles.plate || 'Sin Placa'})`;
                                     }
 
-                                    // 2. Transaction Metadata (Extras)
+                                    // 2. Transaction Metadata (FROM EXTRAS JSON)
                                     const extraBrand = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_brand)?.vehicle_brand : tx.extras?.vehicle_brand;
                                     const extraModel = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_model)?.vehicle_model : tx.extras?.vehicle_model;
                                     const extraPlate = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_plate)?.vehicle_plate : tx.extras?.vehicle_plate;
@@ -972,8 +972,20 @@ const CustomerPortal = () => {
                                         return `${extraBrand || ''} ${extraModel || 'Vehículo'} (${extraPlate || 'Sin Placa'})`;
                                     }
 
-                                    // 3. Customer Legacy (Last Resort)
-                                    return `${customer?.vehicle_brand || ''} ${customer?.vehicle_model || 'Vehículo'} (${customer?.vehicle_plate || 'Sin Placa'})`;
+                                    // 3. Linked Vehicle (FALLBACK SEARCH IN STATE)
+                                    if (tx.vehicle_id) {
+                                        const v = vehicles.find(v => v.id === tx.vehicle_id);
+                                        if (v) return `${v.brand || ''} ${v.model || 'Vehículo'} (${v.plate || 'Sin Placa'})`;
+                                    }
+
+                                    // 4. Customer Legacy (ONLY IF NO OTHER DATA AT ALL)
+                                    if (customer?.vehicle_model || customer?.vehicle_plate) {
+                                        // ONLY use this if there's no vehicle_id and no extras.
+                                        // This is the "old guest" or "old single car" path.
+                                        return `${customer?.vehicle_brand || ''} ${customer?.vehicle_model || 'Vehículo'} (${customer?.vehicle_plate || 'Sin Placa'})`;
+                                    }
+
+                                    return 'Vehículo no especificado';
                                 })()}
                             </div>
                             <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b' }}>
