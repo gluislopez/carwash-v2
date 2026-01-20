@@ -420,17 +420,37 @@ const CustomerPortal = () => {
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
-                {/* CUSTOMER GREETING & STATS (MOVED TO TOP) */}
-                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
+                {/* CUSTOMER GREETING & STATS (INTEGRATED LOYALTY) */}
+                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', position: 'relative' }}>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
-                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.5rem' }}>
-                        <div style={{ textAlign: 'center' }}>
+                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                        <div style={{ textAlign: 'center', flex: 1 }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center', flex: 1 }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
+                        </div>
+                        <div style={{ textAlign: 'center', flex: 1.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem' }}>
+                            {availableCoupons > 0 ? (
+                                <button
+                                    onClick={() => setShowCouponModal(true)}
+                                    style={{
+                                        backgroundColor: '#4f46e5', color: 'white', padding: '0.4rem 0.6rem',
+                                        borderRadius: '0.5rem', border: 'none', fontWeight: 'bold',
+                                        fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)'
+                                    }}>
+                                    🎁 USAR 50% OFF
+                                </button>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '1.3rem', filter: 'grayscale(0.5)', opacity: 0.8 }}>🎁</div>
+                                    <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.2rem' }}>
+                                        {10 - (customer.points % 10)} pts para 50%
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -543,44 +563,7 @@ const CustomerPortal = () => {
                 )}
 
 
-                {/* LOYALTY COUPON BADGE */}
-                {availableCoupons > 0 ? (
-                    <div
-                        onClick={() => setShowCouponModal(true)}
-                        style={{
-                            backgroundColor: '#4f46e5', color: 'white', padding: '1rem',
-                            borderRadius: '1rem', marginBottom: '0.75rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
-                            cursor: 'pointer'
-                        }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ fontSize: '1.5rem' }}>🎟️</div>
-                            <div>
-                                <div style={{ fontWeight: 'bold' }}>¡TIENES 50% OFF!</div>
-                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Cupón por tus {customer.points} puntos</div>
-                            </div>
-                        </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.7rem', borderRadius: '0.5rem' }}>
-                            USAR
-                        </div>
-                    </div>
-                ) : (
-                    <div style={{
-                        backgroundColor: 'white', color: '#64748b', padding: '1rem',
-                        borderRadius: '1rem', marginBottom: '0.75rem',
-                        display: 'flex', alignItems: 'center', gap: '1rem',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                    }}>
-                        <Gift size={24} className="text-purple-500" />
-                        <div>
-                            <div style={{ fontWeight: 'bold', color: '#333' }}>Programa de Lealtad</div>
-                            <div style={{ fontSize: '0.85rem' }}>
-                                {10 - (customer.points % 10)} puntos más para tu próximo 50% OFF
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* LOYALTY SECTION REMOVED (INTEGRATED ABOVE) */}
 
                 {/* MEMBERSHIP CARD */}
                 {membership && (
