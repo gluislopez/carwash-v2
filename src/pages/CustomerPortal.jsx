@@ -171,9 +171,8 @@ const CustomerPortal = () => {
             if (!txError && txData) {
                 setHistory(txData);
 
-                // Loyalty Logic
-                const totalVisits = txData.length;
-                const earned = Math.floor(totalVisits / 5);
+                // Loyalty Logic: 10 points = 50% OFF
+                const earned = Math.floor((custData.points || 0) / 10);
                 const redeemed = custData.redeemed_coupons || 0;
                 const available = Math.max(0, earned - redeemed);
 
@@ -387,6 +386,21 @@ const CustomerPortal = () => {
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
+                {/* CUSTOMER GREETING & STATS (MOVED TO TOP) */}
+                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
+                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.5rem' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* ACTIVE SERVICE (MOVED TO TOP) */}
                 {activeService && (
                     <div
@@ -509,8 +523,8 @@ const CustomerPortal = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <div style={{ fontSize: '1.5rem' }}>🎟️</div>
                             <div>
-                                <div style={{ fontWeight: 'bold' }}>¡TIENES 10% OFF!</div>
-                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Visita #{nextCouponIndex * 5} alcanzada</div>
+                                <div style={{ fontWeight: 'bold' }}>¡TIENES 50% OFF!</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Cupón por tus {customer.points} puntos</div>
                             </div>
                         </div>
                         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', backgroundColor: 'white', color: '#4f46e5', padding: '0.2rem 0.8rem', borderRadius: '0.5rem' }}>
@@ -528,11 +542,11 @@ const CustomerPortal = () => {
                         <div>
                             <div style={{ fontWeight: 'bold', color: '#333' }}>Programa de Lealtad</div>
                             <div style={{ fontSize: '0.85rem' }}>
-                                {5 - (history.length % 5)} visitas más para tu próximo 10% OFF
+                                {10 - (customer.points % 10)} puntos más para tu próximo 50% OFF
                             </div>
                             {/* Simple Progress Bar */}
                             <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', marginTop: '0.5rem' }}>
-                                <div style={{ width: `${(history.length % 5) * 20}%`, height: '100%', backgroundColor: '#a855f7', borderRadius: '3px' }}></div>
+                                <div style={{ width: `${(customer.points % 10) * 10}%`, height: '100%', backgroundColor: '#a855f7', borderRadius: '3px' }}></div>
                             </div>
                         </div>
                     </div>
@@ -644,7 +658,7 @@ const CustomerPortal = () => {
                             </button>
 
                             <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4f46e5', marginBottom: '0.5rem' }}>¡Felicidades!</h2>
-                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Muestra este código al cajero para reclamar tu 10% de descuento.</p>
+                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Muestra este código al cajero para reclamar tu 50% de descuento.</p>
 
                             <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', border: '2px dashed #4f46e5', display: 'inline-block', marginBottom: '1.5rem' }}>
                                 <QRCode
@@ -725,20 +739,7 @@ const CustomerPortal = () => {
                     </div>
                 )}
 
-                {/* CUSTOMER CARD */}
-                <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
-                    <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.5rem' }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{history.length}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{customer.points || 0}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
-                        </div>
-                    </div>
-                </div>
+
 
                 {/* REFERRAL SYSTEM SECTION */}
                 <div style={{
