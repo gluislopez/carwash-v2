@@ -55,8 +55,8 @@ const CustomerPortal = () => {
     const formatDuration = (start, end) => {
         if (!start) return null;
         const s = new Date(start);
-        const e = end ? new Date(end) : new Date();
-        const diff = Math.floor((e - s) / (1000 * 60)); // minutes
+        const e = end ? new Date(end) : currentTime;
+        const diff = Math.floor((e.getTime() - s.getTime()) / (1000 * 60)); // minutes
         if (diff < 0) return "0 min";
         return `${diff} min`;
     };
@@ -923,19 +923,41 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inicio</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'waiting' ? 'Pendiente' : '---')}</div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fin</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.finished_at ? new Date(selectedTransaction.finished_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'ready' ? '---' : 'En proceso')}</div>
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiempo en Proceso</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>
-                                        {formatDuration(selectedTransaction.started_at, selectedTransaction.finished_at) || 'Calculando...'}
+                                        {formatDuration(selectedTransaction.started_at, selectedTransaction.finished_at) || (selectedTransaction.status === 'waiting' ? '---' : 'Calculando...')}
                                     </div>
                                 </div>
                             </div>
+
+                            {/* PROGRESS BAR IN MODAL */}
+                            {(selectedTransaction.status === 'in_progress' || selectedTransaction.status === 'waiting' || selectedTransaction.status === 'ready') && (
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Progreso</span>
+                                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#3b82f6' }}>{calculateProgress(selectedTransaction)}%</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '12px', backgroundColor: '#e2e8f0', borderRadius: '6px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                                        <div style={{
+                                            width: `${calculateProgress(selectedTransaction)}%`,
+                                            height: '100%',
+                                            backgroundColor: calculateProgress(selectedTransaction) === 100 ? '#10b981' : '#3b82f6',
+                                            borderRadius: '6px',
+                                            transition: 'width 1s ease-in-out',
+                                            backgroundImage: calculateProgress(selectedTransaction) < 100 ? 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)' : 'none',
+                                            backgroundSize: '1rem 1rem',
+                                            animation: calculateProgress(selectedTransaction) < 100 ? 'progress-shimmer 2s linear infinite' : 'none'
+                                        }}></div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Atendido por:</div>
