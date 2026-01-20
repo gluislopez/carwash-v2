@@ -387,6 +387,114 @@ const CustomerPortal = () => {
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
 
+                {/* ACTIVE SERVICE (MOVED TO TOP) */}
+                {activeService && (
+                    <div
+                        onClick={() => setSelectedTransaction(activeService)}
+                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
+                    >
+                        <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                            SERVICIO EN CURSO
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Ver detalles &rarr;</span>
+                        </h3>
+
+                        {/* Service Name with High Contrast */}
+                        <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.2rem' }}>
+                            {activeService.services?.name || 'Lavado'}
+                        </div>
+
+                        {/* Vehicle Info */}
+                        <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
+                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : '') + (activeService.vehicles?.model || activeService.customers?.vehicle_model || activeService.extras?.vehicle_model || 'Vehículo')}
+                            <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                {activeService.vehicles?.plate || activeService.customers?.vehicle_plate || activeService.extras?.vehicle_plate}
+                            </span>
+                        </div>
+
+                        {/* Extras Count & Text */}
+                        {activeService.extras && activeService.extras.length > 0 && (
+                            <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                                + {activeService.extras.length} servicios extra <span style={{ fontSize: '0.8rem' }}>({activeService.extras.map(e => e.description).join(', ')})</span>
+                            </div>
+                        )}
+
+                        {/* TOTAL COST DISPLAY */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: '0.8rem' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#10b981' }}>
+                                Total: ${parseFloat(activeService.price || 0).toFixed(2)}
+                            </div>
+                            {stripeLink && (
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'normal' }}>
+                                    Total con tarjeta crédito o débito: ${(parseFloat(activeService.price || 0) * 1.03).toFixed(2)}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ marginTop: '0.5rem' }}>
+                            {/* EMPLOYEES LIST */}
+                            {activeService.transaction_assignments && activeService.transaction_assignments.length > 0 && (
+                                <div style={{ marginBottom: '0.8rem' }}>
+                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.3rem' }}>Atendido por:</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        {activeService.transaction_assignments.map((assign, idx) => (
+                                            <span key={idx} style={{
+                                                backgroundColor: '#eff6ff', color: '#1e40af',
+                                                padding: '0.25rem 0.6rem', borderRadius: '0.5rem',
+                                                fontSize: '0.8rem', fontWeight: '600',
+                                                display: 'flex', alignItems: 'center', gap: '0.3rem'
+                                            }}>
+                                                👤 {assign.employees?.name || 'Empleado'}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', backgroundColor: '#eff6ff', color: '#3b82f6', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                    {activeService.status === 'waiting' && '⏳ En Espera'}
+                                    {activeService.status === 'in_progress' && '🚿 En Proceso'}
+                                    {activeService.status === 'ready' && '✅ Listo para Recoger'}
+                                </span>
+                                <span style={{ fontWeight: 'bold', color: '#3b82f6', fontSize: '1.1rem' }}>
+                                    {progress}%
+                                </span>
+                            </div>
+
+                            {/* PROGRESS BAR */}
+                            <div style={{
+                                width: '100%',
+                                height: '10px',
+                                backgroundColor: '#e2e8f0',
+                                borderRadius: '5px',
+                                marginTop: '1rem',
+                                overflow: 'hidden',
+                                border: '1px solid #cbd5e1'
+                            }}>
+                                <div style={{
+                                    width: `${progress}%`,
+                                    height: '100%',
+                                    backgroundColor: progress === 100 ? '#10b981' : '#3b82f6',
+                                    borderRadius: '5px',
+                                    transition: 'width 1s ease-in-out',
+                                    backgroundImage: progress < 100 ? 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)' : 'none',
+                                    backgroundSize: '1rem 1rem',
+                                    animation: progress < 100 ? 'progress-shimmer 2s linear infinite' : 'none'
+                                }}></div>
+                            </div>
+                            <style>
+                                {`
+                                    @keyframes progress-shimmer {
+                                        0% { background-position: 1rem 0; }
+                                        100% { background-position: 0 0; }
+                                    }
+                                `}
+                            </style>
+                        </div>
+                    </div>
+                )}
+
+
                 {/* LOYALTY COUPON BADGE */}
                 {availableCoupons > 0 ? (
                     <div
@@ -664,112 +772,7 @@ const CustomerPortal = () => {
                     </button>
                 </div>
 
-                {/* ACTIVE SERVICE */}
-                {activeService && (
-                    <div
-                        onClick={() => setSelectedTransaction(activeService)}
-                        style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
-                    >
-                        <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                            SERVICIO EN CURSO
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Ver detalles &rarr;</span>
-                        </h3>
 
-                        {/* Service Name with High Contrast */}
-                        <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.2rem' }}>
-                            {activeService.services?.name || 'Lavado'}
-                        </div>
-
-                        {/* Vehicle Info */}
-                        <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : '') + (activeService.vehicles?.model || activeService.customers?.vehicle_model || activeService.extras?.vehicle_model || 'Vehículo')}
-                            <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {activeService.vehicles?.plate || activeService.customers?.vehicle_plate || activeService.extras?.vehicle_plate}
-                            </span>
-                        </div>
-
-                        {/* Extras Count & Text */}
-                        {activeService.extras && activeService.extras.length > 0 && (
-                            <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                                + {activeService.extras.length} servicios extra <span style={{ fontSize: '0.8rem' }}>({activeService.extras.map(e => e.description).join(', ')})</span>
-                            </div>
-                        )}
-
-                        {/* TOTAL COST DISPLAY */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: '0.8rem' }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#10b981' }}>
-                                Total: ${parseFloat(activeService.price || 0).toFixed(2)}
-                            </div>
-                            {stripeLink && (
-                                <div style={{ fontSize: '0.9rem', color: '#6366f1', fontWeight: '600' }}>
-                                    Con Tarjeta (3% incl.): ${(parseFloat(activeService.price || 0) * 1.03).toFixed(2)}
-                                </div>
-                            )}
-                        </div>
-
-                        <div style={{ marginTop: '0.5rem' }}>
-                            {/* EMPLOYEES LIST */}
-                            {activeService.transaction_assignments && activeService.transaction_assignments.length > 0 && (
-                                <div style={{ marginBottom: '0.8rem' }}>
-                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.3rem' }}>Atendido por:</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                        {activeService.transaction_assignments.map((assign, idx) => (
-                                            <span key={idx} style={{
-                                                backgroundColor: '#eff6ff', color: '#1e40af',
-                                                padding: '0.25rem 0.6rem', borderRadius: '0.5rem',
-                                                fontSize: '0.8rem', fontWeight: '600',
-                                                display: 'flex', alignItems: 'center', gap: '0.3rem'
-                                            }}>
-                                                👤 {assign.employees?.name || 'Empleado'}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', backgroundColor: '#eff6ff', color: '#3b82f6', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                    {activeService.status === 'waiting' && '⏳ En Espera'}
-                                    {activeService.status === 'in_progress' && '🚿 En Proceso'}
-                                    {activeService.status === 'ready' && '✅ Listo para Recoger'}
-                                </span>
-                                <span style={{ fontWeight: 'bold', color: '#3b82f6', fontSize: '1.1rem' }}>
-                                    {progress}%
-                                </span>
-                            </div>
-
-                            {/* PROGRESS BAR */}
-                            <div style={{
-                                width: '100%',
-                                height: '10px',
-                                backgroundColor: '#e2e8f0',
-                                borderRadius: '5px',
-                                marginTop: '1rem',
-                                overflow: 'hidden',
-                                border: '1px solid #cbd5e1'
-                            }}>
-                                <div style={{
-                                    width: `${progress}%`,
-                                    height: '100%',
-                                    backgroundColor: progress === 100 ? '#10b981' : '#3b82f6',
-                                    borderRadius: '5px',
-                                    transition: 'width 1s ease-in-out',
-                                    backgroundImage: progress < 100 ? 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)' : 'none',
-                                    backgroundSize: '1rem 1rem',
-                                    animation: progress < 100 ? 'progress-shimmer 2s linear infinite' : 'none'
-                                }}></div>
-                            </div>
-                            <style>
-                                {`
-                                    @keyframes progress-shimmer {
-                                        0% { background-position: 1rem 0; }
-                                        100% { background-position: 0 0; }
-                                    }
-                                `}
-                            </style>
-                        </div>
-                    </div>
-                )}
 
                 {/* PAYMENT METHODS CARD */}
                 <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
