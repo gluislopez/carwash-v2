@@ -208,8 +208,12 @@ const CustomerPortal = () => {
 
             if (vData) {
                 setVehicles(vData);
-                // Default to null (All Vehicles)
-                setSelectedVehicleId(null);
+                // Default to FIRST vehicle if exists, otherwise null
+                if (vData.length > 0) {
+                    setSelectedVehicleId(vData[0].id);
+                } else {
+                    setSelectedVehicleId(null);
+                }
             }
 
             // 3. Fetch History & Check Feedback
@@ -539,20 +543,7 @@ const CustomerPortal = () => {
                         padding: '0.5rem 0.2rem 1rem', marginBottom: '0.5rem',
                         scrollbarWidth: 'none', msOverflowStyle: 'none'
                     }} className="no-scrollbar">
-                        <button
-                            onClick={() => setSelectedVehicleId(null)}
-                            style={{
-                                flexShrink: 0, padding: '0.6rem 1.2rem',
-                                borderRadius: '2rem', border: 'none',
-                                backgroundColor: selectedVehicleId === null ? '#3b82f6' : 'white',
-                                color: selectedVehicleId === null ? 'white' : '#64748b',
-                                fontWeight: 'bold', fontSize: '0.9rem',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            📦 Todos
-                        </button>
+
                         {vehicles.map(v => (
                             <button
                                 key={v.id}
