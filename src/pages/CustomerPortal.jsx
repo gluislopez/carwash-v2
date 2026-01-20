@@ -81,8 +81,13 @@ const CustomerPortal = () => {
 
     // Derived Stats for Multi-Vehicle Support
     const selectedVehicle = useMemo(() => vehicles.find(v => v.id === selectedVehicleId), [vehicles, selectedVehicleId]);
-    const vehiclePoints = selectedVehicle ? selectedVehicle.points : (customer?.points || 0);
-    const vehicleRedeemed = selectedVehicle ? selectedVehicle.redeemed_coupons : (customer?.redeemed_coupons || 0);
+
+    // Sum points across all vehicles for Global View
+    const totalVehiclePoints = useMemo(() => vehicles.reduce((sum, v) => sum + (v.points || 0), 0), [vehicles]);
+    const totalVehicleRedeemed = useMemo(() => vehicles.reduce((sum, v) => sum + (v.redeemed_coupons || 0), 0), [vehicles]);
+
+    const vehiclePoints = selectedVehicle ? selectedVehicle.points : totalVehiclePoints;
+    const vehicleRedeemed = selectedVehicle ? selectedVehicle.redeemed_coupons : totalVehicleRedeemed;
 
     const availableCouponsCount = useMemo(() => {
         const earned = Math.floor(vehiclePoints / 10);
@@ -952,19 +957,24 @@ const CustomerPortal = () => {
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                                {(tx.vehicles?.brand && tx.vehicles.brand !== 'null' ? tx.vehicles.brand + ' ' : (customer?.vehicle_brand ? customer.vehicle_brand + ' ' : '')) +
-                                    (tx.vehicles?.model ||
-                                        customer?.vehicle_model ||
-                                        (Array.isArray(tx.extras) ?
-                                            tx.extras.find(e => e.vehicle_model)?.vehicle_model :
-                                            tx.extras?.vehicle_model) ||
-                                        'Vehículo')}
-                                {` (${tx.vehicles?.plate ||
-                                    customer?.vehicle_plate ||
-                                    (Array.isArray(tx.extras) ?
-                                        tx.extras.find(e => e.vehicle_plate)?.vehicle_plate :
-                                        tx.extras?.vehicle_plate) ||
-                                    'Sin Placa'})`}
+                                {(() => {
+                                    // 1. Linked Vehicle
+                                    if (tx.vehicles && tx.vehicles.brand && tx.vehicles.brand !== 'null') {
+                                        return `${tx.vehicles.brand} ${tx.vehicles.model || ''} (${tx.vehicles.plate || 'Sin Placa'})`;
+                                    }
+
+                                    // 2. Transaction Metadata (Extras)
+                                    const extraBrand = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_brand)?.vehicle_brand : tx.extras?.vehicle_brand;
+                                    const extraModel = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_model)?.vehicle_model : tx.extras?.vehicle_model;
+                                    const extraPlate = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_plate)?.vehicle_plate : tx.extras?.vehicle_plate;
+
+                                    if (extraModel || extraPlate) {
+                                        return `${extraBrand || ''} ${extraModel || 'Vehículo'} (${extraPlate || 'Sin Placa'})`;
+                                    }
+
+                                    // 3. Customer Legacy (Last Resort)
+                                    return `${customer?.vehicle_brand || ''} ${customer?.vehicle_model || 'Vehículo'} (${customer?.vehicle_plate || 'Sin Placa'})`;
+                                })()}
                             </div>
                             <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b' }}>
                                 {tx.status === 'completed' || tx.status === 'paid' ? 'Completado' : 'En Proceso'}
