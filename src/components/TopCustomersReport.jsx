@@ -82,7 +82,7 @@ const TopCustomersReport = ({ transactions, customers }) => {
                                         }}>
                                             {idx + 1}
                                         </span>
-                                        {c.name}
+                                        <span style={{ color: 'black' }}>{c.name}</span>
                                     </div>
                                     {c.phone && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '2rem' }}>{c.phone}</div>}
                                 </td>
