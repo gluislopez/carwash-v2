@@ -1141,7 +1141,7 @@ const CustomerPortal = () => {
 
                 {/* VERSION TAG */}
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Diseño Optimizado v1.1 • {new Date().toLocaleTimeString()}
+                    Diseño Optimizado v1.2 Grid • {new Date().toLocaleTimeString()}
                 </div>
 
                 {/* DETAIL MODAL */}
