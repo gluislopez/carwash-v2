@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
+    // Add shimmer animation style
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes progress-shimmer {
+                0% { background-position: 0 0; }
+                100% { background-position: 1rem 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => document.head.removeChild(style);
+    }, []);
+
     const { customerId } = useParams();
     const [customer, setCustomer] = useState(null);
     const [history, setHistory] = useState([]);
@@ -285,7 +298,13 @@ const CustomerPortal = () => {
     };
 
     const [queueCount, setQueueCount] = useState(0);
-    const [selectedTransaction, setSelectedTransaction] = useState(null); // Modal State
+    const [selectedTxId, setSelectedTxId] = useState(null); // Modal State (ID)
+    const selectedTransaction = useMemo(() => {
+        if (!selectedTxId) return null;
+        // Search in history or active service
+        if (activeService && activeService.id === selectedTxId) return activeService;
+        return history.find(tx => tx.id === selectedTxId);
+    }, [selectedTxId, history, activeService]);
 
     // ... useEffect ...
 
@@ -413,7 +432,7 @@ const CustomerPortal = () => {
                 {/* ACTIVE SERVICE (MOVED TO TOP) */}
                 {activeService && (
                     <div
-                        onClick={() => setSelectedTransaction(activeService)}
+                        onClick={() => setSelectedTxId(activeService.id)}
                         style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6', cursor: 'pointer' }}
                     >
                         <h3 style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
@@ -858,7 +877,7 @@ const CustomerPortal = () => {
                     {history.map(tx => (
                         <div
                             key={tx.id}
-                            onClick={() => setSelectedTransaction(tx)}
+                            onClick={() => setSelectedTxId(tx.id)}
                             style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
@@ -885,9 +904,9 @@ const CustomerPortal = () => {
                         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                         backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000,
                         padding: '1rem'
-                    }} onClick={() => setSelectedTransaction(null)}>
+                    }} onClick={() => setSelectedTxId(null)}>
                         <div style={{ backgroundColor: 'white', width: '100%', maxWidth: '400px', borderRadius: '1rem', padding: '1.5rem', position: 'relative' }} onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setSelectedTransaction(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                            <button onClick={() => setSelectedTxId(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
                                 &times;
                             </button>
 
@@ -923,7 +942,11 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inicio</div>
-                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (selectedTransaction.status === 'waiting' ? 'Pendiente' : '---')}</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                                        {selectedTransaction.started_at ? new Date(selectedTransaction.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
+                                            (selectedTransaction.status === 'waiting' ? 'Pendiente' :
+                                                new Date(selectedTransaction.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}
+                                    </div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fin</div>
@@ -932,7 +955,7 @@ const CustomerPortal = () => {
                                 <div style={{ gridColumn: 'span 2' }}>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiempo en Proceso</div>
                                     <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>
-                                        {formatDuration(selectedTransaction.started_at, selectedTransaction.finished_at) || (selectedTransaction.status === 'waiting' ? '---' : 'Calculando...')}
+                                        {formatDuration(selectedTransaction.started_at || selectedTransaction.created_at, selectedTransaction.finished_at) || (selectedTransaction.status === 'waiting' ? '---' : 'Calculando...')}
                                     </div>
                                 </div>
                             </div>
@@ -981,7 +1004,7 @@ const CustomerPortal = () => {
                             </div>
 
                             <button
-                                onClick={() => setSelectedTransaction(null)}
+                                onClick={() => setSelectedTxId(null)}
                                 style={{ width: '100%', padding: '0.85rem', backgroundColor: '#1e293b', color: 'white', fontWeight: 'bold', borderRadius: '0.75rem', border: 'none', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                             >
                                 Cerrar

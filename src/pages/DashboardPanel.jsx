@@ -1110,6 +1110,7 @@ const Dashboard = () => {
         try {
             await updateTransaction(tx.id, {
                 status: 'in_progress',
+                started_at: tx.started_at || new Date().toISOString(),
                 finished_at: null // Clear finished time
             });
             await refreshTransactions();
