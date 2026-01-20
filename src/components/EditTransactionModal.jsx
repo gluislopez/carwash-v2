@@ -137,8 +137,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         customer_id: transaction.customer_id,
                         brand: newVehicle.brand,
                         model: newVehicle.model,
-                        plate: newVehicle.plate,
-                        type: 'sedan' // Default type
+                        plate: newVehicle.plate
                     }])
                     .select()
                     .single();
