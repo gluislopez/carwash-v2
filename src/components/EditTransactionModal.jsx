@@ -16,7 +16,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         paymentMethod: transaction.payment_method || 'cash',
         tip: transaction.tip || 0,
         commissionAmount: transaction.commission_amount || 0,
-        commissionAmount: transaction.commission_amount || 0,
         status: transaction.status || 'pending',
         vehicleId: transaction.vehicle_id || ''
     });
