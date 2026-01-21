@@ -199,7 +199,8 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     doc.text(splitFooter, pageWidth / 2, y, { align: 'center' });
 
     // Save
-    const fileName = `recibo_${transaction.customers?.vehicle_plate || 'auto'}_${Date.now()}.pdf`;
+    const filenamePlate = (transaction.vehicles?.plate || transaction.customers?.vehicle_plate || 'auto').replace(/\s+/g, '');
+    const fileName = `recibo_${filenamePlate}_${Date.now()}.pdf`;
     const pdfBlob = doc.output('blob');
     return { blob: pdfBlob, fileName, doc };
 };

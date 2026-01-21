@@ -755,7 +755,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                                 assignedNames,
                                                 reviewLink
                                             );
-                                            doc.save(`recibo_${transaction.customers?.vehicle_plate || 'car'}.pdf`);
+                                            const plate = (transaction.vehicles?.plate || transaction.customers?.vehicle_plate || 'car').replace(/\s+/g, '');
+                                            doc.save(`recibo_${plate}.pdf`);
                                         } catch (error) {
                                             console.error("Error generating/downloading PDF:", error);
                                             alert("Error al generar PDF: " + error.message);

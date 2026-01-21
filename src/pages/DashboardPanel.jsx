@@ -3412,12 +3412,33 @@ const Dashboard = () => {
                                                             🚗 {
                                                                 (() => {
                                                                     // Logic to display vehicle info correctly
+
+                                                                    // Priority 0: Lookup in standard Vehicles Array (Most Reliable)
+                                                                    if (t.vehicle_id) {
+                                                                        const v = vehicles.find(veh => veh.id === t.vehicle_id);
+                                                                        if (v) {
+                                                                            const brand = v.brand;
+                                                                            const model = v.model;
+                                                                            // Filter out bad data strings
+                                                                            const validBrand = (brand && brand !== 'null' && brand !== 'undefined') ? brand : '';
+                                                                            const validModel = (model && model !== 'null' && model !== 'undefined') ? model : '';
+
+                                                                            if (validBrand || validModel) {
+                                                                                return `${validBrand} ${validModel}`.trim();
+                                                                            }
+                                                                        }
+                                                                    }
+
                                                                     // Priority 1: Joined Vehicle Data (from t.vehicles) - Allow partials
                                                                     if (t.vehicles) {
                                                                         const brand = t.vehicles.brand;
                                                                         const model = t.vehicles.model;
-                                                                        if (brand || model) {
-                                                                            return `${brand || ''} ${model || ''}`.trim();
+                                                                        // Filter out bad data strings
+                                                                        const validBrand = (brand && brand !== 'null' && brand !== 'undefined') ? brand : '';
+                                                                        const validModel = (model && model !== 'null' && model !== 'undefined') ? model : '';
+
+                                                                        if (validBrand || validModel) {
+                                                                            return `${validBrand} ${validModel}`.trim();
                                                                         }
                                                                     }
 
