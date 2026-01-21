@@ -605,84 +605,6 @@ const CustomerPortal = () => {
                     </div>
                 </div>
 
-                {/* --- NEW GRID LAYOUT (SQUARES OF 3) --- */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-
-                    {/* 1. VEHICLES CARD */}
-                    <div
-                        onClick={() => setShowVehiclesModal(true)}
-                        style={{
-                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
-                            maxWidth: '110px', width: '100%'
-                        }}
-                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
-                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <div style={{ backgroundColor: '#eff6ff', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
-                            <List size={22} color="#3b82f6" />
-                        </div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>Mis Autos</div>
-                    </div>
-
-                    {/* 2. FEEDBACK CARD */}
-                    <div
-                        onClick={() => {
-                            if (!hasRated && latestTx) {
-                                setShowFeedbackModal(true);
-                            }
-                        }}
-                        style={{
-                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
-                            maxWidth: '110px', width: '100%',
-                            opacity: (hasRated || !latestTx) ? 0.6 : 1
-                        }}
-                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
-                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <div style={{ backgroundColor: '#fef9c3', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '1.2rem' }}>⭐</span>
-                        </div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>
-                            {hasRated ? 'Calificado' : 'Opinar'}
-                        </div>
-                    </div>
-
-                    {/* 3. REFERRAL CARD */}
-                    <div
-                        onClick={() => {
-                            const message = `¡Hola! Te recomiendo Express CarWash. Si vas, diles que te refirió *${customer.name}*. ¡Gracias! 🚗✨`;
-                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                            window.open(whatsappUrl, '_blank');
-                        }}
-                        style={{
-                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
-                            maxWidth: '110px', width: '100%'
-                        }}
-                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
-                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <div style={{ backgroundColor: '#dcfce7', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
-                            <Gift size={22} color="#10b981" />
-                        </div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>Referir</div>
-                    </div>
-
-                </div>
-
                 {/* ACTIVE SERVICE (MOVED TO TOP) */}
                 {activeService && (
                     <div
@@ -800,6 +722,80 @@ const CustomerPortal = () => {
                         </div>
                     </div>
                 )}
+
+
+                {/* --- NEW GRID LAYOUT (SQUARES OF 3) --- */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+
+                    {/* 1. VEHICLES CARD */}
+                    <div
+                        onClick={() => setShowVehiclesModal(true)}
+                        style={{
+                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
+                            maxWidth: '110px', width: '100%'
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <div style={{ backgroundColor: '#eff6ff', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <List size={22} color="#3b82f6" />
+                        </div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>Mis Autos</div>
+                    </div>
+
+                    {/* 2. FEEDBACK CARD */}
+                    <div
+                        onClick={() => {
+                            if (!hasRated && latestTx) {
+                                setShowFeedbackModal(true);
+                            }
+                        }}
+                        style={{
+                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
+                            maxWidth: '110px', width: '100%',
+                            opacity: (hasRated || !latestTx) ? 0.6 : 1
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <div style={{ backgroundColor: '#fef9c3', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '1.2rem' }}>⭐</span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>
+                            {hasRated ? 'Calificado' : 'Opinar'}
+                        </div>
+                    </div>
+
+                    {/* 3. REFERRAL CARD */}
+                    <div
+                        onClick={() => {
+                            const message = `¡Hola! Te recomiendo Express CarWash. Si vas, diles que te refirió *${customer.name}*. ¡Gracias! 🚗✨`;
+                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                            window.open(whatsappUrl, '_blank');
+                        }}
+                        style={{
+                            backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
+                            maxWidth: '110px', width: '100%'
+                        }}
+                        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+                        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                        <div style={{ backgroundColor: '#dcfce7', padding: '0.6rem', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <Gift size={22} color="#10b981" />
+                        </div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#1e293b' }}>Referir</div>
+                    </div>
+
+                </div>
 
 
                 {/* LOYALTY SECTION REMOVED (INTEGRATED ABOVE) */}
