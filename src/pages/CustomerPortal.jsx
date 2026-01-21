@@ -615,7 +615,10 @@ const CustomerPortal = () => {
                             backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
                             boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s'
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
+                            maxWidth: '110px', width: '100%', margin: '0 auto'
                         }}
                         onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
                         onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -638,6 +641,7 @@ const CustomerPortal = () => {
                             boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                             textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
+                            maxWidth: '110px', width: '100%', margin: '0 auto',
                             opacity: (hasRated || !latestTx) ? 0.6 : 1
                         }}
                         onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
@@ -662,7 +666,8 @@ const CustomerPortal = () => {
                             backgroundColor: 'white', borderRadius: '1rem', padding: '1rem',
                             boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s'
+                            textAlign: 'center', aspectRatio: '1', transition: 'transform 0.1s',
+                            maxWidth: '110px', width: '100%', margin: '0 auto'
                         }}
                         onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
                         onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
