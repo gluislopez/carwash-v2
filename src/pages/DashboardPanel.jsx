@@ -1304,533 +1304,361 @@ const Dashboard = () => {
     return (
         <div>
             {/* HEADER */}
-            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                <div>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
-                        <img src="/logo.jpg" alt="Logo" style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover', border: '2px solid white' }} />
-                        <h1 style={{ fontSize: '1.875rem', margin: 0 }}>Dashboard</h1>
-                        <span style={{ fontSize: '0.8rem', color: 'white', backgroundColor: '#6366f1', border: '1px solid white', padding: '0.2rem 0.5rem', borderRadius: '4px', boxShadow: '0 0 10px #6366f1' }}>
-                            v4.61
-                        </span>
+            {/* HEADER HEADER HEADER */}
+            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
+
+                {/* ROW 1: BRANDING & UTILITIES */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+
+                    {/* LEFT: Branding */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <img src="/logo.jpg" alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover', border: '2px solid white' }} />
+                        <div style={{ lineHeight: '1' }}>
+                            <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Dashboard</h1>
+                            <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 'bold', letterSpacing: '0.5px' }}>v4.61 • BETA</span>
+                        </div>
+                    </div>
+
+                    {/* RIGHT: Top Utilities */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {(userRole === 'admin' || userRole === 'manager') && (
+                            <>
+                                {/* SOUND TOGGLE */}
+                                <button
+                                    onClick={async () => { await unlockAudio(); alert("🔊 Audio activado."); }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.4rem', color: 'var(--text-muted)' }}
+                                    title="Activar Sonido"
+                                >
+                                    <span role="img" aria-label="sound">🔔</span>
+                                </button>
+
+                                {/* NOTES TOGGLE */}
+                                <button
+                                    onClick={() => setShowNotes(!showNotes)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                        backgroundColor: showNotes ? 'var(--primary)' : 'var(--bg-secondary)',
+                                        color: showNotes ? 'white' : 'var(--text-muted)',
+                                        border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.8rem',
+                                        fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer'
+                                    }}
+                                >
+                                    <Edit2 size={14} /> Notas
+                                </button>
+
+                                <button
+                                    className="btn mobile-hide-text"
+                                    onClick={async () => {
+                                        try {
+                                            // 1. Gather Data
+                                            const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                                            const completedTxs = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid');
+                                            const count = completedTxs.length;
+
+                                            const incomeCash = completedTxs
+                                                .filter(t => t.payment_method === 'cash')
+                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+
+                                            const incomeTransfer = completedTxs
+                                                .filter(t => t.payment_method === 'transfer')
+                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+
+                                            const totalIncome = incomeCash + incomeTransfer;
+
+                                            const totalTips = completedTxs.reduce((sum, t) => sum + (parseFloat(t.tip) || 0), 0);
+                                            const totalCommissions = completedTxs.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0), 0);
+
+                                            const expensesProduct = expenses
+                                                .filter(e => {
+                                                    const eDate = getPRDateString(e.date);
+                                                    const today = getPRDateString(new Date());
+                                                    return eDate === today && e.category === 'product';
+                                                })
+                                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                            const expensesLunch = expenses
+                                                .filter(e => {
+                                                    const eDate = getPRDateString(e.date);
+                                                    const today = getPRDateString(new Date());
+                                                    return eDate === today && e.category === 'lunch';
+                                                })
+                                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                            const totalExpenses = totalCommissions + totalTips + expensesProduct + expensesLunch;
+                                            const netProfit = totalIncome - totalExpenses; // Note: Tips are expense if excluded from income, but usually income includes tips? Check t.price vs t.tip logic. 
+                                            // Normally price is base price. Tip is extra. 
+                                            // If totalIncome = sum(price), then tips are not in income. 
+                                            // But we pay tips out. So tips are flow-through. 
+                                            // Let's assume Net = Income - (Commissions + Tips + Expenses).
+
+                                            // 2. Generate PDF
+                                            const doc = new jsPDF();
+
+                                            // Header
+                                            doc.setFillColor(37, 99, 235); // Blue
+                                            doc.rect(0, 0, 210, 40, 'F');
+                                            doc.setTextColor(255, 255, 255);
+                                            doc.setFontSize(22);
+                                            doc.text("Reporte Diario Detallado", 105, 20, { align: 'center' });
+                                            doc.setFontSize(12);
+                                            doc.text(todayDate.toUpperCase(), 105, 30, { align: 'center' });
+
+                                            // 2.1 FINANZAS
+                                            autoTable(doc, {
+                                                startY: 50,
+                                                head: [['Concepto', 'Monto']],
+                                                body: [
+                                                    ['Autos Lavados', count.toString()],
+                                                    ['', ''], // Spacer
+                                                    ['Ingresos (Efecivo)', `$${incomeCash.toFixed(2)}`],
+                                                    ['Ingresos (ATH Móvil)', `$${incomeTransfer.toFixed(2)}`],
+                                                    ['INGRESOS TOTALES', `$${totalIncome.toFixed(2)}`],
+                                                    ['', ''], // Spacer
+                                                    ['Comisiones Pagadas', `$${totalCommissions.toFixed(2)}`],
+                                                    ['Propinas Pagadas', `$${totalTips.toFixed(2)}`],
+                                                    ['Almuerzos (Gastos)', `$${expensesLunch.toFixed(2)}`],
+                                                    ['Compras (Gastos)', `$${expensesProduct.toFixed(2)}`],
+                                                    ['GASTOS TOTALES', `$${totalExpenses.toFixed(2)}`],
+                                                    ['', ''], // Spacer
+                                                    ['GANANCIA NETA', `$${netProfit.toFixed(2)}`]
+                                                ],
+                                                theme: 'grid',
+                                                headStyles: { fillColor: [37, 99, 235] },
+                                                columnStyles: {
+                                                    0: { fontStyle: 'bold' },
+                                                    1: { halign: 'right' }
+                                                }
+                                            });
+
+                                            // 2.2 EMPLEADOS (Comisiones)
+                                            // Fetch employees directly to ensure data is fresh
+                                            const { data: empData, error: empError } = await supabase.from('employees').select('*');
+                                            const employeesList = empData || employees; // Fallback to state if fetch fails
+                                            if (empError) console.error("Error fetching employees for PDF:", empError);
+
+                                            // Calculate per employee
+                                            const empStats = {};
+                                            completedTxs.forEach(t => {
+                                                const assignments = t.transaction_assignments?.length > 0 ? t.transaction_assignments : [{ employee_id: t.employee_id }];
+                                                const count = assignments.length;
+                                                const shareComm = (parseFloat(t.commission_amount) || 0) / count;
+                                                const shareTip = (parseFloat(t.tip) || 0) / count;
+
+                                                assignments.forEach(a => {
+                                                    const eid = a.employee_id;
+                                                    if (!eid) return; // Skip if no ID
+                                                    if (!empStats[eid]) empStats[eid] = { comm: 0, tips: 0 };
+                                                    empStats[eid].comm += shareComm;
+                                                    empStats[eid].tips += shareTip;
+                                                });
+                                            });
+
+                                            // Debug matching
+                                            console.log("PDF Stats Keys:", Object.keys(empStats));
+                                            console.log("PDF Employees:", employeesList.map(e => ({ id: e.id, name: e.first_name })));
+
+                                            const empBody = Object.entries(empStats).map(([eid, stats]) => {
+                                                const emp = employeesList.find(e => String(e.id) === String(eid));
+                                                const name = emp ? (emp.name || emp.first_name || `Emple. ${eid}`) : `ID: ${eid}`; // Use 'name' as primary, fallback to old fields
+                                                return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
+                                            });
+
+                                            doc.text("Desglose por Empleado", 14, doc.lastAutoTable.finalY + 15);
+                                            autoTable(doc, {
+                                                startY: doc.lastAutoTable.finalY + 20,
+                                                head: [['Empleado', 'Comisión', 'Propina', 'Total']],
+                                                body: empBody,
+                                                theme: 'striped',
+                                                headStyles: { fillColor: [16, 185, 129] } // Green
+                                            });
+
+                                            // 2.3 DETALLE DE AUTOS
+                                            const txBody = completedTxs.map(t => {
+                                                const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                                const brand = (t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico') ? t.vehicles.brand : (t.customers?.vehicle_brand || '');
+                                                const model = t.vehicles?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Auto';
+                                                const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || '';
+                                                const vehicleStr = `${brand} ${model} ${plate ? `(${plate})` : ''}`.trim();
+                                                const clientName = t.customers?.name || 'Cliente';
+                                                const price = `$${parseFloat(t.price).toFixed(2)}`;
+                                                const serviceName = getServiceName(t.service_id);
+                                                return [time, clientName, vehicleStr, serviceName, price];
+                                            });
+
+                                            doc.text("Historial de Autos", 14, doc.lastAutoTable.finalY + 15);
+                                            autoTable(doc, {
+                                                startY: doc.lastAutoTable.finalY + 20,
+                                                head: [['Hora', 'Cliente', 'Vehículo', 'Servicio', 'Precio']],
+                                                body: txBody,
+                                                theme: 'striped',
+                                                headStyles: { fillColor: [75, 85, 99] } // Gray
+                                            });
+
+                                            // 2.4 NOTES
+                                            if (dailyNotes.length > 0) {
+                                                const notesBody = dailyNotes.map(n => [
+                                                    new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                                    n.content
+                                                ]);
+
+                                                doc.addPage(); // Start notes on new page if needed, or check Y
+                                                doc.text("Bitácora / Notas", 14, 20);
+                                                autoTable(doc, {
+                                                    startY: 30,
+                                                    head: [['Hora', 'Nota']],
+                                                    body: notesBody,
+                                                    theme: 'plain'
+                                                });
+                                            }
+
+                                            // 3. Share or Download
+                                            const pdfBlob = doc.output('blob');
+                                            const file = new File([pdfBlob], `Reporte_${getPRDateString(new Date())}.pdf`, { type: 'application/pdf' });
+
+                                            if (navigator.share) {
+                                                await navigator.share({
+                                                    files: [file],
+                                                    title: 'Reporte Diario Completo',
+                                                    text: `Reporte detallado del ${todayDate}`
+                                                });
+                                            } else {
+                                                doc.save(`Reporte_${getPRDateString(new Date())}.pdf`);
+                                                alert("PDF Descargado. Envíalo manualmente por WhatsApp.");
+                                            }
+
+                                        } catch (error) {
+                                            console.error("Error generating PDF:", error);
+                                            alert("Error: " + error.message);
+                                        }
+                                    }}
+                                    style={{
+                                        backgroundColor: '#10b981', color: 'white', border: 'none',
+                                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                        padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '0.5rem', cursor: 'pointer'
+                                    }}
+                                >
+                                    <MessageCircle size={16} /> <span className="desktop-text">PDF Diario</span>
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                    {/* AUDIO UNLOCK */}
-                    {userRole === 'admin' && (
-                        <button
-                            className="btn"
-                            onClick={async () => {
-                                await unlockAudio();
-                                alert("🔊 Audio activado.");
-                            }}
-                            style={{
-                                backgroundColor: 'var(--warning)',
-                                color: 'black',
-                                fontWeight: 'bold',
-                                fontSize: '0.8rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.3rem',
-                                padding: '0.3rem 0.6rem',
-                                border: 'none',
-                                borderRadius: '0.25rem'
-                            }}
-                        >
-                            🔔 Sonido
-                        </button>
-                    )}
-
-                    {/* NOTES TOGGLE - HIDDEN FOR EMPLOYEES (Now in Grid) */}
-                    {(userRole === 'admin' || userRole === 'manager') && (
-                        <button
-                            onClick={() => setShowNotes(!showNotes)}
-                            className="btn"
-                            style={{
-                                backgroundColor: 'var(--bg-secondary)',
-                                border: '1px solid var(--border-color)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                padding: '0.3rem 0.6rem',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                borderRadius: '0.25rem'
-                            }}
-                        >
-                            <span>📝 Notas ({dailyNotes.length})</span>
-                            <span style={{ transform: showNotes ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}>▼</span>
-                        </button>
-                    )}
-
-                    {/* WHATSAPP SELF-REPORT BUTTON (PDF) */}
-                    {userRole === 'admin' && (
-                        <button
-                            onClick={() => setIsConfigModalOpen(true)}
-                            className="btn"
-                            style={{
-                                backgroundColor: '#6366f1',
-                                color: 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                padding: '0.3rem 0.6rem',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                borderRadius: '0.25rem',
-                                fontWeight: 'bold'
-                            }}
-                        >
-                            <Settings size={16} />
-                            <span>Configuración</span>
-                        </button>
-                    )}
-                    {userRole === 'admin' && (
-                        <button
-                            className="btn"
-                            onClick={async () => {
-                                try {
-                                    // 1. Gather Data
-                                    const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-                                    const completedTxs = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid');
-                                    const count = completedTxs.length;
-
-                                    const incomeCash = completedTxs
-                                        .filter(t => t.payment_method === 'cash')
-                                        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-
-                                    const incomeTransfer = completedTxs
-                                        .filter(t => t.payment_method === 'transfer')
-                                        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-
-                                    const totalIncome = incomeCash + incomeTransfer;
-
-                                    const totalTips = completedTxs.reduce((sum, t) => sum + (parseFloat(t.tip) || 0), 0);
-                                    const totalCommissions = completedTxs.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0), 0);
-
-                                    const expensesProduct = expenses
-                                        .filter(e => {
-                                            const eDate = getPRDateString(e.date);
-                                            const today = getPRDateString(new Date());
-                                            return eDate === today && e.category === 'product';
-                                        })
-                                        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
-                                    const expensesLunch = expenses
-                                        .filter(e => {
-                                            const eDate = getPRDateString(e.date);
-                                            const today = getPRDateString(new Date());
-                                            return eDate === today && e.category === 'lunch';
-                                        })
-                                        .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
-                                    const totalExpenses = totalCommissions + totalTips + expensesProduct + expensesLunch;
-                                    const netProfit = totalIncome - totalExpenses; // Note: Tips are expense if excluded from income, but usually income includes tips? Check t.price vs t.tip logic. 
-                                    // Normally price is base price. Tip is extra. 
-                                    // If totalIncome = sum(price), then tips are not in income. 
-                                    // But we pay tips out. So tips are flow-through. 
-                                    // Let's assume Net = Income - (Commissions + Tips + Expenses).
-
-                                    // 2. Generate PDF
-                                    const doc = new jsPDF();
-
-                                    // Header
-                                    doc.setFillColor(37, 99, 235); // Blue
-                                    doc.rect(0, 0, 210, 40, 'F');
-                                    doc.setTextColor(255, 255, 255);
-                                    doc.setFontSize(22);
-                                    doc.text("Reporte Diario Detallado", 105, 20, { align: 'center' });
-                                    doc.setFontSize(12);
-                                    doc.text(todayDate.toUpperCase(), 105, 30, { align: 'center' });
-
-                                    // 2.1 FINANZAS
-                                    autoTable(doc, {
-                                        startY: 50,
-                                        head: [['Concepto', 'Monto']],
-                                        body: [
-                                            ['Autos Lavados', count.toString()],
-                                            ['', ''], // Spacer
-                                            ['Ingresos (Efecivo)', `$${incomeCash.toFixed(2)}`],
-                                            ['Ingresos (ATH Móvil)', `$${incomeTransfer.toFixed(2)}`],
-                                            ['INGRESOS TOTALES', `$${totalIncome.toFixed(2)}`],
-                                            ['', ''], // Spacer
-                                            ['Comisiones Pagadas', `$${totalCommissions.toFixed(2)}`],
-                                            ['Propinas Pagadas', `$${totalTips.toFixed(2)}`],
-                                            ['Almuerzos (Gastos)', `$${expensesLunch.toFixed(2)}`],
-                                            ['Compras (Gastos)', `$${expensesProduct.toFixed(2)}`],
-                                            ['GASTOS TOTALES', `$${totalExpenses.toFixed(2)}`],
-                                            ['', ''], // Spacer
-                                            ['GANANCIA NETA', `$${netProfit.toFixed(2)}`]
-                                        ],
-                                        theme: 'grid',
-                                        headStyles: { fillColor: [37, 99, 235] },
-                                        columnStyles: {
-                                            0: { fontStyle: 'bold' },
-                                            1: { halign: 'right' }
-                                        }
-                                    });
-
-                                    // 2.2 EMPLEADOS (Comisiones)
-                                    // Fetch employees directly to ensure data is fresh
-                                    const { data: empData, error: empError } = await supabase.from('employees').select('*');
-                                    const employeesList = empData || employees; // Fallback to state if fetch fails
-                                    if (empError) console.error("Error fetching employees for PDF:", empError);
-
-                                    // Calculate per employee
-                                    const empStats = {};
-                                    completedTxs.forEach(t => {
-                                        const assignments = t.transaction_assignments?.length > 0 ? t.transaction_assignments : [{ employee_id: t.employee_id }];
-                                        const count = assignments.length;
-                                        const shareComm = (parseFloat(t.commission_amount) || 0) / count;
-                                        const shareTip = (parseFloat(t.tip) || 0) / count;
-
-                                        assignments.forEach(a => {
-                                            const eid = a.employee_id;
-                                            if (!eid) return; // Skip if no ID
-                                            if (!empStats[eid]) empStats[eid] = { comm: 0, tips: 0 };
-                                            empStats[eid].comm += shareComm;
-                                            empStats[eid].tips += shareTip;
-                                        });
-                                    });
-
-                                    // Debug matching
-                                    console.log("PDF Stats Keys:", Object.keys(empStats));
-                                    console.log("PDF Employees:", employeesList.map(e => ({ id: e.id, name: e.first_name })));
-
-                                    const empBody = Object.entries(empStats).map(([eid, stats]) => {
-                                        const emp = employeesList.find(e => String(e.id) === String(eid));
-                                        const name = emp ? (emp.name || emp.first_name || `Emple. ${eid}`) : `ID: ${eid}`; // Use 'name' as primary, fallback to old fields
-                                        return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
-                                    });
-
-                                    doc.text("Desglose por Empleado", 14, doc.lastAutoTable.finalY + 15);
-                                    autoTable(doc, {
-                                        startY: doc.lastAutoTable.finalY + 20,
-                                        head: [['Empleado', 'Comisión', 'Propina', 'Total']],
-                                        body: empBody,
-                                        theme: 'striped',
-                                        headStyles: { fillColor: [16, 185, 129] } // Green
-                                    });
-
-                                    // 2.3 DETALLE DE AUTOS
-                                    const txBody = completedTxs.map(t => {
-                                        const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                        const brand = (t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico') ? t.vehicles.brand : (t.customers?.vehicle_brand || '');
-                                        const model = t.vehicles?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Auto';
-                                        const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || '';
-                                        const vehicleStr = `${brand} ${model} ${plate ? `(${plate})` : ''}`.trim();
-                                        const clientName = t.customers?.name || 'Cliente';
-                                        const price = `$${parseFloat(t.price).toFixed(2)}`;
-                                        const serviceName = getServiceName(t.service_id);
-                                        return [time, clientName, vehicleStr, serviceName, price];
-                                    });
-
-                                    doc.text("Historial de Autos", 14, doc.lastAutoTable.finalY + 15);
-                                    autoTable(doc, {
-                                        startY: doc.lastAutoTable.finalY + 20,
-                                        head: [['Hora', 'Cliente', 'Vehículo', 'Servicio', 'Precio']],
-                                        body: txBody,
-                                        theme: 'striped',
-                                        headStyles: { fillColor: [75, 85, 99] } // Gray
-                                    });
-
-                                    // 2.4 NOTES
-                                    if (dailyNotes.length > 0) {
-                                        const notesBody = dailyNotes.map(n => [
-                                            new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                            n.content
-                                        ]);
-
-                                        doc.addPage(); // Start notes on new page if needed, or check Y
-                                        doc.text("Bitácora / Notas", 14, 20);
-                                        autoTable(doc, {
-                                            startY: 30,
-                                            head: [['Hora', 'Nota']],
-                                            body: notesBody,
-                                            theme: 'plain'
-                                        });
-                                    }
-
-                                    // 3. Share or Download
-                                    const pdfBlob = doc.output('blob');
-                                    const file = new File([pdfBlob], `Reporte_${getPRDateString(new Date())}.pdf`, { type: 'application/pdf' });
-
-                                    if (navigator.share) {
-                                        await navigator.share({
-                                            files: [file],
-                                            title: 'Reporte Diario Completo',
-                                            text: `Reporte detallado del ${todayDate}`
-                                        });
-                                    } else {
-                                        doc.save(`Reporte_${getPRDateString(new Date())}.pdf`);
-                                        alert("PDF Descargado. Envíalo manualmente por WhatsApp.");
-                                    }
-
-                                } catch (error) {
-                                    console.error("Error generating PDF:", error);
-                                    alert("Error: " + error.message);
-                                }
-                            }}
-                            style={{
-                                backgroundColor: '#25D366', // WhatsApp Green
-                                color: 'white',
-                                border: 'none',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                padding: '0.3rem 0.6rem',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                borderRadius: '0.25rem',
-                                marginLeft: 'auto'
-                            }}
-                        >
-                            <MessageCircle size={16} />
-                            <span>Enviar PDF Detallado</span>
-                        </button>
-                    )}
-
-                </div>
-
+                {/* NOTES PANEL (Full Width) */}
                 {showNotes && (
-                    <div style={{
-                        marginBottom: '1rem', // Moved margin here
-                        padding: '1rem',
-                        backgroundColor: 'var(--bg-secondary)',
-                        borderRadius: '0.5rem',
-                        border: '1px solid var(--border-color)',
-                        animation: 'fadeIn 0.2s'
-                    }}>
-                        {dailyNotes.length > 0 ? (
-                            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                                {dailyNotes.map(note => (
-                                    <li key={note.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.9rem' }}>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: '0.5rem' }}>
-                                            {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                        {note.content}
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem', marginBottom: '1rem' }}>No hay notas hoy.</p>
+                    <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.8rem', border: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
+                        {/* ... Note Input UI ... */}
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Nueva nota..." className="input" style={{ flex: 1 }} onKeyDown={(e) => e.key === 'Enter' && handleAddNote()} />
+                            <button onClick={handleAddNote} className="btn btn-primary"><Send size={16} /></button>
+                        </div>
+                        <div style={{ marginTop: '0.5rem', maxHeight: '100px', overflowY: 'auto' }}>
+                            {dailyNotes.length > 0 ? (
+                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                    {dailyNotes.map(note => (
+                                        <li key={note.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.9rem' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: '0.5rem' }}>
+                                                {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                            {note.content}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem', marginBottom: '0' }}>No hay notas hoy.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ROW 2: CONTROLS & FILTERS */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', backgroundColor: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '0.8rem' }}>
+
+                    {/* View Switcher */}
+                    {userRole === 'admin' && (
+                        <div style={{ display: 'flex', backgroundColor: 'var(--bg-card)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <button onClick={() => setViewMode('ops')} style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === 'ops' ? 'var(--primary)' : 'transparent', color: viewMode === 'ops' ? 'white' : 'var(--text-muted)' }}>Operaciones</button>
+                            <button onClick={() => setViewMode('reports')} style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === 'reports' ? 'var(--primary)' : 'transparent', color: viewMode === 'reports' ? 'white' : 'var(--text-muted)' }}>Reportes</button>
+                        </div>
+                    )}
+
+                    {/* Date Filters */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--bg-card)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <button onClick={() => setDateFilter('today')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'today' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'today' ? 'white' : 'var(--text-muted)' }}>Hoy</button>
+                            <button onClick={() => setDateFilter('manual')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'manual' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'manual' ? 'white' : 'var(--text-muted)' }}>Fechas</button>
+                        </div>
+
+                        {dateFilter === 'manual' && (
+                            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                <input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} className="input-compact" />
+                                <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                <input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} className="input-compact" />
+                            </div>
                         )}
 
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input
-                                type="text"
-                                className="input"
-                                placeholder="Escribir nota..."
-                                value={newNote}
-                                onChange={(e) => setNewNote(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-                                style={{ flex: 1 }}
-                            />
-                            <button className="btn btn-primary" onClick={handleAddNote} disabled={!newNote.trim()}>
-                                <Send size={16} />
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-
-            {/* DATE FILTER CONTROLS */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem' }}>
-
-                {/* VIEW TOGGLE (Dashboard 2.0) */}
-                {userRole === 'admin' && (
-                    <div style={{ display: 'flex', backgroundColor: 'var(--bg-secondary)', padding: '4px', borderRadius: '8px' }}>
-                        <button
-                            onClick={() => setViewMode('ops')}
-                            style={{
-                                padding: '6px 16px', borderRadius: '6px',
-                                backgroundColor: viewMode === 'ops' ? 'var(--primary)' : 'transparent',
-                                color: viewMode === 'ops' ? 'white' : 'var(--text-muted)',
-                                border: 'none', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s'
-                            }}
-                        >
-                            Operaciones
-                        </button>
-                        <button
-                            onClick={() => setViewMode('reports')}
-                            style={{
-                                padding: '6px 16px', borderRadius: '6px',
-                                backgroundColor: viewMode === 'reports' ? 'var(--primary)' : 'transparent',
-                                color: viewMode === 'reports' ? 'white' : 'var(--text-muted)',
-                                border: 'none', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
-                                display: 'flex', alignItems: 'center', gap: '0.4rem'
-                            }}
-                        >
-                            <DollarSign size={14} /> Reportes
-                        </button>
-                    </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <button
-                        className="btn"
-                        style={{
-                            backgroundColor: dateFilter === 'today' ? 'var(--primary)' : 'var(--bg-secondary)',
-                            color: 'white',
-                        }}
-                        onClick={() => setDateFilter('today')}
-                    >
-                        Hoy
-                    </button>
-
-                    <button
-                        className="btn"
-                        style={{
-                            backgroundColor: dateFilter === 'manual' ? 'var(--primary)' : 'var(--bg-secondary)',
-                            color: 'white',
-                        }}
-                        onClick={() => setDateFilter('manual')}
-                    >
-                        Rango/Fecha
-                    </button>
-
-                    {dateFilter === 'manual' && (
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '0.5rem' }}>
-                            <input
-                                type="date"
-                                value={dateRange.start}
-                                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                style={{
-                                    padding: '0.4rem',
-                                    borderRadius: '0.25rem',
-                                    border: '1px solid var(--border-color)',
-                                    backgroundColor: 'var(--bg-input)',
-                                    color: 'var(--text-primary)'
-                                }}
-                                title="Desde"
-                            />
-                            <span style={{ color: 'var(--text-muted)' }}>-</span>
-                            <input
-                                type="date"
-                                value={dateRange.end}
-                                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                style={{
-                                    padding: '0.4rem',
-                                    borderRadius: '0.25rem',
-                                    border: '1px solid var(--border-color)',
-                                    backgroundColor: 'var(--bg-input)',
-                                    color: 'var(--text-primary)'
-                                }}
-                                title="Hasta"
-                            />
-                        </div>
-                    )}
-
-                    <button
-                        className="btn"
-                        style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)',
-                            padding: '0.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            opacity: isRefreshing ? 0.7 : 1,
-                            cursor: isRefreshing ? 'wait' : 'pointer'
-                        }}
-                        onClick={async () => {
+                        <button onClick={async () => {
                             if (isRefreshing) return;
                             setIsRefreshing(true);
                             await refreshTransactions();
                             await refreshCustomers();
                             setTimeout(() => setIsRefreshing(false), 500); // Visual delay
-                        }}
-                        title="Recargar datos"
-                    >
-                        <RefreshCw size={18} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
-                        <style>{`
+                        }} className="btn-icon" style={{ padding: '0.5rem' }} title="Actualizar">
+                            <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
+                            <style>{`
                                 @keyframes spin { 100% { transform: rotate(360deg); } }
                             `}</style>
-                    </button>
+                        </button>
+                    </div>
 
-                    {/* SHOW CANCELLED BUTTON */}
-                    <button
-                        className="btn"
-                        style={{
-                            backgroundColor: 'var(--bg-secondary)',
-                            color: '#EF4444', // Red text
-                            padding: '0.5rem 0.75rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            fontSize: '0.9rem'
-                        }}
-                        onClick={() => {
-                            setActiveDetailModal('cancelled');
-                        }}
-                        title="Gestionar cancelaciones"
-                    >
-                        <span style={{ fontSize: '1.1em' }} role="img" aria-label="cancel">⚠️</span> Gestionar Cancelaciones
-                    </button>
-                </div>
-            </div>
-
-
-            {/* MOSTRAR BOTÓN PARA TODOS (Admin y Empleados) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button className="btn btn-primary mobile-fab" onClick={() => setIsModalOpen(true)}>
-                    <Plus size={20} />
-                    <span className="desktop-text">Registrar Servicio</span>
-                </button>
-
-                {/* QUICK PLATE SEARCH (LPR Simulation) */}
-                <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
-                    <Car size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input
-                        type="text"
-                        placeholder="Buscar Tablilla... (Enter)"
-                        className="input"
-                        value={plateSearch}
-                        onChange={(e) => setPlateSearch(e.target.value)}
-                        onKeyDown={handlePlateSearch}
-                        style={{ paddingLeft: '2.5rem', width: '100%', border: '1px solid var(--primary)', boxShadow: '0 0 10px rgba(99, 102, 241, 0.2)' }}
-                    />
+                    {/* Cancelled Warning Link */}
+                    <div style={{ marginLeft: 'auto' }}>
+                        <button onClick={() => setActiveDetailModal('cancelled')} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <span style={{ fontSize: '1rem' }}>⚠️</span> Cancelaciones
+                        </button>
+                    </div>
                 </div>
 
-                {(userRole === 'admin' || userRole === 'manager') && (
-                    <button
-                        onClick={() => setIsConfigModalOpen(true)}
-                        title="Configuración de Sistema"
-                        className="btn"
-                        style={{
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                            color: 'white',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.5rem',
-                            padding: '0 1rem',
-                            height: '42px',
-                            cursor: 'pointer',
-                            borderRadius: '0.5rem',
-                            transition: 'all 0.2s',
-                            fontWeight: '600'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
-                    >
-                        <Settings size={20} />
-                        <span className="desktop-text">Configurar</span>
+                {/* ROW 3: PRIMARY ACTIONS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0.8rem', alignItems: 'center' }}>
+                    {/* Register Button */}
+                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)} style={{ height: '44px', padding: '0 1.5rem', fontSize: '0.95rem', borderRadius: '0.8rem', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)' }}>
+                        <Plus size={20} /> <span className="mobile-hide-text" style={{ marginLeft: '0.3rem' }}>Registrar</span>
                     </button>
-                )}
+
+                    {/* Search Bar */}
+                    <div style={{ position: 'relative', height: '44px' }}>
+                        <Car size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar Tablilla... (Enter)"
+                            className="input"
+                            value={plateSearch}
+                            onChange={(e) => setPlateSearch(e.target.value)}
+                            onKeyDown={handlePlateSearch}
+                            style={{
+                                width: '100%', height: '100%', paddingLeft: '2.8rem',
+                                border: '1px solid var(--border-color)', borderRadius: '0.8rem',
+                                backgroundColor: 'var(--bg-card)', fontSize: '1rem'
+                            }}
+                        />
+                    </div>
+
+                    {/* System Config */}
+                    {(userRole === 'admin' || userRole === 'manager') && (
+                        <button onClick={() => setIsConfigModalOpen(true)} className="btn" style={{ height: '44px', width: '44px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '0.8rem' }}>
+                            <Settings size={20} color="var(--text-muted)" />
+                        </button>
+                    )}
+                </div>
+
             </div>
-
-
-
 
             {/* MULTI-STAGE FLOW SECTIONS (Compacted) */}
             {viewMode === 'reports' ? (
                 /* REPORTES DASHBOARD (Dashboard 2.0) */
                 <div style={{ padding: '1rem' }}>
-
                     {/* KPI CARDS */}
                     <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                         <div className="card" style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: '1rem', borderLeft: '4px solid #10b981' }}>
@@ -1858,777 +1686,705 @@ const Dashboard = () => {
                         <TopCustomersReport transactions={transactions} customers={customers} />
                     </div>
                 </div>
-            ) : (<>
-                /* OPERACIONES DASHBOARD (Default) */
-                <div className="uniform-3-col-grid" style={{ marginBottom: '2rem' }}>
+            ) : (
+                <>
+                    {/* OPERACIONES DASHBOARD (Default) */}
+                    <div className="uniform-3-col-grid" style={{ marginBottom: '2rem' }}>
 
-                    {/* COLA DE ESPERA (Summary Card) */}
-                    <div
-                        onClick={() => setActiveDetailModal('waiting_list')}
-                        style={{
-                            backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
-                            border: activeDetailModal === 'waiting_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                            transition: 'transform 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Espera</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <Clock size={24} color="#6366f1" />
-                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                                {statsTransactions.filter(t => t.status === 'waiting').length}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Vertical Column for In Process + Feedback */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {/* CARD: EN PROCESO */}
+                        {/* COLA DE ESPERA (Summary Card) */}
                         <div
-                            onClick={() => setActiveDetailModal('in_progress_list')}
+                            onClick={() => setActiveDetailModal('waiting_list')}
                             style={{
                                 backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
                                 boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
-                                border: activeDetailModal === 'in_progress_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                border: activeDetailModal === 'waiting_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
                                 transition: 'transform 0.2s'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso</h3>
+                            <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Espera</h3>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <Droplets size={24} color="#3B82F6" />
+                                <Clock size={24} color="#6366f1" />
                                 <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                                    {statsTransactions.filter(t => t.status === 'in_progress').length}
+                                    {statsTransactions.filter(t => t.status === 'waiting').length}
                                 </div>
                             </div>
                         </div>
 
-
-                    </div>
-
-                    {/* CARD: LISTO PARA RECOGER (NUEVO) */}
-                    <div
-                        onClick={() => setActiveDetailModal('ready_list')}
-                        style={{
-                            backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
-                            border: activeDetailModal === 'ready_list' ? '2px solid #10B981' : '1px solid var(--border-color)',
-                            transition: 'transform 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>Listos</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <DollarSign size={24} color="#10B981" />
-                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                                {statsTransactions.filter(t => t.status === 'ready').length}
+                        {/* Vertical Column for In Process + Feedback */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {/* CARD: EN PROCESO */}
+                            <div
+                                onClick={() => setActiveDetailModal('in_progress_list')}
+                                style={{
+                                    backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
+                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
+                                    border: activeDetailModal === 'in_progress_list' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                    transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <Droplets size={24} color="#3B82F6" />
+                                    <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                                        {statsTransactions.filter(t => t.status === 'in_progress').length}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="uniform-3-col-grid" style={{ marginBottom: '1.5rem' }}>
-                    {/* TOTAL REGISTRADOS / MIS SERVICIOS */}
-                    <div
-                        className="card"
-                        onClick={() => setActiveDetailModal('cars')}
-                        style={{
-                            padding: '1.25rem',
-                            backgroundColor: 'var(--bg-card)',
-                            cursor: 'pointer',
-                            transition: 'transform 0.2s',
-                            border: activeDetailModal === 'cars' ? '2px solid var(--primary)' : '1px solid var(--border-color)'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                            {userRole === 'admin' || userRole === 'manager' ? 'Total Registrados' : 'Mis Servicios'}
-                        </h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <Car size={24} style={{ color: 'var(--text-muted)' }} />
-                            <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                                {userRole === 'admin' || userRole === 'manager'
-                                    ? statsTransactions.length
-                                    : statsTransactions.filter(t => t.status !== 'waiting').length}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div
-                        className="card"
-                        onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('income')}
-                        style={{
-                            cursor: (userRole === 'admin' || userRole === 'manager') ? 'pointer' : 'default',
-                            transition: 'transform 0.2s',
-                            padding: '1.25rem',
-                            backgroundColor: 'var(--bg-card)',
-                            border: activeDetailModal === 'income' ? '2px solid var(--primary)' : '1px solid var(--border-color)'
-                        }}
-                        onMouseEnter={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1.02)')}
-                        onMouseLeave={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1)')}
-                    >
-                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                            {(userRole === 'admin' || userRole === 'manager') ? 'Autos Completados' : 'Mis Autos'}
-                        </h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <Car size={24} className="text-primary" />
-                            <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
-                                {userRole === 'admin'
-                                    ? statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length
-                                    : formatToFraction(fractionalCount)
-                                }
-                            </p>
                         </div>
-                    </div>
 
-                    {/* SOLO ADMIN VE INGRESOS TOTALES */}
-                    {userRole === 'admin' && (
+                        {/* CARD: LISTO PARA RECOGER (NUEVO) */}
                         <div
-                            className="card"
-                            onClick={() => setActiveDetailModal('income')}
-                            style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
+                            onClick={() => setActiveDetailModal('ready_list')}
+                            style={{
+                                backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
+                                border: activeDetailModal === 'ready_list' ? '2px solid #10B981' : '1px solid var(--border-color)',
+                                transition: 'transform 0.2s'
+                            }}
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Ingresos Hoy</h3>
-                            <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--success)', lineHeight: 1 }}>
-                                ${totalIncome.toFixed(0)}
-                            </p>
-                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>(Sin propinas)</p>
-                        </div>
-                    )}
-
-                    <div
-                        className="card"
-                        onClick={() => setActiveDetailModal('commissions')}
-                        style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                            {userRole === 'admin' ? 'Comisiones' : 'Mi Neto'}
-                        </h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--warning)', lineHeight: 1 }}>
-                                ${userRole === 'admin' ? totalCommissions.toFixed(0) : netCommissions.toFixed(2)}
-                            </p>
-                            {totalLunches > 0 && userRole !== 'admin' && (
-                                <span style={{ fontSize: '0.7rem', color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.2rem 0.4rem', borderRadius: '0.3rem' }}>
-                                    -${totalLunches.toFixed(0)}
-                                </span>
-                            )}
+                            <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>Listos</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <DollarSign size={24} color="#10B981" />
+                                <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                                    {statsTransactions.filter(t => t.status === 'ready').length}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* NOTE CARD FOR EMPLOYEES (Placed 3rd in Grid) */}
-                    {userRole !== 'admin' && userRole !== 'manager' && (
+                    <div className="uniform-3-col-grid" style={{ marginBottom: '1.5rem' }}>
+                        {/* TOTAL REGISTRADOS / MIS SERVICIOS */}
                         <div
                             className="card"
-                            onClick={() => setActiveDetailModal('daily_notes')}
+                            onClick={() => setActiveDetailModal('cars')}
+                            style={{
+                                padding: '1.25rem',
+                                backgroundColor: 'var(--bg-card)',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s',
+                                border: activeDetailModal === 'cars' ? '2px solid var(--primary)' : '1px solid var(--border-color)'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                                {userRole === 'admin' || userRole === 'manager' ? 'Total Registrados' : 'Mis Servicios'}
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Car size={24} style={{ color: 'var(--text-muted)' }} />
+                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                                    {userRole === 'admin' || userRole === 'manager'
+                                        ? statsTransactions.length
+                                        : statsTransactions.filter(t => t.status !== 'waiting').length}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div
+                            className="card"
+                            onClick={() => (userRole === 'admin' || userRole === 'manager') && setActiveDetailModal('income')}
+                            style={{
+                                cursor: (userRole === 'admin' || userRole === 'manager') ? 'pointer' : 'default',
+                                transition: 'transform 0.2s',
+                                padding: '1.25rem',
+                                backgroundColor: 'var(--bg-card)',
+                                border: activeDetailModal === 'income' ? '2px solid var(--primary)' : '1px solid var(--border-color)'
+                            }}
+                            onMouseEnter={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1.02)')}
+                            onMouseLeave={(e) => (userRole === 'admin' || userRole === 'manager') && (e.currentTarget.style.transform = 'scale(1)')}
+                        >
+                            <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                                {(userRole === 'admin' || userRole === 'manager') ? 'Autos Completados' : 'Mis Autos'}
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Car size={24} className="text-primary" />
+                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
+                                    {userRole === 'admin'
+                                        ? statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length
+                                        : formatToFraction(fractionalCount)
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* SOLO ADMIN VE INGRESOS TOTALES */}
+                        {userRole === 'admin' && (
+                            <div
+                                className="card"
+                                onClick={() => setActiveDetailModal('income')}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Ingresos Hoy</h3>
+                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--success)', lineHeight: 1 }}>
+                                    ${totalIncome.toFixed(0)}
+                                </p>
+                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>(Sin propinas)</p>
+                            </div>
+                        )}
+
+                        <div
+                            className="card"
+                            onClick={() => setActiveDetailModal('commissions')}
                             style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
                             <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                                Notas del Día
+                                {userRole === 'admin' ? 'Comisiones' : 'Mi Neto'}
                             </h3>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.4rem', borderRadius: '0.5rem' }}>
-                                    <MessageCircle size={20} color="#EAB308" />
-                                </div>
-                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
-                                    {dailyNotes.length}
+                                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--warning)', lineHeight: 1 }}>
+                                    ${userRole === 'admin' ? totalCommissions.toFixed(0) : netCommissions.toFixed(2)}
                                 </p>
+                                {totalLunches > 0 && userRole !== 'admin' && (
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.2rem 0.4rem', borderRadius: '0.3rem' }}>
+                                        -${totalLunches.toFixed(0)}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* NOTE CARD FOR EMPLOYEES (Placed 3rd in Grid) */}
+                        {userRole !== 'admin' && userRole !== 'manager' && (
+                            <div
+                                className="card"
+                                onClick={() => setActiveDetailModal('daily_notes')}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                <h3 className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                                    Notas del Día
+                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.4rem', borderRadius: '0.5rem' }}>
+                                        <MessageCircle size={20} color="#EAB308" />
+                                    </div>
+                                    <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
+                                        {dailyNotes.length}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* RESEÑAS PRIVADAS (Relocated Below Stats) */}
+                    {/* ADMIN SPLIT ROW: FEEDBACK & DAILY NOTES */}
+                    {(userRole === 'admin' || userRole === 'manager') && (
+                        <div className="force-2-col-grid" style={{ marginBottom: '1.5rem' }}>
+                            {/* FEEDBACK CARD */}
+                            <div
+                                className="card"
+                                onClick={() => setActiveDetailModal('feedback')}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                                        <MessageSquare size={24} color="#8b5cf6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Feedback</h3>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios de clientes</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{filteredFeedbacks.length}</p>
+                                </div>
+                            </div>
+
+                            {/* DAILY NOTES CARD */}
+                            <div
+                                className="card"
+                                onClick={() => setActiveDetailModal('daily_notes')}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                                        <MessageCircle size={24} color="#EAB308" />
+                                    </div>
+                                    <div>
+                                        <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Notas del Día</h3>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bitácora de empleados</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{dailyNotes.length}</p>
+                                </div>
                             </div>
                         </div>
                     )}
-                </div>
 
-                {/* RESEÑAS PRIVADAS (Relocated Below Stats) */}
-                {/* ADMIN SPLIT ROW: FEEDBACK & DAILY NOTES */}
-                {(userRole === 'admin' || userRole === 'manager') && (
-                    <div className="force-2-col-grid" style={{ marginBottom: '1.5rem' }}>
-                        {/* FEEDBACK CARD */}
-                        <div
-                            className="card"
-                            onClick={() => setActiveDetailModal('feedback')}
-                            style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                                    <MessageSquare size={24} color="#8b5cf6" />
-                                </div>
-                                <div>
-                                    <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Feedback</h3>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comentarios de clientes</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{filteredFeedbacks.length}</p>
-                            </div>
-                        </div>
-
-                        {/* DAILY NOTES CARD */}
-                        <div
-                            className="card"
-                            onClick={() => setActiveDetailModal('daily_notes')}
-                            style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                                    <MessageCircle size={24} color="#EAB308" />
-                                </div>
-                                <div>
-                                    <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Notas del Día</h3>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bitácora de empleados</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{dailyNotes.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ASSIGNMENT MODAL */}
-                {
-                    assigningTransactionId && (
-                        <div style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
-                        }} onClick={() => setAssigningTransactionId(null)}>
+                    {/* ASSIGNMENT MODAL */}
+                    {
+                        assigningTransactionId && (
                             <div style={{
-                                backgroundColor: 'var(--bg-card)',
-                                padding: '2rem',
-                                borderRadius: '0.5rem',
-                                width: '90%',
-                                maxWidth: '400px'
-                            }} onClick={e => e.stopPropagation()}>
-                                <h2 style={{ marginTop: 0 }}>Asignar Empleado(s)</h2>
-                                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>¿Quién lavará este auto?</p>
+                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
+                            }} onClick={() => setAssigningTransactionId(null)}>
+                                <div style={{
+                                    backgroundColor: 'var(--bg-card)',
+                                    padding: '2rem',
+                                    borderRadius: '0.5rem',
+                                    width: '90%',
+                                    maxWidth: '400px'
+                                }} onClick={e => e.stopPropagation()}>
+                                    <h2 style={{ marginTop: 0 }}>Asignar Empleado(s)</h2>
+                                    <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>¿Quién lavará este auto?</p>
 
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem' }}>
-                                    {employees.map(emp => (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem' }}>
+                                        {employees.map(emp => (
+                                            <button
+                                                key={emp.id}
+                                                onClick={() => {
+                                                    const current = selectedEmployeesForAssignment;
+                                                    const isSelected = current.includes(emp.id);
+                                                    if (isSelected) {
+                                                        setSelectedEmployeesForAssignment(current.filter(id => id !== emp.id));
+                                                    } else {
+                                                        setSelectedEmployeesForAssignment([...current, emp.id]);
+                                                    }
+                                                }}
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '20px',
+                                                    border: '1px solid var(--primary)',
+                                                    backgroundColor: selectedEmployeesForAssignment.includes(emp.id) ? 'var(--primary)' : 'transparent',
+                                                    color: selectedEmployeesForAssignment.includes(emp.id) ? 'white' : 'var(--text-primary)',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {emp.name}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
                                         <button
-                                            key={emp.id}
-                                            onClick={() => {
-                                                const current = selectedEmployeesForAssignment;
-                                                const isSelected = current.includes(emp.id);
-                                                if (isSelected) {
-                                                    setSelectedEmployeesForAssignment(current.filter(id => id !== emp.id));
-                                                } else {
-                                                    setSelectedEmployeesForAssignment([...current, emp.id]);
+                                            className="btn"
+                                            style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                            onClick={() => setAssigningTransactionId(null)}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ flex: 1 }}
+                                            onClick={handleConfirmAssignment}
+                                        >
+                                            Confirmar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {/* CONFIGURATION MODAL */}
+                    {
+                        isConfigModalOpen && (
+                            <div style={{
+                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
+                            }} onClick={() => setIsConfigModalOpen(false)}>
+                                <div style={{
+                                    backgroundColor: 'var(--bg-card)',
+                                    padding: '2rem',
+                                    borderRadius: '0.5rem',
+                                    width: '90%',
+                                    maxWidth: '450px'
+                                }} onClick={e => e.stopPropagation()}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h2 style={{ margin: 0 }}>Configuración de Recibo</h2>
+                                        <button onClick={() => setIsConfigModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
+                                    </div>
+
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label className="label">Link de Reseña de Google</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="https://g.page/r/..."
+                                            value={reviewLink}
+                                            onChange={(e) => setReviewLink(e.target.value)}
+                                        />
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                            Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label className="label">Link de Pago Stripe</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="https://buy.stripe.com/..."
+                                            value={stripeLink}
+                                            onChange={(e) => setStripeLink(e.target.value)}
+                                        />
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                            Link de pago de Stripe para que los clientes paguen desde el portal.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <button
+                                            className="btn"
+                                            style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                            onClick={() => setIsConfigModalOpen(false)}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ flex: 1 }}
+                                            onClick={async () => {
+                                                const res = await handleUpdateSettings({
+                                                    review_link: reviewLink,
+                                                    stripe_link: stripeLink
+                                                });
+                                                if (res.success) {
+                                                    alert('Configuración guardada');
+                                                    setIsConfigModalOpen(false);
                                                 }
                                             }}
-                                            style={{
-                                                padding: '0.5rem 1rem',
-                                                borderRadius: '20px',
-                                                border: '1px solid var(--primary)',
-                                                backgroundColor: selectedEmployeesForAssignment.includes(emp.id) ? 'var(--primary)' : 'transparent',
-                                                color: selectedEmployeesForAssignment.includes(emp.id) ? 'white' : 'var(--text-primary)',
-                                                cursor: 'pointer'
-                                            }}
                                         >
-                                            {emp.name}
+                                            Guardar
                                         </button>
-                                    ))}
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <button
-                                        className="btn"
-                                        style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
-                                        onClick={() => setAssigningTransactionId(null)}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        className="btn btn-primary"
-                                        style={{ flex: 1 }}
-                                        onClick={handleConfirmAssignment}
-                                    >
-                                        Confirmar
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )
-                }
+                        )
+                    }
 
-                {/* CONFIGURATION MODAL */}
-                {
-                    isConfigModalOpen && (
-                        <div style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
-                        }} onClick={() => setIsConfigModalOpen(false)}>
+                    {/* EDIT TRANSACTION MODAL */}
+                    {
+                        editingTransactionId && (
+                            <EditTransactionModal
+                                key={editingTransactionId}
+                                isOpen={true}
+                                transaction={transactions.find(t => t.id === editingTransactionId)}
+                                services={services}
+                                employees={employees}
+                                vehicles={vehicles}
+                                onClose={() => setEditingTransactionId(null)}
+                                onUpdate={handleUpdateTransaction}
+                                onDelete={handleDeleteTransactionV2}
+                                userRole={userRole}
+                                reviewLink={reviewLink}
+                            />
+                        )
+                    }
+
+                    {/* DETAIL MODAL */}
+                    {
+                        activeDetailModal && (
                             <div style={{
-                                backgroundColor: 'var(--bg-card)',
-                                padding: '2rem',
-                                borderRadius: '0.5rem',
-                                width: '90%',
-                                maxWidth: '450px'
-                            }} onClick={e => e.stopPropagation()}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                    <h2 style={{ margin: 0 }}>Configuración de Recibo</h2>
-                                    <button onClick={() => setIsConfigModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
-                                </div>
+                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
+                            }} onClick={() => setActiveDetailModal(null)}>
+                                <div style={{
+                                    backgroundColor: 'var(--bg-card)',
+                                    padding: '2rem',
+                                    borderRadius: '0.5rem',
+                                    width: '90%',
+                                    maxWidth: '600px',
+                                    maxHeight: '80vh',
+                                    overflowY: 'auto'
+                                }} onClick={e => e.stopPropagation()}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h2 style={{ margin: 0 }}>
+                                            {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
+                                            {activeDetailModal === 'waiting_list' && '⏳ Cola de Espera'}
+                                            {activeDetailModal === 'in_progress_list' && '🚿 Autos en Proceso'}
+                                            {activeDetailModal === 'ready_list' && '✅ Listos para Recoger'}
+                                            {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
+                                            {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
+                                            {activeDetailModal === 'feedback' && '💬 Feedback Privado de Clientes'}
+                                            {activeDetailModal === 'daily_notes' && '📝 Notas del Día por Empleado'}
+                                        </h2>
+                                        <button
+                                            onClick={() => setActiveDetailModal(null)}
+                                            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    </div>
 
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <label className="label">Link de Reseña de Google</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="https://g.page/r/..."
-                                        value={reviewLink}
-                                        onChange={(e) => setReviewLink(e.target.value)}
-                                    />
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                        Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
-                                    </p>
-                                </div>
-
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <label className="label">Link de Pago Stripe</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="https://buy.stripe.com/..."
-                                        value={stripeLink}
-                                        onChange={(e) => setStripeLink(e.target.value)}
-                                    />
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                        Link de pago de Stripe para que los clientes paguen desde el portal.
-                                    </p>
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <button
-                                        className="btn"
-                                        style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
-                                        onClick={() => setIsConfigModalOpen(false)}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        className="btn btn-primary"
-                                        style={{ flex: 1 }}
-                                        onClick={async () => {
-                                            const res = await handleUpdateSettings({
-                                                review_link: reviewLink,
-                                                stripe_link: stripeLink
-                                            });
-                                            if (res.success) {
-                                                alert('Configuración guardada');
-                                                setIsConfigModalOpen(false);
-                                            }
-                                        }}
-                                    >
-                                        Guardar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
-
-                {/* EDIT TRANSACTION MODAL */}
-                {
-                    editingTransactionId && (
-                        <EditTransactionModal
-                            key={editingTransactionId}
-                            isOpen={true}
-                            transaction={transactions.find(t => t.id === editingTransactionId)}
-                            services={services}
-                            employees={employees}
-                            vehicles={vehicles}
-                            onClose={() => setEditingTransactionId(null)}
-                            onUpdate={handleUpdateTransaction}
-                            onDelete={handleDeleteTransactionV2}
-                            userRole={userRole}
-                            reviewLink={reviewLink}
-                        />
-                    )
-                }
-
-                {/* DETAIL MODAL */}
-                {
-                    activeDetailModal && (
-                        <div style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
-                        }} onClick={() => setActiveDetailModal(null)}>
-                            <div style={{
-                                backgroundColor: 'var(--bg-card)',
-                                padding: '2rem',
-                                borderRadius: '0.5rem',
-                                width: '90%',
-                                maxWidth: '600px',
-                                maxHeight: '80vh',
-                                overflowY: 'auto'
-                            }} onClick={e => e.stopPropagation()}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                    <h2 style={{ margin: 0 }}>
-                                        {activeDetailModal === 'cars' && '🚗 Detalle de Autos'}
-                                        {activeDetailModal === 'waiting_list' && '⏳ Cola de Espera'}
-                                        {activeDetailModal === 'in_progress_list' && '🚿 Autos en Proceso'}
-                                        {activeDetailModal === 'ready_list' && '✅ Listos para Recoger'}
-                                        {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
-                                        {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
-                                        {activeDetailModal === 'feedback' && '💬 Feedback Privado de Clientes'}
-                                        {activeDetailModal === 'daily_notes' && '📝 Notas del Día por Empleado'}
-                                    </h2>
-                                    <button
-                                        onClick={() => setActiveDetailModal(null)}
-                                        style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-                                    >
-                                        <X size={24} />
-                                    </button>
-                                </div>
-
-                                <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
-                                    {activeDetailModal === 'feedback' && (
-                                        <div style={{ display: 'grid', gap: '1rem' }}>
-                                            {filteredFeedbacks.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay feedbacks en este rango de fechas.</p>}
-                                            {filteredFeedbacks.map(f => (
-                                                <div key={f.id} className="card" style={{ padding: '1rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                        <span style={{ fontWeight: 'bold' }}>{f.transactions?.customers?.name || 'Cliente Anónimo'}</span>
-                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{new Date(f.created_at).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '0.75rem' }}>
-                                                        {[1, 2, 3, 4, 5].map(star => (
-                                                            <Star key={star} size={16} fill={star <= f.rating ? '#FBBF24' : 'none'} color={star <= f.rating ? '#FBBF24' : 'var(--text-muted)'} />
-                                                        ))}
-                                                    </div>
-                                                    <p style={{ fontSize: '0.95rem', fontStyle: f.comment ? 'normal' : 'italic' }}>
-                                                        {f.comment || '(Sin comentario)'}
-                                                    </p>
-                                                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                        Servicio: {f.transactions?.services?.name || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {activeDetailModal === 'daily_notes' && (
-                                        <div style={{ display: 'grid', gap: '1.5rem' }}>
-                                            {dailyNotes.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay notas registradas hoy.</p>}
-                                            {(() => {
-                                                // Group notes by Author (parsing "Name: Content")
-                                                const groupedNotes = {};
-                                                dailyNotes.forEach(note => {
-                                                    const parts = note.content.split(':');
-                                                    let author = 'Desconocido';
-                                                    let content = note.content;
-
-                                                    if (parts.length > 1) {
-                                                        author = parts[0].trim();
-                                                        content = parts.slice(1).join(':').trim();
-                                                    }
-
-                                                    if (!groupedNotes[author]) groupedNotes[author] = [];
-                                                    groupedNotes[author].push({ ...note, cleanContent: content });
-                                                });
-
-                                                return Object.entries(groupedNotes).map(([author, notes]) => (
-                                                    <div key={author} className="card" style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)' }}>
-                                                        <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                                                            👤 {author}
-                                                        </h3>
-                                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                                            {notes.map(n => (
-                                                                <li key={n.id} style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '60px' }}>
-                                                                        {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                    </span>
-                                                                    <span style={{ fontSize: '0.95rem' }}>{n.cleanContent}</span>
-                                                                </li>
+                                    <div style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                                        {activeDetailModal === 'feedback' && (
+                                            <div style={{ display: 'grid', gap: '1rem' }}>
+                                                {filteredFeedbacks.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No hay feedbacks en este rango de fechas.</p>}
+                                                {filteredFeedbacks.map(f => (
+                                                    <div key={f.id} className="card" style={{ padding: '1rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                            <span style={{ fontWeight: 'bold' }}>{f.transactions?.customers?.name || 'Cliente Anónimo'}</span>
+                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{new Date(f.created_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '0.75rem' }}>
+                                                            {[1, 2, 3, 4, 5].map(star => (
+                                                                <Star key={star} size={16} fill={star <= f.rating ? '#FBBF24' : 'none'} color={star <= f.rating ? '#FBBF24' : 'var(--text-muted)'} />
                                                             ))}
-                                                        </ul>
+                                                        </div>
+                                                        <p style={{ fontSize: '0.95rem', fontStyle: f.comment ? 'normal' : 'italic' }}>
+                                                            {f.comment || '(Sin comentario)'}
+                                                        </p>
+                                                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                            Servicio: {f.transactions?.services?.name || 'N/A'}
+                                                        </div>
                                                     </div>
-                                                ));
-                                            })()}
+                                                ))}
+                                            </div>
+                                        )}
 
-                                            {/* ADD NOTE INPUT IN MODAL */}
-                                            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <input
-                                                        type="text"
-                                                        className="input"
-                                                        placeholder="Escribir nueva nota..."
-                                                        value={newNote}
-                                                        onChange={(e) => setNewNote(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-                                                        style={{ flex: 1 }}
-                                                    />
-                                                    <button className="btn btn-primary" onClick={handleAddNote} disabled={!newNote.trim()}>
-                                                        <Send size={16} />
-                                                    </button>
+                                        {activeDetailModal === 'daily_notes' && (
+                                            <div style={{ display: 'grid', gap: '1.5rem' }}>
+                                                {dailyNotes.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay notas registradas hoy.</p>}
+                                                {(() => {
+                                                    // Group notes by Author (parsing "Name: Content")
+                                                    const groupedNotes = {};
+                                                    dailyNotes.forEach(note => {
+                                                        const parts = note.content.split(':');
+                                                        let author = 'Desconocido';
+                                                        let content = note.content;
+
+                                                        if (parts.length > 1) {
+                                                            author = parts[0].trim();
+                                                            content = parts.slice(1).join(':').trim();
+                                                        }
+
+                                                        if (!groupedNotes[author]) groupedNotes[author] = [];
+                                                        groupedNotes[author].push({ ...note, cleanContent: content });
+                                                    });
+
+                                                    return Object.entries(groupedNotes).map(([author, notes]) => (
+                                                        <div key={author} className="card" style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)' }}>
+                                                            <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                                                                👤 {author}
+                                                            </h3>
+                                                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                                                {notes.map(n => (
+                                                                    <li key={n.id} style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '60px' }}>
+                                                                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        </span>
+                                                                        <span style={{ fontSize: '0.95rem' }}>{n.cleanContent}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    ));
+                                                })()}
+
+                                                {/* ADD NOTE INPUT IN MODAL */}
+                                                <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <input
+                                                            type="text"
+                                                            className="input"
+                                                            placeholder="Escribir nueva nota..."
+                                                            value={newNote}
+                                                            onChange={(e) => setNewNote(e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
+                                                            style={{ flex: 1 }}
+                                                        />
+                                                        <button className="btn btn-primary" onClick={handleAddNote} disabled={!newNote.trim()}>
+                                                            <Send size={16} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {activeDetailModal === 'cancelled' && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                            {/* SECTION 1: ACTIVE SERVICES (CANCEL HERE) */}
-                                            <div>
-                                                <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', borderBottom: '2px solid var(--primary)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                                                    ⚠️ Cancelar Servicios Activos
-                                                </h3>
-                                                {transactions.filter(t => ['waiting', 'in_progress', 'ready'].includes(t.status)).length === 0 ?
-                                                    <p style={{ color: 'var(--text-muted)' }}>No hay servicios activos para cancelar.</p> : (
+                                        {activeDetailModal === 'cancelled' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                                {/* SECTION 1: ACTIVE SERVICES (CANCEL HERE) */}
+                                                <div>
+                                                    <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', borderBottom: '2px solid var(--primary)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                                        ⚠️ Cancelar Servicios Activos
+                                                    </h3>
+                                                    {transactions.filter(t => ['waiting', 'in_progress', 'ready'].includes(t.status)).length === 0 ?
+                                                        <p style={{ color: 'var(--text-muted)' }}>No hay servicios activos para cancelar.</p> : (
+                                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                                {transactions
+                                                                    .filter(t => ['waiting', 'in_progress', 'ready'].includes(t.status))
+                                                                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                                                                    .map(t => (
+                                                                        <li key={t.id} style={{
+                                                                            padding: '1rem',
+                                                                            backgroundColor: 'var(--bg-secondary)',
+                                                                            borderRadius: '0.5rem',
+                                                                            marginBottom: '0.75rem',
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center',
+                                                                            border: '1px solid var(--border-color)'
+                                                                        }}>
+                                                                            <div>
+                                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                                                                    {t.vehicles?.plate || t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                                    <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                                                                                        ({t.vehicles?.model || t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+                                                                                    <span style={{
+                                                                                        backgroundColor: t.status === 'waiting' ? '#F59E0B' : t.status === 'in_progress' ? '#3B82F6' : '#10B981',
+                                                                                        color: 'white', padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem'
+                                                                                    }}>
+                                                                                        {t.status === 'waiting' ? 'En Cola' : t.status === 'in_progress' ? 'Lavando' : 'Listo'}
+                                                                                    </span>
+                                                                                    <span style={{ color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <button
+                                                                                className="btn"
+                                                                                onClick={() => handleDeleteTransactionV2(t.id)}
+                                                                                style={{
+                                                                                    backgroundColor: '#EF4444',
+                                                                                    color: 'white',
+                                                                                    fontWeight: 'bold',
+                                                                                    padding: '0.5rem 1rem'
+                                                                                }}
+                                                                            >
+                                                                                CANCELAR
+                                                                            </button>
+                                                                        </li>
+                                                                    ))}
+                                                            </ul>
+                                                        )}
+                                                </div>
+
+                                                {/* SECTION 2: HISTORY */}
+                                                <div>
+                                                    <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                                                        🕒 Historial de Cancelados (Hoy)
+                                                    </h3>
+                                                    {transactions.filter(t => t.status === 'cancelled').length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No hay servicios cancelados hoy.</p> : (
                                                         <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                            {transactions
-                                                                .filter(t => ['waiting', 'in_progress', 'ready'].includes(t.status))
-                                                                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                                                            {[...transactions]
+                                                                .filter(t => t.status === 'cancelled')
+                                                                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                                                                 .map(t => (
-                                                                    <li key={t.id} style={{
-                                                                        padding: '1rem',
-                                                                        backgroundColor: 'var(--bg-secondary)',
-                                                                        borderRadius: '0.5rem',
-                                                                        marginBottom: '0.75rem',
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-between',
-                                                                        alignItems: 'center',
-                                                                        border: '1px solid var(--border-color)'
-                                                                    }}>
+                                                                    <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
                                                                         <div>
-                                                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                                                                {t.vehicles?.plate || t.customers?.vehicle_plate || 'Sin Placa'}
-                                                                                <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                                                                                    ({t.vehicles?.model || t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
+                                                                            <div style={{ fontWeight: 'bold', color: '#EF4444' }}>
+                                                                                {new Date(t.created_at).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                                                <span style={{ margin: '0 0.5rem', color: 'var(--text-primary)' }}>-</span>
+                                                                                <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                                                                                    {t.customers?.vehicle_plate || 'Sin Placa'}
                                                                                 </span>
                                                                             </div>
-                                                                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.9rem' }}>
-                                                                                <span style={{
-                                                                                    backgroundColor: t.status === 'waiting' ? '#F59E0B' : t.status === 'in_progress' ? '#3B82F6' : '#10B981',
-                                                                                    color: 'white', padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem'
-                                                                                }}>
-                                                                                    {t.status === 'waiting' ? 'En Cola' : t.status === 'in_progress' ? 'Lavando' : 'Listo'}
-                                                                                </span>
-                                                                                <span style={{ color: 'var(--text-muted)' }}>{getServiceName(t.service_id)}</span>
+                                                                            <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>
+                                                                                🚫 Cancelado por: <strong>{t.cancelled_by || 'Usuario'}</strong>
                                                                             </div>
                                                                         </div>
-                                                                        <button
-                                                                            className="btn"
-                                                                            onClick={() => handleDeleteTransactionV2(t.id)}
-                                                                            style={{
-                                                                                backgroundColor: '#EF4444',
-                                                                                color: 'white',
-                                                                                fontWeight: 'bold',
-                                                                                padding: '0.5rem 1rem'
-                                                                            }}
-                                                                        >
-                                                                            CANCELAR
-                                                                        </button>
                                                                     </li>
                                                                 ))}
                                                         </ul>
                                                     )}
+                                                </div>
                                             </div>
+                                        )}
 
-                                            {/* SECTION 2: HISTORY */}
+                                        {activeDetailModal === 'cars' && (
                                             <div>
-                                                <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                                                    🕒 Historial de Cancelados (Hoy)
-                                                </h3>
-                                                {transactions.filter(t => t.status === 'cancelled').length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No hay servicios cancelados hoy.</p> : (
+                                                {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length === 0 ? <p>No hay autos lavados hoy.</p> : (
                                                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                        {[...transactions]
-                                                            .filter(t => t.status === 'cancelled')
-                                                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                                        {[...statsTransactions]
+                                                            .filter(t => t.status === 'completed' || t.status === 'paid')
+                                                            .sort((a, b) => {
+                                                                const dateA = new Date(a.date);
+                                                                const dateB = new Date(b.date);
+                                                                if (dateB - dateA !== 0) return dateB - dateA;
+                                                                return new Date(b.created_at) - new Date(a.created_at);
+                                                            })
                                                             .map(t => (
-                                                                <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
+                                                                <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                     <div>
-                                                                        <div style={{ fontWeight: 'bold', color: '#EF4444' }}>
-                                                                            {new Date(t.created_at).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                                                                            <span style={{ margin: '0 0.5rem', color: 'var(--text-primary)' }}>-</span>
-                                                                            <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>
-                                                                                {t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                        <div style={{ fontWeight: 'bold' }}>
+                                                                            {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
+                                                                            <span style={{ margin: '0 0.5rem' }}>-</span>
+                                                                            {t.vehicles?.plate || t.customers?.vehicle_plate || 'Sin Placa'}
+                                                                            <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem' }}>
+                                                                                ({t.vehicles?.model || t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
                                                                             </span>
                                                                         </div>
-                                                                        <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--text-primary)' }}>
-                                                                            🚫 Cancelado por: <strong>{t.cancelled_by || 'Usuario'}</strong>
-                                                                        </div>
+                                                                        {t.finished_at && (
+                                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                                Esperó: {Math.round((new Date(t.finished_at) - new Date(t.created_at)) / 60000)} min
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div style={{ textAlign: 'right' }}>
+                                                                        <span style={{
+                                                                            fontSize: '0.75rem',
+                                                                            padding: '0.1rem 0.4rem',
+                                                                            borderRadius: '4px',
+                                                                            marginRight: '0.5rem',
+                                                                            backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                                            color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
+                                                                            border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`
+                                                                        }}>
+                                                                            {getPaymentMethodLabel(t.payment_method)}
+                                                                        </span>
+                                                                        <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
+                                                                        {(userRole === 'admin' || userRole === 'manager') && (
+                                                                            <button
+                                                                                onClick={() => handlePayment(t)}
+                                                                                style={{
+                                                                                    marginLeft: '1rem',
+                                                                                    background: 'none',
+                                                                                    border: 'none',
+                                                                                    color: 'var(--success)',
+                                                                                    cursor: 'pointer',
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: '0.2rem',
+                                                                                    fontSize: '0.8rem',
+                                                                                    fontWeight: 'bold'
+                                                                                }}
+                                                                            >
+                                                                                <DollarSign size={14} /> Recibo
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </li>
                                                             ))}
                                                     </ul>
                                                 )}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {activeDetailModal === 'cars' && (
-                                        <div>
-                                            {statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length === 0 ? <p>No hay autos lavados hoy.</p> : (
-                                                <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                    {[...statsTransactions]
-                                                        .filter(t => t.status === 'completed' || t.status === 'paid')
-                                                        .sort((a, b) => {
-                                                            const dateA = new Date(a.date);
-                                                            const dateB = new Date(b.date);
-                                                            if (dateB - dateA !== 0) return dateB - dateA;
-                                                            return new Date(b.created_at) - new Date(a.created_at);
-                                                        })
-                                                        .map(t => (
-                                                            <li key={t.id} style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <div>
-                                                                    <div style={{ fontWeight: 'bold' }}>
-                                                                        {new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}
-                                                                        <span style={{ margin: '0 0.5rem' }}>-</span>
-                                                                        {t.vehicles?.plate || t.customers?.vehicle_plate || 'Sin Placa'}
-                                                                        <span style={{ color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '0.5rem' }}>
-                                                                            ({t.vehicles?.model || t.customers?.vehicle_model || 'Modelo?'} - {t.customers?.name})
-                                                                        </span>
-                                                                    </div>
-                                                                    {t.finished_at && (
-                                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                                            Esperó: {Math.round((new Date(t.finished_at) - new Date(t.created_at)) / 60000)} min
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div style={{ textAlign: 'right' }}>
-                                                                    <span style={{
-                                                                        fontSize: '0.75rem',
-                                                                        padding: '0.1rem 0.4rem',
-                                                                        borderRadius: '4px',
-                                                                        marginRight: '0.5rem',
-                                                                        backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                                                                        color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
-                                                                        border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`
-                                                                    }}>
-                                                                        {getPaymentMethodLabel(t.payment_method)}
-                                                                    </span>
-                                                                    <span style={{ color: 'var(--primary)' }}>{getServiceName(t.service_id)}</span>
-                                                                    {(userRole === 'admin' || userRole === 'manager') && (
-                                                                        <button
-                                                                            onClick={() => handlePayment(t)}
-                                                                            style={{
-                                                                                marginLeft: '1rem',
-                                                                                background: 'none',
-                                                                                border: 'none',
-                                                                                color: 'var(--success)',
-                                                                                cursor: 'pointer',
-                                                                                display: 'inline-flex',
-                                                                                alignItems: 'center',
-                                                                                gap: '0.2rem',
-                                                                                fontSize: '0.8rem',
-                                                                                fontWeight: 'bold'
-                                                                            }}
-                                                                        >
-                                                                            <DollarSign size={14} /> Recibo
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </li>
-                                                        ))}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {activeDetailModal === 'waiting_list' && (
-                                        <div>
-                                            {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? (
-                                                <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
-                                            ) : (
-                                                <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
-                                                    {statsTransactions.filter(t => t.status === 'waiting').map(t => {
-                                                        const vehicle = vehicles.find(v => v.id === t.vehicle_id);
-                                                        let vehicleDisplayName = 'Modelo N/A';
-
-                                                        const brand = (vehicle?.brand && vehicle.brand !== 'Generico' && vehicle.brand !== 'Generic' && vehicle.brand !== 'null') ? vehicle.brand : (t.customers?.vehicle_brand || '');
-                                                        const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
-                                                        vehicleDisplayName = `${brand} ${model}`.trim();
-
-                                                        return (
-                                                            <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                                    <div>
-                                                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
-                                                                        <div style={{ color: 'var(--text-muted)' }}>
-                                                                            {t.customers?.name}
-                                                                            {(t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate})</span>}
-                                                                        </div>
-                                                                        <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
-                                                                        <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
-                                                                            Llegada: {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                        </div>
-                                                                        <div style={{ fontSize: '0.8rem', color: '#F59E0B', marginTop: '0.2rem', fontWeight: 'bold' }}>
-                                                                            Espera: {Math.round((new Date() - new Date(t.created_at)) / 60000)} min
-                                                                        </div>
-                                                                    </div>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                                        <button
-                                                                            className="btn btn-primary"
-                                                                            onClick={() => handleStartService(t.id)}
-                                                                            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                                                        >
-                                                                            <Play size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Comenzar</span>
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setEditingTransactionId(t.id)}
-                                                                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
-                                                                        >
-                                                                            <Edit2 size={14} /> Editar
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setQrTransactionId(t.id)}
-                                                                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
-                                                                        >
-                                                                            <QrCode size={14} /> Ver QR
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    )}
-
-
-
-                                    {activeDetailModal === 'in_progress_list' && (
-                                        <div>
-                                            {statsTransactions.filter(t => t.status === 'in_progress').length === 0 ? <p>No hay autos lavándose.</p> : (
-                                                <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
-                                                    {statsTransactions
-                                                        .filter(t => t.status === 'in_progress')
-                                                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                                                        .map(t => {
+                                        {activeDetailModal === 'waiting_list' && (
+                                            <div>
+                                                {statsTransactions.filter(t => t.status === 'waiting').length === 0 ? (
+                                                    <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No hay autos en espera.</p>
+                                                ) : (
+                                                    <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
+                                                        {statsTransactions.filter(t => t.status === 'waiting').map(t => {
                                                             const vehicle = vehicles.find(v => v.id === t.vehicle_id);
                                                             let vehicleDisplayName = 'Modelo N/A';
 
                                                             const brand = (vehicle?.brand && vehicle.brand !== 'Generico' && vehicle.brand !== 'Generic' && vehicle.brand !== 'null') ? vehicle.brand : (t.customers?.vehicle_brand || '');
                                                             const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
                                                             vehicleDisplayName = `${brand} ${model}`.trim();
-
-                                                            // Calculate Wash Time (Current - Started)
-                                                            const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at); // Fallback to created_at if started_at missing
-                                                            const now = new Date();
-                                                            const diffMs = now - start;
-                                                            const diffMins = Math.floor(diffMs / 60000);
-                                                            const hours = Math.floor(diffMins / 60);
-                                                            const mins = diffMins % 60;
-                                                            const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
                                                             return (
                                                                 <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
@@ -2637,1117 +2393,1191 @@ const Dashboard = () => {
                                                                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
                                                                             <div style={{ color: 'var(--text-muted)' }}>
                                                                                 {t.customers?.name}
-                                                                                {(vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate)) &&
-                                                                                    <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>
-                                                                                        ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate)})
-                                                                                    </span>}
+                                                                                {(t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate) && <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>({t.vehicles?.plate || t.customers?.vehicle_plate || t.extras?.vehicle_plate})</span>}
                                                                             </div>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                                                                                <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>{getServiceName(t.service_id)}</div>
-                                                                                <div style={{
-                                                                                    fontSize: '0.8rem',
-                                                                                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                                                                                    color: '#F59E0B',
-                                                                                    padding: '2px 6px',
-                                                                                    borderRadius: '4px',
-                                                                                    display: 'flex',
-                                                                                    alignItems: 'center',
-                                                                                    gap: '4px'
-                                                                                }}>
-                                                                                    <Clock size={12} />
-                                                                                    {timeString}
-                                                                                </div>
+                                                                            <div style={{ color: 'var(--primary)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                                            <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                                Llegada: {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                             </div>
-                                                                            {/* Show Wait Time for context */}
-                                                                            <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>
-                                                                                Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)}m
-                                                                            </div>
-
-                                                                            {/* Assigned Employees */}
-                                                                            <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                                                                                {t.transaction_assignments?.map(a => (
-                                                                                    <span key={a.employee_id} style={{ fontSize: '0.75rem', backgroundColor: '#333', padding: '2px 6px', borderRadius: '4px' }}>
-                                                                                        {getEmployeeName(a.employee_id)}
-                                                                                    </span>
-                                                                                ))}
+                                                                            <div style={{ fontSize: '0.8rem', color: '#F59E0B', marginTop: '0.2rem', fontWeight: 'bold' }}>
+                                                                                Espera: {Math.round((new Date() - new Date(t.created_at)) / 60000)} min
                                                                             </div>
                                                                         </div>
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                                             <button
-                                                                                className="btn"
-                                                                                onClick={() => handleOpenVerification(t)}
-                                                                                title="Verificar y Notificar"
-                                                                                style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                                className="btn btn-primary"
+                                                                                onClick={() => handleStartService(t.id)}
+                                                                                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                                                             >
-                                                                                <Send size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Listo</span>
+                                                                                <Play size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Comenzar</span>
                                                                             </button>
                                                                             <button
                                                                                 onClick={() => setEditingTransactionId(t.id)}
-                                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                                            >
-                                                                                <Edit2 size={14} /> Editar
-
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setQrTransactionId(t.id)}
-                                                                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                                            >
-                                                                                <QrCode size={14} /> Ver QR
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                </li>
-                                                            );
-                                                        })}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {activeDetailModal === 'ready_list' && (
-                                        <div>
-                                            {statsTransactions.filter(t => t.status === 'ready').length === 0 ? <p>No hay autos listos para recoger.</p> : (
-                                                <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
-                                                    {statsTransactions
-                                                        .filter(t => t.status === 'ready')
-                                                        .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
-                                                        .map(t => {
-                                                            const vehicle = vehicles.find(v => v.id === t.vehicle_id);
-                                                            const brand = (vehicle?.brand && vehicle.brand !== 'null' && vehicle.brand !== 'Generico') ? vehicle.brand : (t.customers?.vehicle_brand || '');
-                                                            const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
-                                                            const vehicleModel = `${brand} ${model}`.trim();
-                                                            return (
-                                                                <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                                        <div>
-                                                                            <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
-                                                                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                                                                                ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || 'Sin Placa'})
-                                                                            </div>
-                                                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
-                                                                            <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
-
-                                                                            {t.finished_at && (
-                                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                                                                                    <div>Llegada: {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                                                                    <div>Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)} min</div>
-                                                                                    <div>Lavado: {Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min</div>
-                                                                                    <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min</div>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                                                                            <button
-                                                                                className="btn"
-                                                                                onClick={() => handlePayment(t)}
-                                                                                style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                                                            >
-                                                                                <DollarSign size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Pagar</span>
-                                                                            </button>
-
-                                                                            <button
-                                                                                className="btn"
-                                                                                onClick={() => handleRevertToInProgress(t)}
-                                                                                title="Devolver a En Proceso"
-                                                                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                                                            >
-                                                                                <RefreshCw size={14} /> <span>En Proceso</span>
-                                                                            </button>
-
-                                                                            <button
-                                                                                onClick={() => setEditingTransactionId(t.id)}
-                                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
                                                                             >
                                                                                 <Edit2 size={14} /> Editar
                                                                             </button>
                                                                             <button
                                                                                 onClick={() => setQrTransactionId(t.id)}
-                                                                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
                                                                             >
                                                                                 <QrCode size={14} /> Ver QR
                                                                             </button>
                                                                         </div>
-                                                                    </div>
-                                                                </li>
-                                                            );
-                                                        })}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {
-                                        activeDetailModal === 'income' && (
-                                            <div>
-                                                <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                        <span>Efectivo:</span>
-                                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                        <span>Tarjeta:</span>
-                                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                        <span>Ath Móvil:</span>
-                                                        <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
-                                                    </div>
-                                                    <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
-                                                        <span>Total:</span>
-                                                        <span>${totalIncome.toFixed(2)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-
-                                    {
-                                        activeDetailModal === 'commissions' && (
-                                            <div>
-                                                {userRole === 'admin' ? (
-                                                    // VISTA DE ADMIN: LISTA DE EMPLEADOS
-                                                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                        {employees.map(emp => {
-                                                            // Calculate commission for this employee
-                                                            const empCommission = statsTransactions.reduce((sum, t) => {
-                                                                // SOLO contar si está completado
-                                                                if (t.status !== 'completed') return sum;
-
-                                                                const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
-                                                                const isPrimary = t.employee_id === emp.id;
-
-                                                                if (isAssigned || isPrimary) {
-                                                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0);
-                                                                    const tip = (parseFloat(t.tip) || 0);
-                                                                    const count = (t.transaction_assignments?.length) || 1;
-
-                                                                    // Calculate Extras assigned to THIS employee
-                                                                    const myExtras = t.extras?.filter(e => e.assignedTo === emp.id) || [];
-                                                                    const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
-
-                                                                    // Calculate Total Assigned Extras (to subtract from pool)
-                                                                    const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                                    const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
-
-                                                                    // Shared Pool
-                                                                    const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                                    const sharedShare = sharedPool / count;
-                                                                    const tipShare = tip / count;
-
-                                                                    return sum + sharedShare + tipShare + myExtrasCommission;
-                                                                }
-                                                                return sum;
-                                                            }, 0);
-
-                                                            // Calculate lunches
-                                                            const empLunches = filteredExpenses
-                                                                .filter(e => e.employee_id === emp.id)
-                                                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
-                                                            const empNet = empCommission - empLunches;
-
-                                                            if (empCommission === 0 && empLunches === 0) return null;
-
-                                                            // Calculate fractional car count for this employee
-                                                            const empFractionalCount = statsTransactions
-                                                                .filter(t => t.status === 'completed' || t.status === 'paid')
-                                                                .reduce((sum, t) => {
-                                                                    const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
-                                                                    const isPrimary = t.employee_id === emp.id;
-
-                                                                    if (isAssigned || isPrimary) {
-                                                                        const count = t.transaction_assignments?.length || 1;
-                                                                        return sum + (1 / count);
-                                                                    }
-                                                                    return sum;
-                                                                }, 0);
-
-                                                            return (
-                                                                <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                            <span>{emp.name}</span>
-                                                                            <span style={{ fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--primary)' }}>
-                                                                                {formatToFraction(empFractionalCount)} Autos
-                                                                            </span>
-                                                                        </div>
-                                                                        <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
-                                                                    </div>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                                        <span>Comisión: ${empCommission.toFixed(2)}</span>
-                                                                        <span>Almuerzos: -${empLunches.toFixed(2)}</span>
                                                                     </div>
                                                                 </li>
                                                             );
                                                         })}
                                                     </ul>
-                                                ) : (
-                                                    // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
-                                                    <div>
-                                                        <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
-                                                            Mis Trabajos de Hoy ({formatToFraction(fractionalCount)})
-                                                        </h4>
-                                                        <ul style={{ listStyle: 'none', padding: 0 }}>
-                                                            {statsTransactions
-                                                                .filter(t => t.status === 'completed') // SOLO completados
-                                                                .map(t => {
-                                                                    // Calcular mi parte de esta transacción
-                                                                    const txTotalCommission = (parseFloat(t.commission_amount) || 0); // Base commission
-                                                                    const tip = (parseFloat(t.tip) || 0);
-
-                                                                    // 1. Separate Assigned vs Shared Commissions
-                                                                    let myAssignedCommission = 0;
-                                                                    let totalAssignedCommission = 0;
-
-                                                                    if (t.extras && Array.isArray(t.extras)) {
-                                                                        t.extras.forEach(extra => {
-                                                                            if (extra.assignedTo) {
-                                                                                const extraComm = parseFloat(extra.commission || 0);
-                                                                                totalAssignedCommission += extraComm;
-                                                                                if (extra.assignedTo === myUserId || extra.assignedTo === myEmployeeId) { // Check both ID types just in case
-                                                                                    myAssignedCommission += extraComm;
-                                                                                }
-                                                                                // Also check if assignedTo matches the current iteration employee 'emp' (for Admin View) or 'myself'
-                                                                                // Fix: simpler iteration below
-                                                                            }
-                                                                        });
-                                                                    }
-
-                                                                    const sharedCommissionPool = Math.max(0, txTotalCommission - totalAssignedCommission);
-                                                                    const count = (t.transaction_assignments?.length) || 1;
-
-                                                                    // 2. Logic: (Shared / Count) + MyAssigned + (Tip / Count)
-                                                                    // Usage: This block is inside the 'admin' map OR 'employee' map.
-                                                                    // We need to know 'who' we are calculating for.
-                                                                    // Since this replacement block targets the 'employee' view (lines 1353+),
-                                                                    // we are iterating 't' but we are the logged-in user.
-
-                                                                    // Wait, for the 'employee' view, we need to filter assigned extras for THIS user.
-                                                                    // Detailed logic:
-                                                                    const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
-                                                                    const myExtrasCommission = myExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
-
-                                                                    // Re-calculate Total Assigned to subtract from pool
-                                                                    const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
-                                                                    const allAssignedCommission = allAssignedExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
-
-                                                                    const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
-                                                                    const sharedShare = sharedPool / count;
-                                                                    const tipShare = tip / count;
-
-                                                                    const myShare = sharedShare + tipShare + myExtrasCommission;
-
-                                                                    return (
-                                                                        <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                            <div>
-                                                                                <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
-                                                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                                                    {getServiceName(t.service_id)}
-                                                                                    {count > 1 && (
-                                                                                        <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold' }}>
-                                                                                            (1/{count})
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                                {myExtras.length > 0 && (
-                                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
-                                                                                        + {myExtras.length} Extras Propios
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                            <div style={{ textAlign: 'right' }}>
-                                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
-                                                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                                                                                    Base: ${sharedShare.toFixed(2)} | Extras: ${myExtrasCommission.toFixed(2)} | Tip: ${tipShare.toFixed(2)}
-                                                                                </div>
-                                                                            </div>
-                                                                        </li>
-                                                                    );
-                                                                })}
-                                                        </ul>
-
-                                                        {totalLunches > 0 && (
-                                                            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', fontWeight: 'bold' }}>
-                                                                    <span>Descuento Almuerzos</span>
-                                                                    <span>-${totalLunches.toFixed(2)}</span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '2px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                                                            <span>Total Neto</span>
-                                                            <span style={{ color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</span>
-                                                        </div>
-                                                    </div>
                                                 )}
                                             </div>
                                         )}
-                                </div>
-                            </div>
-                        </div >
-                    )
-                }
 
-                {
-                    isModalOpen && (
-                        <div className="modal-overlay" style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-                            overflowY: 'auto'
-                        }}>
-                            <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-                                <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio</h3>
-                                <form onSubmit={handleSubmit}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                        <div style={{ marginBottom: '1rem' }}>
-                                            <label className="label">Cliente</label>
-                                            {!isAddingCustomer ? (
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                    {/* SEARCH MODE OR SELECT MODE */}
-                                                    {showCustomerSearch ? (
-                                                        <div style={{ position: 'relative' }}>
-                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                <input
-                                                                    type="text"
-                                                                    className="input"
-                                                                    placeholder="🔍 Escribe nombre, modelo o placa..."
-                                                                    value={customerSearch}
-                                                                    onChange={(e) => setCustomerSearch(e.target.value)}
-                                                                    autoFocus
-                                                                    style={{ flex: 1 }}
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn"
-                                                                    onClick={() => {
-                                                                        setShowCustomerSearch(false);
-                                                                        setCustomerSearch('');
-                                                                    }}
-                                                                    style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                                                                >
-                                                                    ✕
-                                                                </button>
+
+                                        {activeDetailModal === 'in_progress_list' && (
+                                            <div>
+                                                {statsTransactions.filter(t => t.status === 'in_progress').length === 0 ? <p>No hay autos lavándose.</p> : (
+                                                    <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
+                                                        {statsTransactions
+                                                            .filter(t => t.status === 'in_progress')
+                                                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                                            .map(t => {
+                                                                const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                                                let vehicleDisplayName = 'Modelo N/A';
+
+                                                                const brand = (vehicle?.brand && vehicle.brand !== 'Generico' && vehicle.brand !== 'Generic' && vehicle.brand !== 'null') ? vehicle.brand : (t.customers?.vehicle_brand || '');
+                                                                const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
+                                                                vehicleDisplayName = `${brand} ${model}`.trim();
+
+                                                                // Calculate Wash Time (Current - Started)
+                                                                const start = t.started_at ? new Date(t.started_at) : new Date(t.created_at); // Fallback to created_at if started_at missing
+                                                                const now = new Date();
+                                                                const diffMs = now - start;
+                                                                const diffMins = Math.floor(diffMs / 60000);
+                                                                const hours = Math.floor(diffMins / 60);
+                                                                const mins = diffMins % 60;
+                                                                const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                                                                return (
+                                                                    <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: '0.5rem', borderRadius: '8px' }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                                            <div>
+                                                                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{vehicleDisplayName}</div>
+                                                                                <div style={{ color: 'var(--text-muted)' }}>
+                                                                                    {t.customers?.name}
+                                                                                    {(vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate)) &&
+                                                                                        <span style={{ color: 'var(--text-primary)', marginLeft: '0.5rem', fontWeight: 'bold' }}>
+                                                                                            ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate)})
+                                                                                        </span>}
+                                                                                </div>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                                                                    <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>{getServiceName(t.service_id)}</div>
+                                                                                    <div style={{
+                                                                                        fontSize: '0.8rem',
+                                                                                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                                                                        color: '#F59E0B',
+                                                                                        padding: '2px 6px',
+                                                                                        borderRadius: '4px',
+                                                                                        display: 'flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: '4px'
+                                                                                    }}>
+                                                                                        <Clock size={12} />
+                                                                                        {timeString}
+                                                                                    </div>
+                                                                                </div>
+                                                                                {/* Show Wait Time for context */}
+                                                                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.2rem' }}>
+                                                                                    Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)}m
+                                                                                </div>
+
+                                                                                {/* Assigned Employees */}
+                                                                                <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                                                                    {t.transaction_assignments?.map(a => (
+                                                                                        <span key={a.employee_id} style={{ fontSize: '0.75rem', backgroundColor: '#333', padding: '2px 6px', borderRadius: '4px' }}>
+                                                                                            {getEmployeeName(a.employee_id)}
+                                                                                        </span>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                                <button
+                                                                                    className="btn"
+                                                                                    onClick={() => handleOpenVerification(t)}
+                                                                                    title="Verificar y Notificar"
+                                                                                    style={{ backgroundColor: '#3B82F6', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                                >
+                                                                                    <Send size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Listo</span>
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => setEditingTransactionId(t.id)}
+                                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                >
+                                                                                    <Edit2 size={14} /> Editar
+
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => setQrTransactionId(t.id)}
+                                                                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                >
+                                                                                    <QrCode size={14} /> Ver QR
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeDetailModal === 'ready_list' && (
+                                            <div>
+                                                {statsTransactions.filter(t => t.status === 'ready').length === 0 ? <p>No hay autos listos para recoger.</p> : (
+                                                    <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
+                                                        {statsTransactions
+                                                            .filter(t => t.status === 'ready')
+                                                            .sort((a, b) => new Date(b.finished_at) - new Date(a.finished_at))
+                                                            .map(t => {
+                                                                const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                                                const brand = (vehicle?.brand && vehicle.brand !== 'null' && vehicle.brand !== 'Generico') ? vehicle.brand : (t.customers?.vehicle_brand || '');
+                                                                const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
+                                                                const vehicleModel = `${brand} ${model}`.trim();
+                                                                return (
+                                                                    <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(16, 185, 129, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #10B981' }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                                            <div>
+                                                                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
+                                                                                <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                                                    ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || 'Sin Placa'})
+                                                                                </div>
+                                                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
+                                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+
+                                                                                {t.finished_at && (
+                                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                                                                        <div>Llegada: {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                                        <div>Espera: {Math.round((new Date(t.started_at || t.created_at) - new Date(t.created_at)) / 60000)} min</div>
+                                                                                        <div>Lavado: {Math.round((new Date(t.finished_at) - new Date(t.started_at || t.created_at)) / 60000)} min</div>
+                                                                                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Listo hace: {Math.round((new Date() - new Date(t.finished_at)) / 60000)} min</div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                                <button
+                                                                                    className="btn"
+                                                                                    onClick={() => handlePayment(t)}
+                                                                                    style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                                >
+                                                                                    <DollarSign size={18} style={{ minWidth: '18px' }} /> <span style={{ fontWeight: '600' }}>Pagar</span>
+                                                                                </button>
+
+                                                                                <button
+                                                                                    className="btn"
+                                                                                    onClick={() => handleRevertToInProgress(t)}
+                                                                                    title="Devolver a En Proceso"
+                                                                                    style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                                                >
+                                                                                    <RefreshCw size={14} /> <span>En Proceso</span>
+                                                                                </button>
+
+                                                                                <button
+                                                                                    onClick={() => setEditingTransactionId(t.id)}
+                                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                >
+                                                                                    <Edit2 size={14} /> Editar
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => setQrTransactionId(t.id)}
+                                                                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                >
+                                                                                    <QrCode size={14} /> Ver QR
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {
+                                            activeDetailModal === 'income' && (
+                                                <div>
+                                                    <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                            <span>Efectivo:</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                            <span>Tarjeta:</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                            <span>Ath Móvil:</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                                        </div>
+                                                        <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
+                                                            <span>Total:</span>
+                                                            <span>${totalIncome.toFixed(2)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+
+                                        {
+                                            activeDetailModal === 'commissions' && (
+                                                <div>
+                                                    {userRole === 'admin' ? (
+                                                        // VISTA DE ADMIN: LISTA DE EMPLEADOS
+                                                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                            {employees.map(emp => {
+                                                                // Calculate commission for this employee
+                                                                const empCommission = statsTransactions.reduce((sum, t) => {
+                                                                    // SOLO contar si está completado
+                                                                    if (t.status !== 'completed') return sum;
+
+                                                                    const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                                                    const isPrimary = t.employee_id === emp.id;
+
+                                                                    if (isAssigned || isPrimary) {
+                                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0);
+                                                                        const tip = (parseFloat(t.tip) || 0);
+                                                                        const count = (t.transaction_assignments?.length) || 1;
+
+                                                                        // Calculate Extras assigned to THIS employee
+                                                                        const myExtras = t.extras?.filter(e => e.assignedTo === emp.id) || [];
+                                                                        const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                                        // Calculate Total Assigned Extras (to subtract from pool)
+                                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                                        const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+                                                                        // Shared Pool
+                                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                                        const sharedShare = sharedPool / count;
+                                                                        const tipShare = tip / count;
+
+                                                                        return sum + sharedShare + tipShare + myExtrasCommission;
+                                                                    }
+                                                                    return sum;
+                                                                }, 0);
+
+                                                                // Calculate lunches
+                                                                const empLunches = filteredExpenses
+                                                                    .filter(e => e.employee_id === emp.id)
+                                                                    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                                                                const empNet = empCommission - empLunches;
+
+                                                                if (empCommission === 0 && empLunches === 0) return null;
+
+                                                                // Calculate fractional car count for this employee
+                                                                const empFractionalCount = statsTransactions
+                                                                    .filter(t => t.status === 'completed' || t.status === 'paid')
+                                                                    .reduce((sum, t) => {
+                                                                        const isAssigned = t.transaction_assignments?.some(a => a.employee_id === emp.id);
+                                                                        const isPrimary = t.employee_id === emp.id;
+
+                                                                        if (isAssigned || isPrimary) {
+                                                                            const count = t.transaction_assignments?.length || 1;
+                                                                            return sum + (1 / count);
+                                                                        }
+                                                                        return sum;
+                                                                    }, 0);
+
+                                                                return (
+                                                                    <li key={emp.id} style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                                <span>{emp.name}</span>
+                                                                                <span style={{ fontSize: '0.8rem', backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--primary)' }}>
+                                                                                    {formatToFraction(empFractionalCount)} Autos
+                                                                                </span>
+                                                                            </div>
+                                                                            <span style={{ color: empNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>${empNet.toFixed(2)}</span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                            <span>Comisión: ${empCommission.toFixed(2)}</span>
+                                                                            <span>Almuerzos: -${empLunches.toFixed(2)}</span>
+                                                                        </div>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    ) : (
+                                                        // VISTA DE EMPLEADO: LISTA DE SUS TRANSACCIONES
+                                                        <div>
+                                                            <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+                                                                Mis Trabajos de Hoy ({formatToFraction(fractionalCount)})
+                                                            </h4>
+                                                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                                                {statsTransactions
+                                                                    .filter(t => t.status === 'completed') // SOLO completados
+                                                                    .map(t => {
+                                                                        // Calcular mi parte de esta transacción
+                                                                        const txTotalCommission = (parseFloat(t.commission_amount) || 0); // Base commission
+                                                                        const tip = (parseFloat(t.tip) || 0);
+
+                                                                        // 1. Separate Assigned vs Shared Commissions
+                                                                        let myAssignedCommission = 0;
+                                                                        let totalAssignedCommission = 0;
+
+                                                                        if (t.extras && Array.isArray(t.extras)) {
+                                                                            t.extras.forEach(extra => {
+                                                                                if (extra.assignedTo) {
+                                                                                    const extraComm = parseFloat(extra.commission || 0);
+                                                                                    totalAssignedCommission += extraComm;
+                                                                                    if (extra.assignedTo === myUserId || extra.assignedTo === myEmployeeId) { // Check both ID types just in case
+                                                                                        myAssignedCommission += extraComm;
+                                                                                    }
+                                                                                    // Also check if assignedTo matches the current iteration employee 'emp' (for Admin View) or 'myself'
+                                                                                    // Fix: simpler iteration below
+                                                                                }
+                                                                            });
+                                                                        }
+
+                                                                        const sharedCommissionPool = Math.max(0, txTotalCommission - totalAssignedCommission);
+                                                                        const count = (t.transaction_assignments?.length) || 1;
+
+                                                                        // 2. Logic: (Shared / Count) + MyAssigned + (Tip / Count)
+                                                                        // Usage: This block is inside the 'admin' map OR 'employee' map.
+                                                                        // We need to know 'who' we are calculating for.
+                                                                        // Since this replacement block targets the 'employee' view (lines 1353+),
+                                                                        // we are iterating 't' but we are the logged-in user.
+
+                                                                        // Wait, for the 'employee' view, we need to filter assigned extras for THIS user.
+                                                                        // Detailed logic:
+                                                                        const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+                                                                        const myExtrasCommission = myExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
+
+                                                                        // Re-calculate Total Assigned to subtract from pool
+                                                                        const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+                                                                        const allAssignedCommission = allAssignedExtras.reduce((sum, e) => sum + (parseFloat(e.commission) || 0), 0);
+
+                                                                        const sharedPool = Math.max(0, txTotalCommission - allAssignedCommission);
+                                                                        const sharedShare = sharedPool / count;
+                                                                        const tipShare = tip / count;
+
+                                                                        const myShare = sharedShare + tipShare + myExtrasCommission;
+
+                                                                        return (
+                                                                            <li key={t.id} style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                                <div>
+                                                                                    <div style={{ fontWeight: 'bold' }}>{t.customers?.name || 'Cliente Casual'}</div>
+                                                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                                        {getServiceName(t.service_id)}
+                                                                                        {count > 1 && (
+                                                                                            <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold' }}>
+                                                                                                (1/{count})
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {myExtras.length > 0 && (
+                                                                                        <div style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                                                                            + {myExtras.length} Extras Propios
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div style={{ textAlign: 'right' }}>
+                                                                                    <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>+${myShare.toFixed(2)}</div>
+                                                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                                                        Base: ${sharedShare.toFixed(2)} | Extras: ${myExtrasCommission.toFixed(2)} | Tip: ${tipShare.toFixed(2)}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </li>
+                                                                        );
+                                                                    })}
+                                                            </ul>
+
+                                                            {totalLunches > 0 && (
+                                                                <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '0.5rem' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', fontWeight: 'bold' }}>
+                                                                        <span>Descuento Almuerzos</span>
+                                                                        <span>-${totalLunches.toFixed(2)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '2px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
+                                                                <span>Total Neto</span>
+                                                                <span style={{ color: 'var(--warning)' }}>${netCommissions.toFixed(2)}</span>
                                                             </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                    </div>
+                                </div>
+                            </div >
+                        )
+                    }
 
-                                                            {/* RESULTS LIST */}
-                                                            {customerSearch.length > 0 && (
+                    {
+                        isModalOpen && (
+                            <div className="modal-overlay" style={{
+                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                                overflowY: 'auto'
+                            }}>
+                                <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+                                    <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio</h3>
+                                    <form onSubmit={handleSubmit}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <div style={{ marginBottom: '1rem' }}>
+                                                <label className="label">Cliente</label>
+                                                {!isAddingCustomer ? (
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                        {/* SEARCH MODE OR SELECT MODE */}
+                                                        {showCustomerSearch ? (
+                                                            <div style={{ position: 'relative' }}>
+                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="input"
+                                                                        placeholder="🔍 Escribe nombre, modelo o placa..."
+                                                                        value={customerSearch}
+                                                                        onChange={(e) => setCustomerSearch(e.target.value)}
+                                                                        autoFocus
+                                                                        style={{ flex: 1 }}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn"
+                                                                        onClick={() => {
+                                                                            setShowCustomerSearch(false);
+                                                                            setCustomerSearch('');
+                                                                        }}
+                                                                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                                                    >
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* RESULTS LIST */}
+                                                                {customerSearch.length > 0 && (
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        top: '100%',
+                                                                        left: 0,
+                                                                        right: 0,
+                                                                        backgroundColor: 'var(--bg-card)',
+                                                                        border: '1px solid var(--border-color)',
+                                                                        borderRadius: '0.5rem',
+                                                                        maxHeight: '200px',
+                                                                        overflowY: 'auto',
+                                                                        zIndex: 10,
+                                                                        marginTop: '0.25rem',
+                                                                        boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                                                                    }}>
+                                                                        {customers
+                                                                            .filter(c =>
+                                                                                (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                                                (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                                                (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())
+                                                                            )
+                                                                            .map(c => (
+                                                                                <div
+                                                                                    key={c.id}
+                                                                                    onClick={() => {
+                                                                                        // Auto-select vehicle if exists
+                                                                                        const custVehicle = vehicles.find(v => v.customer_id == c.id);
+                                                                                        setFormData({
+                                                                                            ...formData,
+                                                                                            customerId: c.id,
+                                                                                            vehicleId: custVehicle ? custVehicle.id : ''
+                                                                                        });
+                                                                                        handleCustomerSelect(c.id);
+                                                                                        setShowCustomerSearch(false);
+                                                                                        setCustomerSearch('');
+                                                                                    }}
+                                                                                    style={{
+                                                                                        padding: '0.75rem',
+                                                                                        borderBottom: '1px solid var(--border-color)',
+                                                                                        cursor: 'pointer',
+                                                                                        display: 'flex',
+                                                                                        justifyContent: 'space-between',
+                                                                                        alignItems: 'center'
+                                                                                    }}
+                                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                                >
+                                                                                    <span style={{ fontWeight: 'bold' }}>{c.name}</span>
+                                                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                                                                        {c.vehicle_model ? `${c.vehicle_model} ` : ''}
+                                                                                        ({c.vehicle_plate || 'Sin Placa'})
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                        {customers.filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
+                                                                            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                                                No se encontraron resultados
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                    <select
+                                                                        className="input"
+                                                                        required
+                                                                        value={formData.customerId}
+                                                                        onChange={(e) => {
+                                                                            const cId = e.target.value;
+                                                                            const custVehicle = vehicles.find(v => v.customer_id == cId);
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                customerId: cId,
+                                                                                vehicleId: custVehicle ? custVehicle.id : ''
+                                                                            });
+                                                                            handleCustomerSelect(cId);
+                                                                        }}
+                                                                        style={{ flex: 1 }}
+                                                                    >
+                                                                        <option value="">Seleccionar Cliente...</option>
+                                                                        {customers.map(c => (
+                                                                            <option key={c.id} value={c.id}>
+                                                                                {c.name} - {c.vehicle_model ? `${c.vehicle_model} ` : ''}({c.vehicle_plate})
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+
+                                                                    {/* SEARCH TOGGLE BUTTON */}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn"
+                                                                        onClick={() => setShowCustomerSearch(true)}
+                                                                        title="Buscar Cliente"
+                                                                        style={{
+                                                                            flexShrink: 0,
+                                                                            width: '48px',
+                                                                            padding: 0,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            backgroundColor: 'var(--bg-secondary)',
+                                                                            color: 'white',
+                                                                            fontSize: '1.5rem'
+                                                                        }}
+                                                                    >
+                                                                        🔍
+                                                                    </button>
+
+                                                                    {/* ADD CUSTOMER BUTTON */}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-primary"
+                                                                        onClick={() => setIsAddingCustomer(true)}
+                                                                        title="Nuevo Cliente"
+                                                                        style={{
+                                                                            flexShrink: 0,
+                                                                            width: '48px',
+                                                                            padding: 0,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            fontSize: '2rem',
+                                                                            lineHeight: '1'
+                                                                        }}
+                                                                    >
+                                                                        +
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* VEHICLE SELECTOR ROW */}
+                                                                {formData.customerId && (
+                                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                        <div style={{ flex: 1, position: 'relative' }}>
+                                                                            <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Vehículo a lavar:</label>
+                                                                            <select
+                                                                                className="input"
+                                                                                required
+                                                                                value={formData.vehicleId}
+                                                                                onChange={(e) => {
+                                                                                    if (e.target.value === 'new_vehicle') {
+                                                                                        const customer = customers.find(c => c.id == formData.customerId);
+                                                                                        if (customer) {
+                                                                                            setNewCustomer({
+                                                                                                ...newCustomer,
+                                                                                                name: customer.name,
+                                                                                                phone: customer.phone,
+                                                                                                email: customer.email,
+                                                                                                vehicle_plate: '',
+                                                                                                vehicle_brand: '',
+                                                                                                vehicle_model: ''
+                                                                                            });
+                                                                                            setIsAddingCustomer(true);
+                                                                                        }
+                                                                                    } else {
+                                                                                        setFormData({ ...formData, vehicleId: e.target.value });
+                                                                                    }
+                                                                                }}
+                                                                                style={{ width: '100%', backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
+                                                                            >
+                                                                                {customerVehicles.map(v => (
+                                                                                    <option key={v.id} value={v.id}>
+                                                                                        🚗 {v.brand} {v.model} ({v.plate})
+                                                                                    </option>
+                                                                                ))}
+                                                                                <option value="new_vehicle" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+                                                                                    + Agregar Otro Vehículo
+                                                                                </option>
+                                                                            </select>
+                                                                        </div>
+
+                                                                        {/* REFERRER SEARCH FIELD (Moved to be side-by-side with vehicle or full width) */}
+                                                                        <div style={{ flex: 1, position: 'relative' }}>
+                                                                            <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
+                                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="input"
+                                                                                    placeholder="🔍 Buscar..."
+                                                                                    value={referrerSearch}
+                                                                                    onChange={(e) => {
+                                                                                        setReferrerSearch(e.target.value);
+                                                                                        setShowReferrerSearch(true);
+                                                                                    }}
+                                                                                    style={{ fontSize: '0.85rem', flex: 1 }}
+                                                                                />
+                                                                                {formData.referrerId && (
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            setFormData({ ...formData, referrerId: '' });
+                                                                                            setReferrerSearch('');
+                                                                                        }}
+                                                                                        className="btn"
+                                                                                        style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '0 0.5rem' }}
+                                                                                    >
+                                                                                        ✕
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                            {showReferrerSearch && referrerSearch.length > 0 && (
+                                                                                <div style={{
+                                                                                    position: 'absolute', top: '100%', left: 0, right: 0,
+                                                                                    backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                                                                    borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
+                                                                                    boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+                                                                                }}>
+                                                                                    {customers
+                                                                                        .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()) && c.id != formData.customerId)
+                                                                                        .slice(0, 10)
+                                                                                        .map(c => (
+                                                                                            <div
+                                                                                                key={c.id}
+                                                                                                onClick={() => {
+                                                                                                    setFormData({ ...formData, referrerId: c.id });
+                                                                                                    setReferrerSearch(c.name);
+                                                                                                    setShowReferrerSearch(false);
+                                                                                                }}
+                                                                                                style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
+                                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                                            >
+                                                                                                {c.name}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
+                                                        <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Nuevo Cliente Rápido</h4>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem' }}>
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                placeholder="Nombre"
+                                                                value={newCustomer.name}
+                                                                onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                placeholder="Teléfono"
+                                                                value={newCustomer.phone}
+                                                                onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                placeholder="Placa"
+                                                                value={newCustomer.vehicle_plate}
+                                                                onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                placeholder="Marca"
+                                                                value={newCustomer.vehicle_brand}
+                                                                onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_brand: e.target.value })}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                placeholder="Modelo"
+                                                                value={newCustomer.vehicle_model}
+                                                                onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
+                                                            />
+                                                        </div>
+
+                                                        {/* REFERRER SEARCH FIELD */}
+                                                        <div style={{ marginTop: '0.75rem', position: 'relative' }}>
+                                                            <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
+                                                            <input
+                                                                type="text"
+                                                                className="input"
+                                                                placeholder="🔍 Buscar cliente referente..."
+                                                                value={referrerSearch}
+                                                                onChange={(e) => {
+                                                                    setReferrerSearch(e.target.value);
+                                                                    setShowReferrerSearch(true);
+                                                                }}
+                                                                style={{ fontSize: '0.85rem', height: '36px' }}
+                                                            />
+                                                            {showReferrerSearch && referrerSearch.length > 0 && (
                                                                 <div style={{
-                                                                    position: 'absolute',
-                                                                    top: '100%',
-                                                                    left: 0,
-                                                                    right: 0,
-                                                                    backgroundColor: 'var(--bg-card)',
-                                                                    border: '1px solid var(--border-color)',
-                                                                    borderRadius: '0.5rem',
-                                                                    maxHeight: '200px',
-                                                                    overflowY: 'auto',
-                                                                    zIndex: 10,
-                                                                    marginTop: '0.25rem',
-                                                                    boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                                                                    position: 'absolute', bottom: '100%', left: 0, right: 0,
+                                                                    backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                                                    borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
+                                                                    boxShadow: '0 -4px 6px rgba(0,0,0,0.2)'
                                                                 }}>
                                                                     {customers
-                                                                        .filter(c =>
-                                                                            (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                                                                            (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                                                                            (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())
-                                                                        )
+                                                                        .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()))
+                                                                        .slice(0, 10)
                                                                         .map(c => (
                                                                             <div
                                                                                 key={c.id}
                                                                                 onClick={() => {
-                                                                                    // Auto-select vehicle if exists
-                                                                                    const custVehicle = vehicles.find(v => v.customer_id == c.id);
-                                                                                    setFormData({
-                                                                                        ...formData,
-                                                                                        customerId: c.id,
-                                                                                        vehicleId: custVehicle ? custVehicle.id : ''
-                                                                                    });
-                                                                                    handleCustomerSelect(c.id);
-                                                                                    setShowCustomerSearch(false);
-                                                                                    setCustomerSearch('');
+                                                                                    setNewCustomer({ ...newCustomer, referrer_id: c.id });
+                                                                                    setReferrerSearch(c.name);
+                                                                                    setShowReferrerSearch(false);
                                                                                 }}
-                                                                                style={{
-                                                                                    padding: '0.75rem',
-                                                                                    borderBottom: '1px solid var(--border-color)',
-                                                                                    cursor: 'pointer',
-                                                                                    display: 'flex',
-                                                                                    justifyContent: 'space-between',
-                                                                                    alignItems: 'center'
-                                                                                }}
+                                                                                style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
                                                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
                                                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                                             >
-                                                                                <span style={{ fontWeight: 'bold' }}>{c.name}</span>
-                                                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                                                                    {c.vehicle_model ? `${c.vehicle_model} ` : ''}
-                                                                                    ({c.vehicle_plate || 'Sin Placa'})
-                                                                                </span>
+                                                                                {c.name}
                                                                             </div>
                                                                         ))}
-                                                                    {customers.filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
-                                                                        <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                                                            No se encontraron resultados
-                                                                        </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                            <button
+                                                                type="button"
+                                                                className="btn"
+                                                                onClick={() => setIsAddingCustomer(false)}
+                                                                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                                                            >
+                                                                Cancelar
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary"
+                                                                onClick={handleCreateCustomer}
+                                                                disabled={!newCustomer.name || !newCustomer.vehicle_plate}
+                                                                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                                                            >
+                                                                Guardar Cliente
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+
+                                                {/* MEMBERSHIP INDICATOR */}
+                                                {customerMembership && (
+                                                    <div style={{
+                                                        gridColumn: 'span 2',
+                                                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                                        border: '1px solid #22C55E',
+                                                        padding: '0.75rem',
+                                                        borderRadius: '0.5rem',
+                                                        marginBottom: '1rem',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        <div>
+                                                            <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                {customerMembership.memberships.type === 'unlimited'
+                                                                    ? 'Lavados Ilimitados'
+                                                                    : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships.wash_limit}`}
+                                                            </div>
+                                                        </div>
+                                                        {(customerMembership.memberships.type === 'unlimited' || customerMembership.usage_count < customerMembership.memberships.wash_limit) && (
+                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isMembershipUsage}
+                                                                    onChange={(e) => setIsMembershipUsage(e.target.checked)}
+                                                                    style={{ width: '20px', height: '20px' }}
+                                                                />
+                                                                <span style={{ fontWeight: 'bold' }}>Saldar con Membresía</span>
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="label">Servicio Principal</label>
+                                                    <select
+                                                        className="input"
+                                                        required
+                                                        value={formData.serviceId}
+                                                        onChange={handleServiceChange}
+                                                    >
+                                                        <option value="">Seleccionar Servicio...</option>
+                                                        {sortedServices.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* SECONDARY SERVICES (EXTRAS) */}
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="label">Servicios Secundarios</label>
+                                                    <select
+                                                        className="input"
+                                                        value=""
+                                                        onChange={(e) => {
+                                                            const sId = e.target.value;
+                                                            if (!sId) return;
+                                                            const s = services.find(srv => srv.id == sId);
+                                                            if (s) {
+                                                                // CHECK FOR MULTI-EMPLOYEE ASSIGNMENT
+                                                                if (formData.selectedEmployees && formData.selectedEmployees.length > 1) {
+                                                                    setPendingExtra(s);
+                                                                    setShowAssignmentModal(true);
+                                                                } else {
+                                                                    // Single employee or none: Add directly
+                                                                    addExtra(s, null);
+                                                                }
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">Seleccionar Servicio Secundario...</option>
+                                                        {sortedServices.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* LIST OF ADDED EXTRAS */}
+                                                {formData.extras && formData.extras.length > 0 && (
+                                                    <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
+                                                        <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Servicios Agregados:</label>
+                                                        {formData.extras.map((extra, index) => (
+                                                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', fontSize: '0.9rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <span>{extra.description} (${extra.price})</span>
+                                                                    {extra.assignedTo && (
+                                                                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                                                            Hecho por: {employees.find(e => e.id === extra.assignedTo)?.name || 'Desconocido'}
+                                                                        </span>
                                                                     )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                <select
-                                                                    className="input"
-                                                                    required
-                                                                    value={formData.customerId}
-                                                                    onChange={(e) => {
-                                                                        const cId = e.target.value;
-                                                                        const custVehicle = vehicles.find(v => v.customer_id == cId);
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            customerId: cId,
-                                                                            vehicleId: custVehicle ? custVehicle.id : ''
-                                                                        });
-                                                                        handleCustomerSelect(cId);
-                                                                    }}
-                                                                    style={{ flex: 1 }}
-                                                                >
-                                                                    <option value="">Seleccionar Cliente...</option>
-                                                                    {customers.map(c => (
-                                                                        <option key={c.id} value={c.id}>
-                                                                            {c.name} - {c.vehicle_model ? `${c.vehicle_model} ` : ''}({c.vehicle_plate})
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-
-                                                                {/* SEARCH TOGGLE BUTTON */}
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn"
-                                                                    onClick={() => setShowCustomerSearch(true)}
-                                                                    title="Buscar Cliente"
-                                                                    style={{
-                                                                        flexShrink: 0,
-                                                                        width: '48px',
-                                                                        padding: 0,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        backgroundColor: 'var(--bg-secondary)',
-                                                                        color: 'white',
-                                                                        fontSize: '1.5rem'
-                                                                    }}
-                                                                >
-                                                                    🔍
-                                                                </button>
-
-                                                                {/* ADD CUSTOMER BUTTON */}
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-primary"
-                                                                    onClick={() => setIsAddingCustomer(true)}
-                                                                    title="Nuevo Cliente"
-                                                                    style={{
-                                                                        flexShrink: 0,
-                                                                        width: '48px',
-                                                                        padding: 0,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        fontSize: '2rem',
-                                                                        lineHeight: '1'
-                                                                    }}
-                                                                >
-                                                                    +
+                                                                <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                                    <Trash2 size={14} />
                                                                 </button>
                                                             </div>
+                                                        ))}
+                                                    </div>
+                                                )}
 
-                                                            {/* VEHICLE SELECTOR ROW */}
-                                                            {formData.customerId && (
-                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                    <div style={{ flex: 1, position: 'relative' }}>
-                                                                        <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Vehículo a lavar:</label>
-                                                                        <select
-                                                                            className="input"
-                                                                            required
-                                                                            value={formData.vehicleId}
-                                                                            onChange={(e) => {
-                                                                                if (e.target.value === 'new_vehicle') {
-                                                                                    const customer = customers.find(c => c.id == formData.customerId);
-                                                                                    if (customer) {
-                                                                                        setNewCustomer({
-                                                                                            ...newCustomer,
-                                                                                            name: customer.name,
-                                                                                            phone: customer.phone,
-                                                                                            email: customer.email,
-                                                                                            vehicle_plate: '',
-                                                                                            vehicle_brand: '',
-                                                                                            vehicle_model: ''
-                                                                                        });
-                                                                                        setIsAddingCustomer(true);
-                                                                                    }
-                                                                                } else {
-                                                                                    setFormData({ ...formData, vehicleId: e.target.value });
-                                                                                }
-                                                                            }}
-                                                                            style={{ width: '100%', backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
-                                                                        >
-                                                                            {customerVehicles.map(v => (
-                                                                                <option key={v.id} value={v.id}>
-                                                                                    🚗 {v.brand} {v.model} ({v.plate})
-                                                                                </option>
-                                                                            ))}
-                                                                            <option value="new_vehicle" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
-                                                                                + Agregar Otro Vehículo
-                                                                            </option>
-                                                                        </select>
-                                                                    </div>
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="label">Hora del Servicio</label>
+                                                    <input
+                                                        type="time"
+                                                        className="input"
+                                                        required
+                                                        value={formData.serviceTime}
+                                                        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                                                    {/* REFERRER SEARCH FIELD (Moved to be side-by-side with vehicle or full width) */}
-                                                                    <div style={{ flex: 1, position: 'relative' }}>
-                                                                        <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
-                                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                            <input
-                                                                                type="text"
-                                                                                className="input"
-                                                                                placeholder="🔍 Buscar..."
-                                                                                value={referrerSearch}
-                                                                                onChange={(e) => {
-                                                                                    setReferrerSearch(e.target.value);
-                                                                                    setShowReferrerSearch(true);
-                                                                                }}
-                                                                                style={{ fontSize: '0.85rem', flex: 1 }}
-                                                                            />
-                                                                            {formData.referrerId && (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => {
-                                                                                        setFormData({ ...formData, referrerId: '' });
-                                                                                        setReferrerSearch('');
-                                                                                    }}
-                                                                                    className="btn"
-                                                                                    style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '0 0.5rem' }}
-                                                                                >
-                                                                                    ✕
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-                                                                        {showReferrerSearch && referrerSearch.length > 0 && (
-                                                                            <div style={{
-                                                                                position: 'absolute', top: '100%', left: 0, right: 0,
-                                                                                backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                                                                borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
-                                                                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
-                                                                            }}>
-                                                                                {customers
-                                                                                    .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()) && c.id != formData.customerId)
-                                                                                    .slice(0, 10)
-                                                                                    .map(c => (
-                                                                                        <div
-                                                                                            key={c.id}
-                                                                                            onClick={() => {
-                                                                                                setFormData({ ...formData, referrerId: c.id });
-                                                                                                setReferrerSearch(c.name);
-                                                                                                setShowReferrerSearch(false);
-                                                                                            }}
-                                                                                            style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-                                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                                        >
-                                                                                            {c.name}
-                                                                                        </div>
-                                                                                    ))}
+                                        {/* LOYALTY REDEMPTION BUTTON */}
+                                        {canRedeemPoints && (
+                                            <button
+                                                type="button"
+                                                className="btn"
+                                                onClick={() => {
+                                                    setFormData({ ...formData, price: 0 });
+                                                    setIsRedemption(true);
+                                                    setCanRedeemPoints(false);
+                                                    alert('¡Lavado Gratis aplicado! El precio se ha ajustado a $0.00');
+                                                }}
+                                                style={{ width: '100%', marginTop: '1rem', backgroundColor: '#F59E0B', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                                            >
+                                                🌟 Canjear Lavado Gratis (10 Pts)
+                                            </button>
+                                        )}
+
+                                        {/* TOTAL PRICE DISPLAY */}
+                                        <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 'bold' }}>Total Estimado:</span>
+                                            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                                                ${formData.price || 0}
+                                            </span>
+                                        </div>
+
+
+
+                                        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                            <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
+                                                Cancelar
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                onClick={handleSubmit}
+                                                disabled={isSubmitting}
+                                                style={{ opacity: isSubmitting ? 0.7 : 1 }}
+                                            >
+                                                {isSubmitting ? 'Registrando...' : 'Registrar Venta'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div >
+                        )
+                    }
+
+
+                    {/* ERROR ALERT */}
+                    {
+                        error && (
+                            <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', border: '1px solid #EF4444' }}>
+                                <strong>Error:</strong> {error}
+                                <button onClick={() => setError(null)} style={{ float: 'right', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}>✕</button>
+                            </div>
+                        )
+                    }
+
+
+
+                    {/* SECCIÓN DE HISTORIAL (PAGADOS) - ADMIN/MANAGER ONLY */}
+                    {
+                        (userRole === 'admin' || userRole === 'manager') && (
+                            <>
+                                <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {statsTransactions
+                                        .filter(t => t.status === 'completed' || t.status === 'paid')
+                                        .sort((a, b) => {
+                                            const dateA = new Date(a.date);
+                                            const dateB = new Date(b.date);
+                                            if (dateB - dateA !== 0) return dateB - dateA;
+                                            return new Date(b.created_at) - new Date(a.created_at);
+                                        })
+                                        .map(t => (
+                                            <div
+                                                key={t.id}
+                                                className="card"
+                                                style={{
+                                                    borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
+                                                    cursor: 'pointer',
+                                                    transition: 'transform 0.2s'
+                                                }}
+                                                onClick={() => setSelectedTransaction(t)}
+                                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                    <div>
+                                                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
+                                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                                                            🚗 {
+                                                                (() => {
+                                                                    // Logic to display vehicle info correctly
+                                                                    // Priority 1: Joined Vehicle Data (from t.vehicles) - Allow partials
+                                                                    if (t.vehicles) {
+                                                                        const brand = t.vehicles.brand;
+                                                                        const model = t.vehicles.model;
+                                                                        if (brand || model) {
+                                                                            return `${brand || ''} ${model || ''}`.trim();
+                                                                        }
+                                                                    }
+
+                                                                    // Priority 2: Legacy Customer Fields (from t.customers)
+                                                                    if (t.customers) {
+                                                                        const brand = t.customers.vehicle_brand;
+                                                                        const model = t.customers.vehicle_model;
+                                                                        if (brand || model) {
+                                                                            return `${brand || ''} ${model || ''}`.trim();
+                                                                        }
+                                                                    }
+
+                                                                    // Priority 3: Extras (if vehicle info stored there)
+                                                                    if (Array.isArray(t.extras)) {
+                                                                        const extraWithVehicle = t.extras.find(e => e.vehicle_model);
+                                                                        if (extraWithVehicle) return extraWithVehicle.vehicle_model;
+                                                                    }
+                                                                    return 'Vehículo';
+                                                                })()
+                                                            }
+                                                            <span style={{ color: 'var(--text-muted)' }}>
+                                                                {' '}({
+                                                                    t.vehicles?.plate ||
+                                                                    t.customers?.vehicle_plate ||
+                                                                    (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : null) ||
+                                                                    'Sin Placa'
+                                                                })
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                                            <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span>•</span>
+                                                            <span style={{
+                                                                padding: '0.1rem 0.5rem',
+                                                                borderRadius: '9999px',
+                                                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                                                color: '#10B981'
+                                                            }}>
+                                                                {getPaymentMethodLabel(t.payment_method)}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* TIMING DETAILS (Users Request) */}
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
+                                                            {(() => {
+                                                                const created = new Date(t.created_at);
+                                                                const started = t.started_at ? new Date(t.started_at) : created;
+                                                                const finished = t.finished_at ? new Date(t.finished_at) : null;
+
+                                                                // Wait Time (Created -> Started)
+                                                                const waitMins = Math.max(0, Math.round((started - created) / 60000));
+
+                                                                // Process Time (Started -> Finished)
+                                                                const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
+
+                                                                return (
+                                                                    <>
+                                                                        <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
+                                                                        <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
+                                                                        {finished && (
+                                                                            <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
+                                                                                ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
-                                                    <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Nuevo Cliente Rápido</h4>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem' }}>
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="Nombre"
-                                                            value={newCustomer.name}
-                                                            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="Teléfono"
-                                                            value={newCustomer.phone}
-                                                            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="Placa"
-                                                            value={newCustomer.vehicle_plate}
-                                                            onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="Marca"
-                                                            value={newCustomer.vehicle_brand}
-                                                            onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_brand: e.target.value })}
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="Modelo"
-                                                            value={newCustomer.vehicle_model}
-                                                            onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
-                                                        />
                                                     </div>
-
-                                                    {/* REFERRER SEARCH FIELD */}
-                                                    <div style={{ marginTop: '0.75rem', position: 'relative' }}>
-                                                        <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="🔍 Buscar cliente referente..."
-                                                            value={referrerSearch}
-                                                            onChange={(e) => {
-                                                                setReferrerSearch(e.target.value);
-                                                                setShowReferrerSearch(true);
-                                                            }}
-                                                            style={{ fontSize: '0.85rem', height: '36px' }}
-                                                        />
-                                                        {showReferrerSearch && referrerSearch.length > 0 && (
-                                                            <div style={{
-                                                                position: 'absolute', bottom: '100%', left: 0, right: 0,
-                                                                backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                                                borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
-                                                                boxShadow: '0 -4px 6px rgba(0,0,0,0.2)'
-                                                            }}>
-                                                                {customers
-                                                                    .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()))
-                                                                    .slice(0, 10)
-                                                                    .map(c => (
-                                                                        <div
-                                                                            key={c.id}
-                                                                            onClick={() => {
-                                                                                setNewCustomer({ ...newCustomer, referrer_id: c.id });
-                                                                                setReferrerSearch(c.name);
-                                                                                setShowReferrerSearch(false);
-                                                                            }}
-                                                                            style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                        >
-                                                                            {c.name}
-                                                                        </div>
-                                                                    ))}
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                                                            ${parseFloat(t.price || 0).toFixed(2)}
+                                                        </div>
+                                                        {t.tip > 0 && (
+                                                            <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
+                                                                + ${parseFloat(t.tip).toFixed(2)} propina
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                        <button
-                                                            type="button"
-                                                            className="btn"
-                                                            onClick={() => setIsAddingCustomer(false)}
-                                                            style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                                                        >
-                                                            Cancelar
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-primary"
-                                                            onClick={handleCreateCustomer}
-                                                            disabled={!newCustomer.name || !newCustomer.vehicle_plate}
-                                                            style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                                                        >
-                                                            Guardar Cliente
-                                                        </button>
-                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-
-                                            {/* MEMBERSHIP INDICATOR */}
-                                            {customerMembership && (
-                                                <div style={{
-                                                    gridColumn: 'span 2',
-                                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                                                    border: '1px solid #22C55E',
-                                                    padding: '0.75rem',
-                                                    borderRadius: '0.5rem',
-                                                    marginBottom: '1rem',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <div>
-                                                        <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships.name}</div>
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                            {customerMembership.memberships.type === 'unlimited'
-                                                                ? 'Lavados Ilimitados'
-                                                                : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships.wash_limit}`}
-                                                        </div>
-                                                    </div>
-                                                    {(customerMembership.memberships.type === 'unlimited' || customerMembership.usage_count < customerMembership.memberships.wash_limit) && (
-                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isMembershipUsage}
-                                                                onChange={(e) => setIsMembershipUsage(e.target.checked)}
-                                                                style={{ width: '20px', height: '20px' }}
-                                                            />
-                                                            <span style={{ fontWeight: 'bold' }}>Saldar con Membresía</span>
-                                                        </label>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            <div style={{ marginBottom: '1rem' }}>
-                                                <label className="label">Servicio Principal</label>
-                                                <select
-                                                    className="input"
-                                                    required
-                                                    value={formData.serviceId}
-                                                    onChange={handleServiceChange}
-                                                >
-                                                    <option value="">Seleccionar Servicio...</option>
-                                                    {sortedServices.map(s => (
-                                                        <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            {/* SECONDARY SERVICES (EXTRAS) */}
-                                            <div style={{ marginBottom: '1rem' }}>
-                                                <label className="label">Servicios Secundarios</label>
-                                                <select
-                                                    className="input"
-                                                    value=""
-                                                    onChange={(e) => {
-                                                        const sId = e.target.value;
-                                                        if (!sId) return;
-                                                        const s = services.find(srv => srv.id == sId);
-                                                        if (s) {
-                                                            // CHECK FOR MULTI-EMPLOYEE ASSIGNMENT
-                                                            if (formData.selectedEmployees && formData.selectedEmployees.length > 1) {
-                                                                setPendingExtra(s);
-                                                                setShowAssignmentModal(true);
-                                                            } else {
-                                                                // Single employee or none: Add directly
-                                                                addExtra(s, null);
-                                                            }
-                                                        }
-                                                    }}
-                                                >
-                                                    <option value="">Seleccionar Servicio Secundario...</option>
-                                                    {sortedServices.map(s => (
-                                                        <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            {/* LIST OF ADDED EXTRAS */}
-                                            {formData.extras && formData.extras.length > 0 && (
-                                                <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                                    <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Servicios Agregados:</label>
-                                                    {formData.extras.map((extra, index) => (
-                                                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', fontSize: '0.9rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <span>{extra.description} (${extra.price})</span>
-                                                                {extra.assignedTo && (
-                                                                    <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
-                                                                        Hecho por: {employees.find(e => e.id === extra.assignedTo)?.name || 'Desconocido'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <div style={{ marginBottom: '1rem' }}>
-                                                <label className="label">Hora del Servicio</label>
-                                                <input
-                                                    type="time"
-                                                    className="input"
-                                                    required
-                                                    value={formData.serviceTime}
-                                                    onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* LOYALTY REDEMPTION BUTTON */}
-                                    {canRedeemPoints && (
-                                        <button
-                                            type="button"
-                                            className="btn"
-                                            onClick={() => {
-                                                setFormData({ ...formData, price: 0 });
-                                                setIsRedemption(true);
-                                                setCanRedeemPoints(false);
-                                                alert('¡Lavado Gratis aplicado! El precio se ha ajustado a $0.00');
-                                            }}
-                                            style={{ width: '100%', marginTop: '1rem', backgroundColor: '#F59E0B', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-                                        >
-                                            🌟 Canjear Lavado Gratis (10 Pts)
-                                        </button>
-                                    )}
-
-                                    {/* TOTAL PRICE DISPLAY */}
-                                    <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 'bold' }}>Total Estimado:</span>
-                                        <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                                            ${formData.price || 0}
-                                        </span>
-                                    </div>
-
-
-
-                                    <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                        <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary"
-                                            onClick={handleSubmit}
-                                            disabled={isSubmitting}
-                                            style={{ opacity: isSubmitting ? 0.7 : 1 }}
-                                        >
-                                            {isSubmitting ? 'Registrando...' : 'Registrar Venta'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div >
-                    )
-                }
-
-
-                {/* ERROR ALERT */}
-                {
-                    error && (
-                        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem', border: '1px solid #EF4444' }}>
-                            <strong>Error:</strong> {error}
-                            <button onClick={() => setError(null)} style={{ float: 'right', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}>✕</button>
-                        </div>
-                    )
-                }
-
-
-
-                {/* SECCIÓN DE HISTORIAL (PAGADOS) - ADMIN/MANAGER ONLY */}
-                {
-                    (userRole === 'admin' || userRole === 'manager') && (
-                        <>
-                            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                                {statsTransactions
-                                    .filter(t => t.status === 'completed' || t.status === 'paid')
-                                    .sort((a, b) => {
-                                        const dateA = new Date(a.date);
-                                        const dateB = new Date(b.date);
-                                        if (dateB - dateA !== 0) return dateB - dateA;
-                                        return new Date(b.created_at) - new Date(a.created_at);
-                                    })
-                                    .map(t => (
-                                        <div
-                                            key={t.id}
-                                            className="card"
-                                            style={{
-                                                borderLeft: t.payment_method === 'cash' ? '4px solid #10B981' : t.payment_method === 'card' ? '4px solid #3B82F6' : '4px solid #F59E0B',
-                                                cursor: 'pointer',
-                                                transition: 'transform 0.2s'
-                                            }}
-                                            onClick={() => setSelectedTransaction(t)}
-                                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                        >
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                                <div>
-                                                    <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente Casual'}</h3>
-                                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                                                        🚗 {
-                                                            (() => {
-                                                                // Logic to display vehicle info correctly
-                                                                // Priority 1: Joined Vehicle Data (from t.vehicles) - Allow partials
-                                                                if (t.vehicles) {
-                                                                    const brand = t.vehicles.brand;
-                                                                    const model = t.vehicles.model;
-                                                                    if (brand || model) {
-                                                                        return `${brand || ''} ${model || ''}`.trim();
-                                                                    }
-                                                                }
-
-                                                                // Priority 2: Legacy Customer Fields (from t.customers)
-                                                                if (t.customers) {
-                                                                    const brand = t.customers.vehicle_brand;
-                                                                    const model = t.customers.vehicle_model;
-                                                                    if (brand || model) {
-                                                                        return `${brand || ''} ${model || ''}`.trim();
-                                                                    }
-                                                                }
-
-                                                                // Priority 3: Extras (if vehicle info stored there)
-                                                                if (Array.isArray(t.extras)) {
-                                                                    const extraWithVehicle = t.extras.find(e => e.vehicle_model);
-                                                                    if (extraWithVehicle) return extraWithVehicle.vehicle_model;
-                                                                }
-                                                                return 'Vehículo';
-                                                            })()
-                                                        }
-                                                        <span style={{ color: 'var(--text-muted)' }}>
-                                                            {' '}({
-                                                                t.vehicles?.plate ||
-                                                                t.customers?.vehicle_plate ||
-                                                                (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : null) ||
-                                                                'Sin Placa'
-                                                            })
-                                                        </span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                                        <span>{new Date(t.date).toLocaleTimeString('es-PR', { timeZone: 'America/Puerto_Rico', hour: '2-digit', minute: '2-digit' })}</span>
-                                                        <span>•</span>
-                                                        <span style={{
-                                                            padding: '0.1rem 0.5rem',
-                                                            borderRadius: '9999px',
-                                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                                            color: '#10B981'
-                                                        }}>
-                                                            {getPaymentMethodLabel(t.payment_method)}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* TIMING DETAILS (Users Request) */}
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.25rem', marginTop: '0.25rem' }}>
-                                                        {(() => {
-                                                            const created = new Date(t.created_at);
-                                                            const started = t.started_at ? new Date(t.started_at) : created;
-                                                            const finished = t.finished_at ? new Date(t.finished_at) : null;
-
-                                                            // Wait Time (Created -> Started)
-                                                            const waitMins = Math.max(0, Math.round((started - created) / 60000));
-
-                                                            // Process Time (Started -> Finished)
-                                                            const processMins = finished ? Math.max(0, Math.round((finished - started) / 60000)) : 0;
-
-                                                            return (
-                                                                <>
-                                                                    <div title="Tiempo de Espera en Cola">⏳ Espera: <span style={{ color: 'var(--text-main)' }}>{waitMins}m</span></div>
-                                                                    <div title="Tiempo de Lavado">🚿 Lavado: <span style={{ color: 'var(--text-main)' }}>{processMins > 0 ? formatDuration(processMins) : '--'}</span></div>
-                                                                    {finished && (
-                                                                        <div title="Hora de Finalización" style={{ gridColumn: 'span 2' }}>
-                                                                            ✅ Fin: <span style={{ color: 'var(--text-main)' }}>{finished.toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                        </div>
-                                                                    )}
-                                                                </>
-                                                            );
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                                <div style={{ textAlign: 'right' }}>
-                                                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                                                        ${parseFloat(t.price || 0).toFixed(2)}
-                                                    </div>
-                                                    {t.tip > 0 && (
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>
-                                                            + ${parseFloat(t.tip).toFixed(2)} propina
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
-                                                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
-                                                </div>
-                                                {t.extras && t.extras.length > 0 && (
+                                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
-                                                        <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
+                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Servicio:</span>
+                                                        <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getServiceName(t.service_id)}</span>
                                                     </div>
-                                                )}
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
-                                                    <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
-                                                        {t.transaction_assignments && t.transaction_assignments.length > 0
-                                                            ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
-                                                            : getEmployeeName(t.employee_id)
-                                                        }
-                                                    </span>
+                                                    {t.extras && t.extras.length > 0 && (
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Extras:</span>
+                                                            <span style={{ fontSize: '0.9rem' }}>{t.extras.length} items</span>
+                                                        </div>
+                                                    )}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Realizado por:</span>
+                                                        <span style={{ fontSize: '0.9rem', textAlign: 'right' }}>
+                                                            {t.transaction_assignments && t.transaction_assignments.length > 0
+                                                                ? t.transaction_assignments.map(a => getEmployeeName(a.employee_id)).join(', ')
+                                                                : getEmployeeName(t.employee_id)
+                                                            }
+                                                        </span>
+                                                    </div>
                                                 </div>
+
+                                                {/* ACTIONS FOR HISTORY ITEMS */}
+                                                < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                                                    <button
+                                                        className="btn"
+                                                        onClick={() => handleRevertToReady(t)}
+                                                        title="Devolver a Listo"
+                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                    >
+                                                        <RefreshCw size={14} /> <span>Devolver</span>
+                                                    </button>
+                                                    {userRole === 'admin' && (
+                                                        <>
+                                                            <button
+                                                                className="btn"
+                                                                style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setEditingTransactionId(t.id);
+                                                                }}
+                                                                title="Editar"
+                                                            >
+                                                                <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn"
+                                                                style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
+                                                                        handleDeleteTransactionV2(t.id);
+                                                                    }
+                                                                }}
+                                                                title="Eliminar"
+                                                            >
+                                                                <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+
                                             </div>
-
-                                            {/* ACTIONS FOR HISTORY ITEMS */}
-                                            < div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
-                                                <button
-                                                    className="btn"
-                                                    onClick={() => handleRevertToReady(t)}
-                                                    title="Devolver a Listo"
-                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                                >
-                                                    <RefreshCw size={14} /> <span>Devolver</span>
-                                                </button>
-                                                {userRole === 'admin' && (
-                                                    <>
-                                                        <button
-                                                            className="btn"
-                                                            style={{ padding: '0.5rem', color: 'var(--primary)', backgroundColor: 'transparent' }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setEditingTransactionId(t.id);
-                                                            }}
-                                                            title="Editar"
-                                                        >
-                                                            <span style={{ marginRight: '0.5rem' }}>Editar</span> ✏️
-                                                        </button>
-                                                        <button
-                                                            className="btn"
-                                                            style={{ padding: '0.5rem', color: 'var(--error)', backgroundColor: 'transparent' }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (window.confirm('¿Seguro que quieres eliminar esta venta?')) {
-                                                                    handleDeleteTransactionV2(t.id);
-                                                                }
-                                                            }}
-                                                            title="Eliminar"
-                                                        >
-                                                            <span style={{ marginRight: '0.5rem' }}>Eliminar</span> <Trash2 size={18} />
-                                                        </button>
-                                                    </>
-                                                )}
+                                        ))
+                                    }
+                                    {
+                                        statsTransactions.length === 0 && (
+                                            <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
+                                                No hay ventas registradas hoy
                                             </div>
+                                        )
+                                    }
+                                </div >
+                            </>
+                        )
+                    }
 
-                                        </div>
-                                    ))
-                                }
-                                {
-                                    statsTransactions.length === 0 && (
-                                        <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
-                                            No hay ventas registradas hoy
-                                        </div>
-                                    )
-                                }
-                            </div >
-                        </>
-                    )
-                }
-
-            </>)}
+                </>)
+            }
 
             {/* TRANSACTION DETAIL MODAL */}
             {
