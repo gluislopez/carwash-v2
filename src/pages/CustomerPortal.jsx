@@ -496,42 +496,45 @@ const CustomerPortal = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {vehicles.map(v => (
-                                <div key={v.id} style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '1rem', borderRadius: '0.8rem',
-                                    backgroundColor: selectedVehicleId === v.id ? '#eff6ff' : '#f8fafc',
-                                    border: selectedVehicleId === v.id ? '2px solid #3b82f6' : '1px solid #e2e8f0'
-                                }}>
-                                    <div>
-                                        <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1rem' }}>
-                                            {v.brand} {v.model}
+                            {vehicles.map(v => {
+                                const clean = (val) => (val && val !== 'null') ? val : '';
+                                return (
+                                    <div key={v.id} style={{
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        padding: '1rem', borderRadius: '0.8rem',
+                                        backgroundColor: selectedVehicleId === v.id ? '#eff6ff' : '#f8fafc',
+                                        border: selectedVehicleId === v.id ? '2px solid #3b82f6' : '1px solid #e2e8f0'
+                                    }}>
+                                        <div>
+                                            <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1rem' }}>
+                                                {clean(v.brand)} {clean(v.model) || 'Vehículo'}
+                                            </div>
+                                            <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                                                {clean(v.plate) || 'Sin Placa'}
+                                            </div>
                                         </div>
-                                        <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                                            {v.plate}
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
+                                                {v.points || 0} pts
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedVehicleId(v.id);
+                                                    setShowVehiclesModal(false);
+                                                }}
+                                                style={{
+                                                    fontSize: '0.75rem', padding: '0.3rem 0.6rem',
+                                                    backgroundColor: '#3b82f6', color: 'white',
+                                                    border: 'none', borderRadius: '0.4rem',
+                                                    marginTop: '0.2rem', cursor: 'pointer'
+                                                }}
+                                            >
+                                                Ver Historial
+                                            </button>
                                         </div>
                                     </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
-                                            {v.points || 0} pts
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedVehicleId(v.id);
-                                                setShowVehiclesModal(false);
-                                            }}
-                                            style={{
-                                                fontSize: '0.75rem', padding: '0.3rem 0.6rem',
-                                                backgroundColor: '#3b82f6', color: 'white',
-                                                border: 'none', borderRadius: '0.4rem',
-                                                marginTop: '0.2rem', cursor: 'pointer'
-                                            }}
-                                        >
-                                            Ver Historial
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
@@ -586,24 +589,27 @@ const CustomerPortal = () => {
                         scrollbarWidth: 'none', msOverflowStyle: 'none'
                     }} className="no-scrollbar">
 
-                        {vehicles.map(v => (
-                            <button
-                                key={v.id}
-                                onClick={() => setSelectedVehicleId(v.id)}
-                                style={{
-                                    flexShrink: 0, padding: '0.6rem 1.2rem',
-                                    borderRadius: '2rem', border: 'none',
-                                    backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
-                                    color: selectedVehicleId === v.id ? 'white' : '#64748b',
-                                    fontWeight: 'bold', fontSize: '0.9rem',
-                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                🚗 {v.brand} {v.model}
-                            </button>
-                        ))}
+                        {vehicles.map(v => {
+                            const clean = (val) => (val && val !== 'null') ? val : '';
+                            return (
+                                <button
+                                    key={v.id}
+                                    onClick={() => setSelectedVehicleId(v.id)}
+                                    style={{
+                                        flexShrink: 0, padding: '0.6rem 1.2rem',
+                                        borderRadius: '2rem', border: 'none',
+                                        backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
+                                        color: selectedVehicleId === v.id ? 'white' : '#64748b',
+                                        fontWeight: 'bold', fontSize: '0.9rem',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🚗 {clean(v.brand)} {clean(v.model) || 'Vehículo'}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
 
@@ -612,7 +618,14 @@ const CustomerPortal = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
                         <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
-                            {selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'Vista General'}
+                            {(() => {
+                                const clean = (val) => (val && val !== 'null') ? val : '';
+                                if (!selectedVehicle) return 'Vista General';
+                                const brand = clean(selectedVehicle.brand);
+                                const model = clean(selectedVehicle.model);
+                                if (!brand && !model) return 'Vehículo';
+                                return `${brand} ${model}`.trim();
+                            })()}
                         </div>
                     </div>
                     <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -1352,21 +1365,20 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehículo</div>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b' }}>
-                                    {(selectedTransaction.vehicles?.brand && selectedTransaction.vehicles.brand !== 'null' ? selectedTransaction.vehicles.brand + ' ' : (customer?.vehicle_brand ? customer.vehicle_brand + ' ' : '')) +
-                                        (selectedTransaction.vehicles?.model ||
-                                            customer?.vehicle_model ||
-                                            (Array.isArray(selectedTransaction.extras) ?
-                                                selectedTransaction.extras.find(e => e.vehicle_model)?.vehicle_model :
-                                                selectedTransaction.extras?.vehicle_model) ||
-                                            'Vehículo')}
+                                    {(() => {
+                                        const clean = (val) => (val && val !== 'null') ? val : '';
+                                        const brand = clean(selectedTransaction.vehicles?.brand) || clean(customer?.vehicle_brand);
+                                        const model = clean(selectedTransaction.vehicles?.model) || clean(customer?.vehicle_model);
+                                        return `${brand} ${model || 'Vehículo'}`.trim();
+                                    })()}
                                 </div>
                                 <div style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: '600', marginTop: '0.1rem' }}>
-                                    {selectedTransaction.vehicles?.plate ||
-                                        customer?.vehicle_plate ||
-                                        (Array.isArray(selectedTransaction.extras) ?
-                                            selectedTransaction.extras.find(e => e.vehicle_plate)?.vehicle_plate :
-                                            selectedTransaction.extras?.vehicle_plate) ||
-                                        'Sin Placa'}
+                                    {(() => {
+                                        const clean = (val) => (val && val !== 'null') ? val : '';
+                                        return clean(selectedTransaction.vehicles?.plate) ||
+                                            clean(customer?.vehicle_plate) ||
+                                            'Sin Placa';
+                                    })()}
                                 </div>
                             </div>
 
