@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+suimport React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
@@ -2998,6 +2998,7 @@ const Dashboard = () => {
                                                                     <div style={{ marginBottom: '1.5rem' }}>
                                                                         <label className="label" style={{ fontSize: '0.85rem', marginBottom: '0.75rem', display: 'block' }}>
                                                                             {customerVehicles.length > 1 ? 'Selecciona el vehículo (Varios detectados):' : 'Vehículo a lavar:'}
+                                                                            <span style={{ fontSize: '0.7rem', color: '#9ca3af', marginLeft: '0.5rem', fontWeight: 'normal' }}>(Total: {customerVehicles.length})</span>
                                                                         </label>
 
                                                                         {customerVehicles.length > 1 ? (
