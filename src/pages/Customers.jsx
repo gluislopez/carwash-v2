@@ -9,6 +9,8 @@ const Customers = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
+    const [customerVehicles, setCustomerVehicles] = useState([]); // State for vehicles in modal
+    const [newVehicle, setNewVehicle] = useState({ plate: '', model: '', brand: '' });
     const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
     const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0 });
@@ -209,24 +211,60 @@ const Customers = () => {
         membership_id: ''
     });
 
-    const openModal = (customer) => {
+    const openModal = async (customer) => {
         const activeSub = customer ? activeMemberships[customer.id] : null;
+
         if (customer) {
             setEditingCustomer(customer);
+            // Fetch Vehicles
+            const { data: vData } = await supabase.from('vehicles').select('*').eq('customer_id', customer.id);
+            setCustomerVehicles(vData || []);
+
             setFormData({
                 name: customer.name,
                 phone: customer.phone || '',
                 email: customer.email || '',
-                vehicle_plate: customer.vehicle_plate || '',
-                vehicle_model: customer.vehicle_model || '',
+                vehicle_plate: '', // Reset new vehicle inputs
+                vehicle_model: '',
                 points: customer.points || 0,
                 membership_id: activeSub ? activeSub.membership_id : ''
             });
         } else {
             setEditingCustomer(null);
+            setCustomerVehicles([]);
             setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '' });
         }
         setIsModalOpen(true);
+    };
+
+    const handleAddVehicle = async () => {
+        if (!newVehicle.plate || !newVehicle.model) return alert('Placa y Modelo son requeridos');
+
+        try {
+            const { data, error } = await supabase.from('vehicles').insert([{
+                customer_id: editingCustomer.id,
+                plate: newVehicle.plate.toUpperCase(),
+                model: newVehicle.model,
+                brand: newVehicle.brand || ''
+            }]).select();
+
+            if (error) throw error;
+
+            setCustomerVehicles([...customerVehicles, data[0]]);
+            setNewVehicle({ plate: '', model: '', brand: '' });
+        } catch (error) {
+            alert('Error al añadir vehículo: ' + error.message);
+        }
+    };
+
+    const handleDeleteVehicle = async (id) => {
+        if (!window.confirm('¿Eliminar vehículo?')) return;
+        try {
+            await supabase.from('vehicles').delete().eq('id', id);
+            setCustomerVehicles(customerVehicles.filter(v => v.id !== id));
+        } catch (error) {
+            alert('Error al eliminar vehículo: ' + error.message);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -632,28 +670,90 @@ const Customers = () => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                                <div>
-                                    <label className="label">Modelo Vehículo</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="Ej. Toyota Corolla"
-                                        value={formData.vehicle_model}
-                                        onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })}
-                                    />
+
+
+                            {/* VEHICLE MANAGEMENT (Only for Existing Customers) */}
+                            {editingCustomer && (
+                                <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
+                                    <h4 style={{ marginBottom: '0.5rem', borderBottom: '1px solid #444', paddingBottom: '0.5rem' }}>Vehículos Registrados</h4>
+
+                                    {/* List */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                                        {customerVehicles.map(v => (
+                                            <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold' }}>{v.plate}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{v.brand} {v.model}</div>
+                                                </div>
+                                                <button type="button" onClick={() => handleDeleteVehicle(v.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {customerVehicles.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Sin vehículos.</span>}
+                                    </div>
+
+                                    {/* Add New */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                placeholder="Placa"
+                                                value={newVehicle.plate}
+                                                onChange={e => setNewVehicle({ ...newVehicle, plate: e.target.value })}
+                                                style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                placeholder="Modelo"
+                                                value={newVehicle.model}
+                                                onChange={e => setNewVehicle({ ...newVehicle, model: e.target.value })}
+                                                style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                className="input"
+                                                placeholder="Marca"
+                                                value={newVehicle.brand}
+                                                onChange={e => setNewVehicle({ ...newVehicle, brand: e.target.value })}
+                                                style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                                            />
+                                        </div>
+                                        <button type="button" onClick={handleAddVehicle} className="btn btn-primary" style={{ padding: '0.4rem', minWidth: 'auto' }}>
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="label">Tablilla (Placa)</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="ABC-123"
-                                        value={formData.vehicle_plate}
-                                        onChange={(e) => setFormData({ ...formData, vehicle_plate: e.target.value })}
-                                    />
+                            )}
+
+                            {/* Legacy Field Warning (Hidden for UX cleanliness, or we could show inputs for New Customer Only) */}
+                            {!editingCustomer && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div>
+                                        <label className="label">Modelo Vehículo</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="Ej. Toyota Corolla"
+                                            value={formData.vehicle_model}
+                                            onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label">Tablilla (Placa)</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="ABC-123"
+                                            value={formData.vehicle_plate}
+                                            onChange={(e) => setFormData({ ...formData, vehicle_plate: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Puntos (Solo Admin/Manager) */}
                             {(userRole === 'admin' || userRole === 'manager') && (
@@ -700,7 +800,7 @@ const Customers = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div >
             )}
 
             {/* QR CODE MODAL FOR CUSTOMERS */}
@@ -775,103 +875,107 @@ const Customers = () => {
             }
 
             {/* CUSTOMER HISTORY MODAL */}
-            {selectedHistoryCustomer && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000
-                }} onClick={() => setSelectedHistoryCustomer(null)}>
-                    <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ margin: 0 }}>Historial: {selectedHistoryCustomer.name}</h3>
-                            <button onClick={() => setSelectedHistoryCustomer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                                <X size={24} />
-                            </button>
+            {
+                selectedHistoryCustomer && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000
+                    }} onClick={() => setSelectedHistoryCustomer(null)}>
+                        <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h3 style={{ margin: 0 }}>Historial: {selectedHistoryCustomer.name}</h3>
+                                <button onClick={() => setSelectedHistoryCustomer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            {loadingHistory ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando historial...</div>
+                            ) : customerHistory.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {customerHistory.map(tx => (
+                                        <div key={tx.id} style={{ padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+                                                    {tx.services?.name || 'Servicio Desconocido'}
+                                                </span>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                    {new Date(tx.date).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                                <span>
+                                                    🚗 {tx.vehicles?.plate
+                                                        ? `${tx.vehicles.plate} (${tx.vehicles.model || ''})`
+                                                        : (tx.customers?.vehicle_plate
+                                                            ? `${tx.customers.vehicle_plate} (${tx.customers.vehicle_model || ''})`
+                                                            : 'Sin Placa')}
+                                                </span>
+                                                <span style={{ fontWeight: 'bold' }}>${tx.price}</span>
+                                            </div>
+                                            <div style={{ marginTop: '0.5rem' }}>
+                                                <span className={`badge badge-${tx.status}`} style={{ fontSize: '0.7rem' }}>
+                                                    {tx.status.toUpperCase()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                    No hay servicios registrados para este cliente.
+                                </div>
+                            )}
                         </div>
-
-                        {loadingHistory ? (
-                            <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando historial...</div>
-                        ) : customerHistory.length > 0 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {customerHistory.map(tx => (
-                                    <div key={tx.id} style={{ padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
-                                                {tx.services?.name || 'Servicio Desconocido'}
-                                            </span>
-                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                {new Date(tx.date).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                                            <span>
-                                                🚗 {tx.vehicles?.plate
-                                                    ? `${tx.vehicles.plate} (${tx.vehicles.model || ''})`
-                                                    : (tx.customers?.vehicle_plate
-                                                        ? `${tx.customers.vehicle_plate} (${tx.customers.vehicle_model || ''})`
-                                                        : 'Sin Placa')}
-                                            </span>
-                                            <span style={{ fontWeight: 'bold' }}>${tx.price}</span>
-                                        </div>
-                                        <div style={{ marginTop: '0.5rem' }}>
-                                            <span className={`badge badge-${tx.status}`} style={{ fontSize: '0.7rem' }}>
-                                                {tx.status.toUpperCase()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                                No hay servicios registrados para este cliente.
-                            </div>
-                        )}
                     </div>
-                </div>
-            )}
-            {isStatsModalOpen && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-                }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>Editar Estadísticas: {editingCustomer?.name}</h3>
-                        <form onSubmit={handleStatsSubmit}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label className="label">Puntos de Lealtad</label>
-                                <input
-                                    type="number"
-                                    className="input"
-                                    value={statsFormData.points}
-                                    onChange={(e) => setStatsFormData({ ...statsFormData, points: e.target.value })}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label className="label">Ajuste Manual de Visitas (+/-)</label>
-                                <input
-                                    type="number"
-                                    className="input"
-                                    value={statsFormData.manual_visit_count}
-                                    onChange={(e) => setStatsFormData({ ...statsFormData, manual_visit_count: e.target.value })}
-                                />
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                    Visitas Reales (Transacciones): {visitCounts[editingCustomer?.id] || 0}<br />
-                                    Total Mostrado: {(visitCounts[editingCustomer?.id] || 0) + (parseInt(statsFormData.manual_visit_count) || 0)}
-                                </p>
-                            </div>
+                )
+            }
+            {
+                isStatsModalOpen && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                    }}>
+                        <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Editar Estadísticas: {editingCustomer?.name}</h3>
+                            <form onSubmit={handleStatsSubmit}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Puntos de Lealtad</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        value={statsFormData.points}
+                                        onChange={(e) => setStatsFormData({ ...statsFormData, points: e.target.value })}
+                                    />
+                                </div>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label className="label">Ajuste Manual de Visitas (+/-)</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        value={statsFormData.manual_visit_count}
+                                        onChange={(e) => setStatsFormData({ ...statsFormData, manual_visit_count: e.target.value })}
+                                    />
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                        Visitas Reales (Transacciones): {visitCounts[editingCustomer?.id] || 0}<br />
+                                        Total Mostrado: {(visitCounts[editingCustomer?.id] || 0) + (parseInt(statsFormData.manual_visit_count) || 0)}
+                                    </p>
+                                </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button type="button" className="btn" onClick={() => setIsStatsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Guardar Cambios
-                                </button>
-                            </div>
-                        </form>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                    <button type="button" className="btn" onClick={() => setIsStatsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="btn btn-primary">
+                                        Guardar Cambios
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
