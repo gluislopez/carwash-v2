@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History } from 'lucide-react';
+import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History, ExternalLink, Share2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 import QRCode from 'react-qr-code';
@@ -280,6 +280,31 @@ const Customers = () => {
         }
     };
 
+    const handleShare = async (customer) => {
+        const url = `${window.location.origin}/portal/${customer.id}`;
+        const shareData = {
+            title: `Portal de ${customer.name}`,
+            text: `Accede al portal de cliente de ${customer.name}`,
+            url: url
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.error('Error sharing:', err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(url);
+                alert('Enlace copiado al portapapeles');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('No se pudo copiar el enlace.');
+            }
+        }
+    };
+
     // Filter customers
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -292,7 +317,7 @@ const Customers = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1>
+                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes <span style={{ fontSize: '0.8rem', opacity: 0.5, fontWeight: 'normal' }}>(Rol: {userRole || 'Cargando...'})</span></h1>
                         <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p>
                     </div>
 
@@ -483,22 +508,42 @@ const Customers = () => {
                             )}
                         </div>
 
-                        {userRole === 'admin' && (
-                            <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
-                                <button onClick={() => openHistory(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }} title="Ver Historial">
-                                    <History size={18} />
-                                </button>
-                                <button onClick={() => setSelectedQrCustomer(customer)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Ver QR">
-                                    <QrCode size={18} />
-                                </button>
-                                <button onClick={() => openModal(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
-                                    <Edit size={18} />
-                                </button>
-                                <button onClick={() => handleDelete(customer.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        )}
+                        {/* ACTIONS - Always visible (View/Share) + Restricted (Edit/Delete) */}
+                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem', zIndex: 10 }}>
+                            <button
+                                onClick={() => window.open(`/portal/${customer.id}`, '_blank')}
+                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                                title="Ver Portal"
+                            >
+                                <ExternalLink size={18} />
+                            </button>
+                            <button
+                                onClick={() => handleShare(customer)}
+                                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                                title="Compartir Portal"
+                            >
+                                <Share2 size={18} />
+                            </button>
+
+                            {(userRole === 'admin' || userRole === 'manager') && (
+                                <>
+                                    <button onClick={() => openHistory(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }} title="Ver Historial">
+                                        <History size={18} />
+                                    </button>
+                                    <button onClick={() => setSelectedQrCustomer(customer)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Ver QR">
+                                        <QrCode size={18} />
+                                    </button>
+                                    <button onClick={() => openModal(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
+                                        <Edit size={18} />
+                                    </button>
+                                    {userRole === 'admin' && (
+                                        <button onClick={() => handleDelete(customer.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 ))}
                 {
