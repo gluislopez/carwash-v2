@@ -269,6 +269,14 @@ const Customers = () => {
 
             setCustomerVehicles([...customerVehicles, data[0]]);
             setNewVehicle({ plate: '', model: '', brand: '' });
+
+            // Update global allVehicles map
+            setAllVehicles(prev => {
+                const newMap = { ...prev };
+                if (!newMap[editingCustomer.id]) newMap[editingCustomer.id] = [];
+                newMap[editingCustomer.id].push(data[0]);
+                return newMap;
+            });
         } catch (error) {
             alert('Error al añadir vehículo: ' + error.message);
         }
@@ -278,7 +286,17 @@ const Customers = () => {
         if (!window.confirm('¿Eliminar vehículo?')) return;
         try {
             await supabase.from('vehicles').delete().eq('id', id);
+            await supabase.from('vehicles').delete().eq('id', id);
             setCustomerVehicles(customerVehicles.filter(v => v.id !== id));
+
+            // Update global allVehicles map
+            setAllVehicles(prev => {
+                const newMap = { ...prev };
+                if (newMap[editingCustomer.id]) {
+                    newMap[editingCustomer.id] = newMap[editingCustomer.id].filter(v => v.id !== id);
+                }
+                return newMap;
+            });
         } catch (error) {
             alert('Error al eliminar vehículo: ' + error.message);
         }
@@ -317,6 +335,19 @@ const Customers = () => {
                     ? { ...v, ...editingVehicleData, plate: editingVehicleData.plate.toUpperCase() }
                     : v
             ));
+
+            // Update global allVehicles map
+            setAllVehicles(prev => {
+                const newMap = { ...prev };
+                if (newMap[editingCustomer.id]) {
+                    newMap[editingCustomer.id] = newMap[editingCustomer.id].map(v =>
+                        v.id === editingVehicleId
+                            ? { ...v, ...editingVehicleData, plate: editingVehicleData.plate.toUpperCase() }
+                            : v
+                    );
+                }
+                return newMap;
+            });
 
             setEditingVehicleId(null);
         } catch (error) {
