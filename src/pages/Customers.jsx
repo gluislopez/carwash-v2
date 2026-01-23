@@ -682,8 +682,13 @@ const Customers = () => {
                                         {customerVehicles.map(v => (
                                             <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
                                                 <div>
-                                                    <div style={{ fontWeight: 'bold' }}>{v.brand} {v.model}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{v.plate}</div>
+                                                    <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                        <Car size={16} />
+                                                        <span>{v.brand || ''} {v.model || 'Sin Modelo'}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1.4rem' }}>
+                                                        {v.plate || 'Sin Placa'}
+                                                    </div>
                                                 </div>
                                                 <button type="button" onClick={() => handleDeleteVehicle(v.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
                                                     <Trash2 size={16} />
