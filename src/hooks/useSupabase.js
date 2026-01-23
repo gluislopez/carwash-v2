@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 
 const useSupabase = (tableName, selectQuery = '*', options = {}) => {
@@ -6,7 +6,9 @@ const useSupabase = (tableName, selectQuery = '*', options = {}) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const fetchData = async () => {
+    const optionsKey = JSON.stringify(options);
+
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             let query = supabase.from(tableName).select(selectQuery);
@@ -15,25 +17,25 @@ const useSupabase = (tableName, selectQuery = '*', options = {}) => {
                 query = query.order(options.orderBy.column, { ascending: options.orderBy.ascending });
             }
 
-            const { data, error } = await query;
+            const { data: fetchedData, error } = await query;
             if (error) throw error;
-            setData(data);
+            setData(fetchedData);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [tableName, selectQuery, optionsKey]);
 
     useEffect(() => {
         fetchData();
-    }, [tableName]);
+    }, [fetchData]);
 
     const create = async (newItem) => {
         try {
             const { data: created, error } = await supabase.from(tableName).insert(newItem).select();
             if (error) throw error;
-            setData([...data, ...created]);
+            setData(prev => [...prev, ...created]);
             return created;
         } catch (err) {
             setError(err.message);
@@ -47,10 +49,9 @@ const useSupabase = (tableName, selectQuery = '*', options = {}) => {
             if (error) throw error;
 
             if (updated && updated.length > 0) {
-                setData(data.map(item => item.id === id ? updated[0] : item));
+                setData(prev => prev.map(item => item.id === id ? updated[0] : item));
                 return updated;
             } else {
-                // RLS likely blocked the update, or id not found. Return empty but don't corrupt state.
                 return [];
             }
         } catch (err) {
@@ -63,7 +64,7 @@ const useSupabase = (tableName, selectQuery = '*', options = {}) => {
         try {
             const { error } = await supabase.from(tableName).delete().eq('id', id).select();
             if (error) throw error;
-            setData(data.filter(item => item.id !== id));
+            setData(prev => prev.filter(item => item.id !== id));
         } catch (err) {
             setError(err.message);
             throw err;

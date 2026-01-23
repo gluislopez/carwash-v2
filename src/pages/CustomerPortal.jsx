@@ -44,6 +44,7 @@ const CustomerPortal = () => {
     const [showFeedbackModal, setShowFeedbackModal] = useState(false); // NEW MODAL FOR FEEDBACK
     const [showMembershipModal, setShowMembershipModal] = useState(false); // NEW MODAL FOR MEMBERSHIPS
     const [availablePlans, setAvailablePlans] = useState([]); // Store all plans
+    const [portalMessage, setPortalMessage] = useState(''); // Global announcement
 
     // PWA State
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -305,6 +306,15 @@ const CustomerPortal = () => {
                 if (sLink) setStripeLink(sLink.value);
             }
 
+            // 7. Fetch Portal Announcement
+            const { data: announce } = await supabase
+                .from('business_settings')
+                .select('setting_value')
+                .eq('setting_key', 'portal_message')
+                .maybeSingle();
+
+            if (announce) setPortalMessage(announce.setting_value);
+
             setLoading(false);
         };
 
@@ -546,6 +556,27 @@ const CustomerPortal = () => {
             )}
 
             <div style={{ maxWidth: '600px', margin: '-1.5rem auto 0', padding: '0 1rem', position: 'relative', zIndex: 10 }}>
+
+                {/* --- GLOBAL ANNOUNCEMENT BANNER --- */}
+                {portalMessage && (
+                    <div style={{
+                        backgroundColor: '#fef9c3',
+                        color: '#854d0e',
+                        padding: '1rem',
+                        borderRadius: '1rem',
+                        marginBottom: '1rem',
+                        borderLeft: '5px solid #eab308',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        fontSize: '0.95rem',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: '0.5rem'
+                    }}>
+                        <span style={{ fontSize: '1.2rem' }}>📢</span>
+                        <span>{portalMessage}</span>
+                    </div>
+                )}
 
                 {/* VEHICLE SELECTOR (TABS) */}
                 {vehicles.length > 0 && (

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS memberships (
 -- 2. Create customer_memberships table
 CREATE TABLE IF NOT EXISTS customer_memberships (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
     membership_id UUID NOT NULL REFERENCES memberships(id) ON DELETE CASCADE,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'expired')),
     start_date TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,

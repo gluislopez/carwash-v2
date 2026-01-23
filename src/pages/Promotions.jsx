@@ -117,7 +117,20 @@ const Promotions = () => {
                 >
                     2. Enviar Campaña
                 </button>
+                <button
+                    onClick={() => setActiveTab('portal')}
+                    style={{
+                        padding: '1rem', border: 'none', background: 'none', cursor: 'pointer',
+                        fontWeight: 'bold', color: activeTab === 'portal' ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: activeTab === 'portal' ? '3px solid var(--primary)' : 'none'
+                    }}
+                >
+                    3. Anuncio en Portal 🆕
+                </button>
             </div>
+
+            {/* TAB CONTENT: PORTAL ANNOUNCEMENT */}
+            {activeTab === 'portal' && <PortalAnnouncement />}
 
             {/* TAB CONTENT: TEMPLATES */}
             {activeTab === 'templates' && (
@@ -272,6 +285,78 @@ const Promotions = () => {
                                 Mostrando primeros 50 de {filteredCustomers.length} resultados. Usa el buscador.
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const PortalAnnouncement = () => {
+    const [message, setMessage] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        fetchCurrentMessage();
+    }, []);
+
+    const fetchCurrentMessage = async () => {
+        const { data } = await supabase
+            .from('business_settings')
+            .select('setting_value')
+            .eq('setting_key', 'portal_message')
+            .single();
+        if (data) setMessage(data.setting_value);
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const { error } = await supabase
+            .from('business_settings')
+            .upsert({ setting_key: 'portal_message', setting_value: message }, { onConflict: 'setting_key' });
+
+        setIsSaving(false);
+        if (error) alert("Error al guardar: " + error.message);
+        else alert("¡Mensaje actualizado en todos los portales!");
+    };
+
+    return (
+        <div style={{ maxWidth: '600px', backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ marginBottom: '1rem', fontWeight: 'bold' }}>Anuncio Global en Portal</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Este mensaje aparecerá en la parte superior del portal de <b>todos</b> tus clientes.
+                Ideal para avisar cambios de horario, cierres por lluvia o avisos importantes.
+            </p>
+
+            <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder="Ej: Hoy cerraremos a las 12:00 MD por mantenimiento."
+                rows={4}
+                style={{ width: '100%', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', fontFamily: 'inherit', marginBottom: '1.5rem' }}
+            />
+
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    style={{ padding: '0.75rem 2rem', borderRadius: '0.5rem', border: 'none', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 'bold', cursor: 'pointer', opacity: isSaving ? 0.7 : 1 }}
+                >
+                    {isSaving ? 'Guardando...' : 'Publicar en Portal'}
+                </button>
+                <button
+                    onClick={() => setMessage('')}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.9rem' }}
+                >
+                    Limpiar Mensaje
+                </button>
+            </div>
+
+            {message && (
+                <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Vista previa en el portal:</p>
+                    <div style={{ backgroundColor: '#fef9c3', color: '#854d0e', padding: '1rem', borderRadius: '0.5rem', borderLeft: '5px solid #eab308', fontSize: '0.95rem', fontWeight: '500' }}>
+                        📢 {message}
                     </div>
                 </div>
             )}

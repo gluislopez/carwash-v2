@@ -16,6 +16,8 @@ const MembershipSettings = () => {
         limit_count: 0
     });
 
+    const [error, setError] = useState(null);
+
     useEffect(() => {
         fetchMemberships();
         fetchSubscriptions();
@@ -23,20 +25,31 @@ const MembershipSettings = () => {
 
     const fetchMemberships = async () => {
         setLoading(true);
+        setError(null);
         const { data, error } = await supabase
             .from('memberships')
             .select('*')
             .order('created_at', { ascending: true });
 
+        if (error) {
+            console.error("Error fetching plans:", error);
+            if (error.code === 'PGRST116' || error.message.includes('relation "memberships" does not exist')) {
+                setError("Las tablas de membresía no existen en Supabase. Por favor ejecuta el archivo SQL.");
+            } else {
+                setError(error.message);
+            }
+        }
         if (data) setMemberships(data);
         setLoading(false);
     };
 
     const fetchSubscriptions = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('customer_memberships')
             .select('*, customers(name, phone), memberships(name, price)')
             .eq('status', 'active');
+
+        if (error) console.error("Error fetching subscriptions:", error);
         if (data) setSubscriptions(data);
     };
 
@@ -48,15 +61,23 @@ const MembershipSettings = () => {
             price: parseFloat(currentPlan.price)
         };
 
+        let error;
         if (currentPlan.id) {
-            await supabase.from('memberships').update(planToSave).eq('id', currentPlan.id);
+            const result = await supabase.from('memberships').update(planToSave).eq('id', currentPlan.id);
+            error = result.error;
         } else {
-            await supabase.from('memberships').insert([planToSave]);
+            const result = await supabase.from('memberships').insert([planToSave]);
+            error = result.error;
         }
 
-        setIsEditing(false);
-        setCurrentPlan({ name: '', description: '', price: '', type: 'limit', limit_count: 0 });
-        fetchMemberships();
+        if (error) {
+            console.error("Error saving plan:", error);
+            alert("Error al guardar el plan: " + error.message);
+        } else {
+            setIsEditing(false);
+            setCurrentPlan({ name: '', description: '', price: '', type: 'limit', limit_count: 0 });
+            fetchMemberships();
+        }
     };
 
     const handleDeletePlan = async (id) => {
@@ -132,6 +153,13 @@ const MembershipSettings = () => {
                     </button>
                 </div>
             </div>
+
+            {error && (
+                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Info size={18} />
+                    <span>{error}</span>
+                </div>
+            )}
 
             {activeTab === 'plans' ? (
                 <>
