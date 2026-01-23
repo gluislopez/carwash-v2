@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard, List } from 'lucide-react';
+import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard, List, Award } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
@@ -42,6 +42,8 @@ const CustomerPortal = () => {
     const [showCouponModal, setShowCouponModal] = useState(false);
     const [showVehiclesModal, setShowVehiclesModal] = useState(false); // NEW MODAL STATE
     const [showFeedbackModal, setShowFeedbackModal] = useState(false); // NEW MODAL FOR FEEDBACK
+    const [showMembershipModal, setShowMembershipModal] = useState(false); // NEW MODAL FOR MEMBERSHIPS
+    const [availablePlans, setAvailablePlans] = useState([]); // Store all plans
 
     // PWA State
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -283,6 +285,15 @@ const CustomerPortal = () => {
                     .order('payment_date', { ascending: false });
                 if (payments) setSubPayments(payments);
             }
+
+            // 4.1 Fetch Available Plans (for Modal)
+            const { data: plans } = await supabase
+                .from('memberships')
+                .select('*')
+                .eq('active', true)
+                .order('price', { ascending: true });
+
+            if (plans) setAvailablePlans(plans);
 
             // 6. Fetch Global Settings (Stripe Link)
             const { data: settings } = await supabase
@@ -797,6 +808,40 @@ const CustomerPortal = () => {
 
                 </div>
 
+                {/* --- MEMBERSHIP PLANS CARD (NEW) --- */}
+                {!membership && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                        <div
+                            onClick={() => setShowMembershipModal(true)}
+                            style={{
+                                width: '100%', maxWidth: '350px',
+                                backgroundColor: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', // Fallback color
+                                background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+                                borderRadius: '1rem', padding: '1rem',
+                                boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
+                                cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                color: 'white'
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.8rem', borderRadius: '50%' }}>
+                                    <Award size={24} color="white" />
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Membresías VIP</div>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Ahorra con planes mensuales</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ backgroundColor: 'white', color: '#4f46e5', fontWeight: 'bold', padding: '0.4rem 0.8rem', borderRadius: '2rem', fontSize: '0.85rem' }}>
+                                    Ver Planes
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
 
                 {/* LOYALTY SECTION REMOVED (INTEGRATED ABOVE) */}
 
@@ -1028,6 +1073,102 @@ const CustomerPortal = () => {
                             >
                                 Cancelar
                             </button>
+                        </div>
+                    </div>
+                )}
+
+
+                {/* MEMBERSHIP SELECTION MODAL */}
+                {showMembershipModal && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 9999,
+                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        padding: '1rem'
+                    }} onClick={() => setShowMembershipModal(false)}>
+                        <div style={{
+                            backgroundColor: '#f8fafc', padding: '0',
+                            borderRadius: '1.5rem', width: '100%', maxWidth: '400px',
+                            maxHeight: '85vh', overflowY: 'auto',
+                            position: 'relative'
+                        }} onClick={e => e.stopPropagation()}>
+
+                            {/* Header */}
+                            <div style={{
+                                backgroundColor: 'white', padding: '1.5rem',
+                                borderBottom: '1px solid #e2e8f0',
+                                position: 'sticky', top: 0, zIndex: 10,
+                                borderTopLeftRadius: '1.5rem', borderTopRightRadius: '1.5rem'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Membresías</h2>
+                                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Elige el plan ideal para ti</p>
+                                    </div>
+                                    <button onClick={() => setShowMembershipModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', backgroundColor: '#f1f5f9' }}>
+                                        <X size={20} color="#64748b" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {availablePlans.map(plan => (
+                                    <div key={plan.id} style={{
+                                        backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                                        border: '1px solid #e2e8f0',
+                                        position: 'relative', overflow: 'hidden'
+                                    }}>
+                                        {plan.type === 'unlimited' && (
+                                            <div style={{
+                                                position: 'absolute', top: '12px', right: '-30px',
+                                                backgroundColor: '#10b981', color: 'white',
+                                                fontSize: '0.7rem', fontWeight: 'bold',
+                                                padding: '0.2rem 2.5rem', transform: 'rotate(45deg)',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                            }}>
+                                                POPULAR
+                                            </div>
+                                        )}
+
+                                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.2rem' }}>{plan.name}</h3>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginBottom: '1rem' }}>
+                                            <span style={{ fontSize: '1.8rem', fontWeight: '900', color: '#3b82f6' }}>${parseInt(plan.price)}</span>
+                                            <span style={{ color: '#64748b' }}>/ mes</span>
+                                        </div>
+
+                                        <ul style={{ marginBottom: '1.5rem', paddingLeft: '1.2rem', color: '#475569', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                            {plan.description ? plan.description.split('.').filter(i => i.trim()).map((feat, i) => (
+                                                <li key={i}>{feat.trim()}</li>
+                                            )) : (
+                                                <li>Beneficios exclusivos</li>
+                                            )}
+                                        </ul>
+
+                                        <button
+                                            onClick={() => {
+                                                const message = `Hola, soy ${customer.name}, me interesa suscribirme al plan *${plan.name}* de $${plan.price}.`;
+                                                const whatsappUrl = `https://wa.me/17873602859?text=${encodeURIComponent(message)}`;
+                                                window.open(whatsappUrl, '_blank');
+                                            }}
+                                            style={{
+                                                width: '100%', padding: '0.8rem',
+                                                backgroundColor: '#3b82f6', color: 'white',
+                                                fontWeight: 'bold', borderRadius: '0.8rem',
+                                                border: 'none', fontSize: '1rem',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                cursor: 'pointer', boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+                                            }}
+                                        >
+                                            Suscribirme <span style={{ fontSize: '0.8rem' }}>via WhatsApp</span>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                Puedes cancelar en cualquier momento.
+                            </div>
                         </div>
                     </div>
                 )}
