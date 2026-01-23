@@ -52,6 +52,25 @@ const CustomerPortal = () => {
     const [showIOSInstructions, setShowIOSInstructions] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // --- SHARED HELPERS ---
+    const clean = (val) => (val && val !== 'null' && val !== 'undefined') ? val.toString().trim() : '';
+
+    const getVehicleDisplayName = (v, cust) => {
+        let brand = clean(v?.brand);
+        let model = clean(v?.model);
+        const plate = clean(v?.plate);
+
+        if (!brand && !model && cust) {
+            if (plate === clean(cust.vehicle_plate) || vehicles.length === 1) {
+                brand = clean(cust.vehicle_brand);
+                model = clean(cust.vehicle_model);
+            }
+        }
+
+        if (!brand && !model) return plate || 'Vehículo';
+        return `${brand} ${model}`.trim();
+    };
+
     // Progress Calculation Logic
     const calculateProgress = (service) => {
         if (!service) return 0;
@@ -496,45 +515,42 @@ const CustomerPortal = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {vehicles.map(v => {
-                                const clean = (val) => (val && val !== 'null') ? val : '';
-                                return (
-                                    <div key={v.id} style={{
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '1rem', borderRadius: '0.8rem',
-                                        backgroundColor: selectedVehicleId === v.id ? '#eff6ff' : '#f8fafc',
-                                        border: selectedVehicleId === v.id ? '2px solid #3b82f6' : '1px solid #e2e8f0'
-                                    }}>
-                                        <div>
-                                            <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1rem' }}>
-                                                {clean(v.brand)} {clean(v.model) || 'Vehículo'}
-                                            </div>
-                                            <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                                                {clean(v.plate) || 'Sin Placa'}
-                                            </div>
+                            {vehicles.map(v => (
+                                <div key={v.id} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '1rem', borderRadius: '0.8rem',
+                                    backgroundColor: selectedVehicleId === v.id ? '#eff6ff' : '#f8fafc',
+                                    border: selectedVehicleId === v.id ? '2px solid #3b82f6' : '1px solid #e2e8f0'
+                                }}>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1rem' }}>
+                                            {getVehicleDisplayName(v, customer)}
                                         </div>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
-                                                {v.points || 0} pts
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedVehicleId(v.id);
-                                                    setShowVehiclesModal(false);
-                                                }}
-                                                style={{
-                                                    fontSize: '0.75rem', padding: '0.3rem 0.6rem',
-                                                    backgroundColor: '#3b82f6', color: 'white',
-                                                    border: 'none', borderRadius: '0.4rem',
-                                                    marginTop: '0.2rem', cursor: 'pointer'
-                                                }}
-                                            >
-                                                Ver Historial
-                                            </button>
+                                        <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                                            {clean(v.plate) || 'Sin Placa'}
                                         </div>
                                     </div>
-                                );
-                            })}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
+                                            {v.points || 0} pts
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedVehicleId(v.id);
+                                                setShowVehiclesModal(false);
+                                            }}
+                                            style={{
+                                                fontSize: '0.75rem', padding: '0.3rem 0.6rem',
+                                                backgroundColor: '#3b82f6', color: 'white',
+                                                border: 'none', borderRadius: '0.4rem',
+                                                marginTop: '0.2rem', cursor: 'pointer'
+                                            }}
+                                        >
+                                            Ver Historial
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
@@ -589,27 +605,24 @@ const CustomerPortal = () => {
                         scrollbarWidth: 'none', msOverflowStyle: 'none'
                     }} className="no-scrollbar">
 
-                        {vehicles.map(v => {
-                            const clean = (val) => (val && val !== 'null') ? val : '';
-                            return (
-                                <button
-                                    key={v.id}
-                                    onClick={() => setSelectedVehicleId(v.id)}
-                                    style={{
-                                        flexShrink: 0, padding: '0.6rem 1.2rem',
-                                        borderRadius: '2rem', border: 'none',
-                                        backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
-                                        color: selectedVehicleId === v.id ? 'white' : '#64748b',
-                                        fontWeight: 'bold', fontSize: '0.9rem',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    🚗 {clean(v.brand)} {clean(v.model) || 'Vehículo'}
-                                </button>
-                            );
-                        })}
+                        {vehicles.map(v => (
+                            <button
+                                key={v.id}
+                                onClick={() => setSelectedVehicleId(v.id)}
+                                style={{
+                                    flexShrink: 0, padding: '0.6rem 1.2rem',
+                                    borderRadius: '2rem', border: 'none',
+                                    backgroundColor: selectedVehicleId === v.id ? '#3b82f6' : 'white',
+                                    color: selectedVehicleId === v.id ? 'white' : '#64748b',
+                                    fontWeight: 'bold', fontSize: '0.9rem',
+                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                🚗 {getVehicleDisplayName(v, customer)}
+                            </button>
+                        ))}
                     </div>
                 )}
 
@@ -618,14 +631,7 @@ const CustomerPortal = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
                         <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
-                            {(() => {
-                                const clean = (val) => (val && val !== 'null') ? val : '';
-                                if (!selectedVehicle) return 'Vista General';
-                                const brand = clean(selectedVehicle.brand);
-                                const model = clean(selectedVehicle.model);
-                                if (!brand && !model) return 'Vehículo';
-                                return `${brand} ${model}`.trim();
-                            })()}
+                            {selectedVehicle ? getVehicleDisplayName(selectedVehicle, customer) : 'Vista General'}
                         </div>
                     </div>
                     <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -678,21 +684,10 @@ const CustomerPortal = () => {
 
                         {/* Vehicle Info */}
                         <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            {(() => {
-                                const clean = (val) => (val && val !== 'null') ? val : '';
-                                const brand = clean(activeService.vehicles?.brand) || clean(customer?.vehicle_brand);
-                                const model = clean(activeService.vehicles?.model) || clean(customer?.vehicle_model);
-                                const plate = clean(activeService.vehicles?.plate) || clean(customer?.vehicle_plate);
-
-                                return (
-                                    <>
-                                        🚗 {brand} {model || 'Vehículo'}
-                                        <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                            {plate || 'Sin Placa'}
-                                        </span>
-                                    </>
-                                );
-                            })()}
+                            🚗 {getVehicleDisplayName(activeService.vehicles || activeService, customer)}
+                            <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                {clean(activeService.vehicles?.plate) || clean(activeService.plate) || clean(customer.vehicle_plate) || 'Sin Placa'}
+                            </span>
                         </div>
 
                         {/* Extras Count & Text */}
@@ -1302,11 +1297,10 @@ const CustomerPortal = () => {
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
                                 {(() => {
-                                    const clean = (val) => (val && val !== 'null') ? val : '';
-
-                                    // 1. Linked Vehicle (FROM JOIN)
-                                    if (tx.vehicles && clean(tx.vehicles.brand)) {
-                                        return `${clean(tx.vehicles.brand)} ${clean(tx.vehicles.model)} (${clean(tx.vehicles.plate) || 'Sin Placa'})`.trim();
+                                    // 1. Linked Vehicle
+                                    const v = tx.vehicles || vehicles.find(v => v.id === tx.vehicle_id);
+                                    if (v && (clean(v.brand) || clean(v.model))) {
+                                        return `${getVehicleDisplayName(v, customer)} (${clean(v.plate) || 'Sin Placa'})`;
                                     }
 
                                     // 2. Transaction Metadata (FROM EXTRAS JSON)
@@ -1318,13 +1312,8 @@ const CustomerPortal = () => {
                                         return `${clean(extraBrand)} ${clean(extraModel) || 'Vehículo'} (${clean(extraPlate) || 'Sin Placa'})`.trim();
                                     }
 
-                                    // 3. Linked Vehicle (FALLBACK SEARCH IN STATE)
-                                    if (tx.vehicle_id) {
-                                        const v = vehicles.find(v => v.id === tx.vehicle_id);
-                                        if (v) return `${clean(v.brand)} ${clean(v.model) || 'Vehículo'} (${clean(v.plate) || 'Sin Placa'})`.trim();
-                                    }
-
-                                    // 4. Customer Legacy (ONLY IF NO OTHER DATA AT ALL)
+                                    // 3. Customer Legacy
+                                    if (v) return `${getVehicleDisplayName(v, customer)} (${clean(v.plate) || 'Sin Placa'})`;
                                     if (clean(customer?.vehicle_model) || clean(customer?.vehicle_plate)) {
                                         return `${clean(customer?.vehicle_brand)} ${clean(customer?.vehicle_model) || 'Vehículo'} (${clean(customer?.vehicle_plate) || 'Sin Placa'})`.trim();
                                     }
@@ -1365,20 +1354,10 @@ const CustomerPortal = () => {
                             <div style={{ marginBottom: '1rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehículo</div>
                                 <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b' }}>
-                                    {(() => {
-                                        const clean = (val) => (val && val !== 'null') ? val : '';
-                                        const brand = clean(selectedTransaction.vehicles?.brand) || clean(customer?.vehicle_brand);
-                                        const model = clean(selectedTransaction.vehicles?.model) || clean(customer?.vehicle_model);
-                                        return `${brand} ${model || 'Vehículo'}`.trim();
-                                    })()}
+                                    {getVehicleDisplayName(selectedTransaction.vehicles || selectedTransaction, customer)}
                                 </div>
                                 <div style={{ fontSize: '0.9rem', color: '#3b82f6', fontWeight: '600', marginTop: '0.1rem' }}>
-                                    {(() => {
-                                        const clean = (val) => (val && val !== 'null') ? val : '';
-                                        return clean(selectedTransaction.vehicles?.plate) ||
-                                            clean(customer?.vehicle_plate) ||
-                                            'Sin Placa';
-                                    })()}
+                                    {clean(selectedTransaction.vehicles?.plate) || clean(selectedTransaction.plate) || clean(customer?.vehicle_plate) || 'Sin Placa'}
                                 </div>
                             </div>
 
