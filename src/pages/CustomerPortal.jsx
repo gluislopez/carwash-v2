@@ -212,129 +212,129 @@ const CustomerPortal = () => {
         const fetchData = async () => {
             if (!customerId) return;
 
-            // SAVE ID FOR PWA "SMART LAUNCH"
-            localStorage.setItem('my_carwash_id', customerId);
-            // Backup cookie (more reliable for some iOS PWA scenarios)
-            document.cookie = `my_carwash_id=${customerId}; path=/; max-age=31536000; SameSite=Lax`;
+            try {
+                // SAVE ID FOR PWA "SMART LAUNCH"
+                localStorage.setItem('my_carwash_id', customerId);
+                // Backup cookie (more reliable for some iOS PWA scenarios)
+                document.cookie = `my_carwash_id=${customerId}; path=/; max-age=31536000; SameSite=Lax`;
 
-            // 1. Fetch Customer Info
-            const { data: custData, error: custError } = await supabase
-                .from('customers')
-                .select('*')
-                .eq('id', customerId)
-                .single();
+                // 1. Fetch Customer Info
+                const { data: custData, error: custError } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('id', customerId)
+                    .single();
 
-            if (custError) {
-                console.error("Error fetching customer:", custError);
-                setLoading(false);
-                return;
-            }
-            setCustomer(custData);
-
-            // 2. Fetch Vehicles
-            const { data: vData } = await supabase
-                .from('vehicles')
-                .select('*')
-                .eq('customer_id', customerId);
-
-            if (vData) {
-                setVehicles(vData);
-                // Default to FIRST vehicle if exists, otherwise null
-                if (vData.length > 0) {
-                    setSelectedVehicleId(vData[0].id);
-                } else {
-                    setSelectedVehicleId(null);
+                if (custError) {
+                    console.error("Error fetching customer:", custError);
+                    setLoading(false);
+                    return;
                 }
-            }
+                setCustomer(custData);
 
-            // 3. Fetch History & Check Feedback
-            const { data: txData, error: txError } = await supabase
-                .from('transactions')
-                .select(`
-                    *,
-                    services (name),
-                    vehicles (model, brand, plate),
-                    customer_feedback (id, rating),
-                    transaction_assignments (
-                        employees (name)
-                    )
-                `)
-                .eq('customer_id', customerId)
-                .order('created_at', { ascending: false });
+                // 2. Fetch Vehicles
+                const { data: vData } = await supabase
+                    .from('vehicles')
+                    .select('*')
+                    .eq('customer_id', customerId);
 
-            if (!txError && txData) {
-                setHistory(txData);
-
-                // Loyalty Logic: 10 points = 50% OFF
-                // (Moved to use selectedVehicle points below)
-
-                // Active Service?
-                const active = txData.find(t =>
-                    t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready'
-                );
-                setActiveService(active);
-
-                // Latest Completed Service for Feedback
-                // ALWAY check for latest completed, even if there is another active service
-                const lastCompleted = txData.find(t => t.status === 'completed' || t.status === 'paid');
-                if (lastCompleted) {
-                    setLatestTx(lastCompleted);
-                    if (lastCompleted.customer_feedback && lastCompleted.customer_feedback.length > 0) {
-                        setHasRated(true);
+                if (vData) {
+                    setVehicles(vData);
+                    // Default to FIRST vehicle if exists, otherwise null
+                    if (vData.length > 0) {
+                        setSelectedVehicleId(vData[0].id);
+                    } else {
+                        setSelectedVehicleId(null);
                     }
                 }
-            }
 
-            // 3. Fetch Queue Count (GLOBAL)
-            const { count, error: queueError } = await supabase
-                .from('transactions')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'waiting');
-
-            if (!queueError) {
-                setQueueCount(count);
-            }
-
-            // 4. Fetch Membership Details
-            const { data: memberSub } = await supabase
-                .from('customer_memberships')
-                .select('*, memberships(name, type, wash_limit, price)')
-                .eq('customer_id', customerId)
-                .is('cancelled_at', null)
-                .single();
-
-            if (memberSub) {
-                setMembership(memberSub);
-
-                // 5. Fetch Subscription Payments
-                const { data: payments } = await supabase
-                    .from('subscription_payments')
-                    .select('*')
+                // 3. Fetch History & Check Feedback
+                const { data: txData, error: txError } = await supabase
+                    .from('transactions')
+                    .select(`
+                        *,
+                        services (name),
+                        vehicles (model, brand, plate),
+                        customer_feedback (id, rating),
+                        transaction_assignments (
+                            employees (name)
+                        )
+                    `)
                     .eq('customer_id', customerId)
-                    .order('payment_date', { ascending: false });
-                if (payments) setSubPayments(payments);
+                    .order('created_at', { ascending: false });
+
+                if (!txError && txData) {
+                    setHistory(txData);
+
+                    // Active Service?
+                    const active = txData.find(t =>
+                        t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready'
+                    );
+                    setActiveService(active);
+
+                    // Latest Completed Service for Feedback
+                    const lastCompleted = txData.find(t => t.status === 'completed' || t.status === 'paid');
+                    if (lastCompleted) {
+                        setLatestTx(lastCompleted);
+                        if (lastCompleted.customer_feedback && lastCompleted.customer_feedback.length > 0) {
+                            setHasRated(true);
+                        }
+                    }
+                }
+
+                // 3. Fetch Queue Count (GLOBAL)
+                const { count, error: queueError } = await supabase
+                    .from('transactions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'waiting');
+
+                if (!queueError) {
+                    setQueueCount(count);
+                }
+
+                // 4. Fetch Membership Details (Safe check for limit_count vs wash_limit)
+                const { data: memberSub } = await supabase
+                    .from('customer_memberships')
+                    .select('*, memberships(*)')
+                    .eq('customer_id', customerId)
+                    .is('cancelled_at', null)
+                    .single();
+
+                if (memberSub) {
+                    setMembership(memberSub);
+
+                    // 5. Fetch Subscription Payments
+                    const { data: payments } = await supabase
+                        .from('subscription_payments')
+                        .select('*')
+                        .eq('customer_id', customerId)
+                        .order('payment_date', { ascending: false });
+                    if (payments) setSubPayments(payments);
+                }
+
+                // 4.1 Fetch Available Plans (for Modal)
+                const { data: plans } = await supabase
+                    .from('memberships')
+                    .select('*')
+                    .eq('active', true)
+                    .order('price', { ascending: true });
+
+                if (plans) setAvailablePlans(plans);
+
+                // 6. Fetch Global Settings (Stripe Link)
+                const { data: settings } = await supabase
+                    .from('settings')
+                    .select('key, value');
+
+                if (settings) {
+                    const sLink = settings.find(s => s.key === 'stripe_link');
+                    if (sLink) setStripeLink(sLink.value);
+                }
+            } catch (err) {
+                console.error("General Portal Error:", err);
+            } finally {
+                setLoading(false);
             }
-
-            // 4.1 Fetch Available Plans (for Modal)
-            const { data: plans } = await supabase
-                .from('memberships')
-                .select('*')
-                .eq('active', true)
-                .order('price', { ascending: true });
-
-            if (plans) setAvailablePlans(plans);
-
-            // 6. Fetch Global Settings (Stripe Link)
-            const { data: settings } = await supabase
-                .from('settings')
-                .select('key, value');
-
-            if (settings) {
-                const sLink = settings.find(s => s.key === 'stripe_link');
-                if (sLink) setStripeLink(sLink.value);
-            }
-
-            setLoading(false);
         };
 
         fetchData();
