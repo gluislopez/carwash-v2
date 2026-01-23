@@ -681,10 +681,8 @@ const Customers = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                                         {customerVehicles.map(v => (
                                             <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 'bold' }}>{v.plate}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{v.brand} {v.model}</div>
-                                                </div>
+                                                <div style={{ fontWeight: 'bold' }}>{v.brand} {v.model}</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{v.plate}</div>
                                                 <button type="button" onClick={() => handleDeleteVehicle(v.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
                                                     <Trash2 size={16} />
                                                 </button>
