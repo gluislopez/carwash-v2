@@ -317,7 +317,7 @@ const Customers = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes <span style={{ fontSize: '0.8rem', opacity: 0.5, fontWeight: 'normal' }}>(Rol: {userRole || 'Cargando...'})</span></h1>
+                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1>
                         <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p>
                     </div>
 
