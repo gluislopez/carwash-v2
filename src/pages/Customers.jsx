@@ -684,11 +684,17 @@ const Customers = () => {
                                                 <div>
                                                     <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                         <Car size={16} />
-                                                        <span>{v.brand || ''} {v.model || 'Sin Modelo'}</span>
+                                                        <span>
+                                                            {(v.brand || v.model)
+                                                                ? `${v.brand || ''} ${v.model || ''}`
+                                                                : v.plate}
+                                                        </span>
                                                     </div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1.4rem' }}>
-                                                        {v.plate || 'Sin Placa'}
-                                                    </div>
+                                                    {(v.brand || v.model) && (
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1.4rem' }}>
+                                                            {v.plate}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <button type="button" onClick={() => handleDeleteVehicle(v.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
                                                     <Trash2 size={16} />
