@@ -665,21 +665,21 @@ const CustomerPortal = () => {
 
                         {/* Vehicle Info */}
                         <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            🚗 {(activeService.vehicles?.brand && activeService.vehicles.brand !== 'null' ? activeService.vehicles.brand + ' ' : (customer?.vehicle_brand ? customer.vehicle_brand + ' ' : '')) +
-                                (activeService.vehicles?.model ||
-                                    customer?.vehicle_model ||
-                                    (Array.isArray(activeService.extras) ?
-                                        activeService.extras.find(e => e.vehicle_model)?.vehicle_model :
-                                        activeService.extras?.vehicle_model) ||
-                                    'Vehículo')}
-                            <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {activeService.vehicles?.plate ||
-                                    customer?.vehicle_plate ||
-                                    (Array.isArray(activeService.extras) ?
-                                        activeService.extras.find(e => e.vehicle_plate)?.vehicle_plate :
-                                        activeService.extras?.vehicle_plate) ||
-                                    'Sin Placa'}
-                            </span>
+                            {(() => {
+                                const clean = (val) => (val && val !== 'null') ? val : '';
+                                const brand = clean(activeService.vehicles?.brand) || clean(customer?.vehicle_brand);
+                                const model = clean(activeService.vehicles?.model) || clean(customer?.vehicle_model);
+                                const plate = clean(activeService.vehicles?.plate) || clean(customer?.vehicle_plate);
+
+                                return (
+                                    <>
+                                        🚗 {brand} {model || 'Vehículo'}
+                                        <span style={{ marginLeft: '0.5rem', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                            {plate || 'Sin Placa'}
+                                        </span>
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* Extras Count & Text */}
@@ -1289,9 +1289,11 @@ const CustomerPortal = () => {
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
                                 {(() => {
+                                    const clean = (val) => (val && val !== 'null') ? val : '';
+
                                     // 1. Linked Vehicle (FROM JOIN)
-                                    if (tx.vehicles && tx.vehicles.brand && tx.vehicles.brand !== 'null') {
-                                        return `${tx.vehicles.brand} ${tx.vehicles.model || ''} (${tx.vehicles.plate || 'Sin Placa'})`;
+                                    if (tx.vehicles && clean(tx.vehicles.brand)) {
+                                        return `${clean(tx.vehicles.brand)} ${clean(tx.vehicles.model)} (${clean(tx.vehicles.plate) || 'Sin Placa'})`.trim();
                                     }
 
                                     // 2. Transaction Metadata (FROM EXTRAS JSON)
@@ -1299,21 +1301,19 @@ const CustomerPortal = () => {
                                     const extraModel = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_model)?.vehicle_model : tx.extras?.vehicle_model;
                                     const extraPlate = Array.isArray(tx.extras) ? tx.extras.find(e => e.vehicle_plate)?.vehicle_plate : tx.extras?.vehicle_plate;
 
-                                    if (extraModel || extraPlate) {
-                                        return `${extraBrand || ''} ${extraModel || 'Vehículo'} (${extraPlate || 'Sin Placa'})`;
+                                    if (clean(extraModel) || clean(extraPlate)) {
+                                        return `${clean(extraBrand)} ${clean(extraModel) || 'Vehículo'} (${clean(extraPlate) || 'Sin Placa'})`.trim();
                                     }
 
                                     // 3. Linked Vehicle (FALLBACK SEARCH IN STATE)
                                     if (tx.vehicle_id) {
                                         const v = vehicles.find(v => v.id === tx.vehicle_id);
-                                        if (v) return `${v.brand || ''} ${v.model || 'Vehículo'} (${v.plate || 'Sin Placa'})`;
+                                        if (v) return `${clean(v.brand)} ${clean(v.model) || 'Vehículo'} (${clean(v.plate) || 'Sin Placa'})`.trim();
                                     }
 
                                     // 4. Customer Legacy (ONLY IF NO OTHER DATA AT ALL)
-                                    if (customer?.vehicle_model || customer?.vehicle_plate) {
-                                        // ONLY use this if there's no vehicle_id and no extras.
-                                        // This is the "old guest" or "old single car" path.
-                                        return `${customer?.vehicle_brand || ''} ${customer?.vehicle_model || 'Vehículo'} (${customer?.vehicle_plate || 'Sin Placa'})`;
+                                    if (clean(customer?.vehicle_model) || clean(customer?.vehicle_plate)) {
+                                        return `${clean(customer?.vehicle_brand)} ${clean(customer?.vehicle_model) || 'Vehículo'} (${clean(customer?.vehicle_plate) || 'Sin Placa'})`.trim();
                                     }
 
                                     return 'Vehículo no especificado';
