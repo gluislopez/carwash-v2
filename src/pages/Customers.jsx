@@ -10,6 +10,8 @@ const Customers = () => {
     const [userRole, setUserRole] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
+    const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
+    const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0 });
 
     // Search and Stats State
     const [searchTerm, setSearchTerm] = useState('');
@@ -280,6 +282,29 @@ const Customers = () => {
         }
     };
 
+    const openStatsModal = (customer) => {
+        setEditingCustomer(customer);
+        setStatsFormData({
+            points: customer.points || 0,
+            manual_visit_count: customer.manual_visit_count || 0
+        });
+        setIsStatsModalOpen(true);
+    };
+
+    const handleStatsSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await update(editingCustomer.id, {
+                points: parseInt(statsFormData.points) || 0,
+                manual_visit_count: parseInt(statsFormData.manual_visit_count) || 0
+            });
+            setIsStatsModalOpen(false);
+            setEditingCustomer(null);
+        } catch (error) {
+            alert('Error al actualizar estadísticas: ' + error.message);
+        }
+    };
+
     const handleShare = async (customer) => {
         const url = `${window.location.origin}/portal/${customer.id}`;
         const shareData = {
@@ -458,7 +483,7 @@ const Customers = () => {
                                         fontWeight: 'bold',
                                         fontSize: '0.8rem'
                                     }}>
-                                        {visitCounts[customer.id] || 0} Visitas
+                                        {(visitCounts[customer.id] || 0) + (customer.manual_visit_count || 0)} Visitas
                                     </span>
                                     <span style={{
                                         backgroundColor: 'rgba(255, 215, 0, 0.1)',
@@ -471,6 +496,18 @@ const Customers = () => {
                                     }}>
                                         🌟 {customer.points || 0} Pts
                                     </span>
+                                    {(userRole === 'admin' || userRole === 'manager') && (
+                                        <button
+                                            onClick={() => openStatsModal(customer)}
+                                            style={{
+                                                background: 'none', border: 'none', cursor: 'pointer',
+                                                padding: 0, display: 'flex', alignItems: 'center'
+                                            }}
+                                            title="Editar Estadísticas"
+                                        >
+                                            <Edit size={14} color="var(--text-muted)" />
+                                        </button>
+                                    )}
                                     {activeMemberships[customer.id] && (
                                         <span style={{
                                             backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -788,6 +825,49 @@ const Customers = () => {
                                 No hay servicios registrados para este cliente.
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+            {isStatsModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+                        <h3 style={{ marginBottom: '1.5rem' }}>Editar Estadísticas: {editingCustomer?.name}</h3>
+                        <form onSubmit={handleStatsSubmit}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label className="label">Puntos de Lealtad</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={statsFormData.points}
+                                    onChange={(e) => setStatsFormData({ ...statsFormData, points: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label className="label">Ajuste Manual de Visitas (+/-)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={statsFormData.manual_visit_count}
+                                    onChange={(e) => setStatsFormData({ ...statsFormData, manual_visit_count: e.target.value })}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                    Visitas Reales (Transacciones): {visitCounts[editingCustomer?.id] || 0}<br />
+                                    Total Mostrado: {(visitCounts[editingCustomer?.id] || 0) + (parseInt(statsFormData.manual_visit_count) || 0)}
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button type="button" className="btn" onClick={() => setIsStatsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
