@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History, ExternalLink, Share2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History, ExternalLink, Share2, Save, XCircle } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 import QRCode from 'react-qr-code';
@@ -11,6 +11,8 @@ const Customers = () => {
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [customerVehicles, setCustomerVehicles] = useState([]); // State for vehicles in modal
     const [newVehicle, setNewVehicle] = useState({ plate: '', model: '', brand: '' });
+    const [editingVehicleId, setEditingVehicleId] = useState(null); // ID being edited
+    const [editingVehicleData, setEditingVehicleData] = useState({ plate: '', model: '', brand: '' }); // Temp data
     const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
     const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0 });
@@ -234,6 +236,7 @@ const Customers = () => {
             setCustomerVehicles([]);
             setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '' });
         }
+        setEditingVehicleId(null); // Reset vehicle edit state
         setIsModalOpen(true);
     };
 
@@ -264,6 +267,46 @@ const Customers = () => {
             setCustomerVehicles(customerVehicles.filter(v => v.id !== id));
         } catch (error) {
             alert('Error al eliminar vehículo: ' + error.message);
+        }
+    };
+
+    const handleEditVehicle = (vehicle) => {
+        setEditingVehicleId(vehicle.id);
+        setEditingVehicleData({
+            plate: vehicle.plate || '',
+            model: vehicle.model || '',
+            brand: vehicle.brand || ''
+        });
+    };
+
+    const handleCancelEditVehicle = () => {
+        setEditingVehicleId(null);
+        setEditingVehicleData({ plate: '', model: '', brand: '' });
+    };
+
+    const handleSaveVehicle = async () => {
+        try {
+            const { error } = await supabase
+                .from('vehicles')
+                .update({
+                    plate: editingVehicleData.plate.toUpperCase(),
+                    model: editingVehicleData.model,
+                    brand: editingVehicleData.brand
+                })
+                .eq('id', editingVehicleId);
+
+            if (error) throw error;
+
+            // Update local state
+            setCustomerVehicles(customerVehicles.map(v =>
+                v.id === editingVehicleId
+                    ? { ...v, ...editingVehicleData, plate: editingVehicleData.plate.toUpperCase() }
+                    : v
+            ));
+
+            setEditingVehicleId(null);
+        } catch (error) {
+            alert('Error al actualizar vehículo: ' + error.message);
         }
     };
 
@@ -681,24 +724,67 @@ const Customers = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                                         {customerVehicles.map(v => (
                                             <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                        <Car size={16} />
-                                                        <span>
-                                                            {(v.brand || v.model)
-                                                                ? `${v.brand || ''} ${v.model || ''}`
-                                                                : v.plate}
-                                                        </span>
-                                                    </div>
-                                                    {(v.brand || v.model) && (
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1.4rem' }}>
-                                                            {v.plate}
+                                                {editingVehicleId === v.id ? (
+                                                    // EDIT MODE
+                                                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%', alignItems: 'center' }}>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', flex: 1 }}>
+                                                            <input
+                                                                className="input"
+                                                                placeholder="Placa"
+                                                                value={editingVehicleData.plate}
+                                                                onChange={e => setEditingVehicleData({ ...editingVehicleData, plate: e.target.value })}
+                                                                style={{ padding: '0.3rem', fontSize: '0.8rem' }}
+                                                            />
+                                                            <input
+                                                                className="input"
+                                                                placeholder="Modelo"
+                                                                value={editingVehicleData.model}
+                                                                onChange={e => setEditingVehicleData({ ...editingVehicleData, model: e.target.value })}
+                                                                style={{ padding: '0.3rem', fontSize: '0.8rem' }}
+                                                            />
+                                                            <input
+                                                                className="input"
+                                                                placeholder="Marca"
+                                                                value={editingVehicleData.brand}
+                                                                onChange={e => setEditingVehicleData({ ...editingVehicleData, brand: e.target.value })}
+                                                                style={{ padding: '0.3rem', fontSize: '0.8rem' }}
+                                                            />
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <button type="button" onClick={() => handleDeleteVehicle(v.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                        <button onClick={handleSaveVehicle} style={{ color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }} title="Guardar">
+                                                            <Save size={18} />
+                                                        </button>
+                                                        <button onClick={handleCancelEditVehicle} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }} title="Cancelar">
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    // VIEW MODE
+                                                    <>
+                                                        <div>
+                                                            <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                                <Car size={16} />
+                                                                <span>
+                                                                    {(v.brand || v.model)
+                                                                        ? `${v.brand || ''} ${v.model || ''}`
+                                                                        : v.plate}
+                                                                </span>
+                                                            </div>
+                                                            {(v.brand || v.model) && (
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1.4rem' }}>
+                                                                    {v.plate}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button type="button" onClick={() => handleEditVehicle(v)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }} title="Editar">
+                                                                <Edit size={16} />
+                                                            </button>
+                                                            <button type="button" onClick={() => handleDeleteVehicle(v.id)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }} title="Eliminar">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         ))}
                                         {customerVehicles.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Sin vehículos.</span>}
