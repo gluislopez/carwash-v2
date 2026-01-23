@@ -3715,7 +3715,48 @@ const Dashboard = () => {
 
                             <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
                                 <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: 0 }}>{selectedTransaction.customers?.name || 'Cliente Casual'}</h3>
-                                <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0' }}>{selectedTransaction.customers?.vehicle_plate || 'Sin Placa'}</p>
+                                <div style={{ color: 'var(--text-muted)', margin: '0.5rem 0', fontSize: '1.1rem' }}>
+                                    {/* Vehicle Description Logic */}
+                                    {
+                                        (() => {
+                                            const t = selectedTransaction;
+                                            
+                                            // Priority 0: Lookup in standard Vehicles Array (Most Reliable)
+                                            if (t.vehicle_id) {
+                                                const v = vehicles.find(veh => veh.id === t.vehicle_id);
+                                                if (v) {
+                                                    const validBrand = (v.brand && v.brand !== 'null' && v.brand !== 'undefined') ? v.brand : '';
+                                                    const validModel = (v.model && v.model !== 'null' && v.model !== 'undefined') ? v.model : '';
+                                                    if (validBrand || validModel) return `${validBrand} ${validModel}`.trim();
+                                                }
+                                            }
+
+                                            // Priority 1: Joined Vehicle Data
+                                            if (t.vehicles) {
+                                                const validBrand = (t.vehicles.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'undefined') ? t.vehicles.brand : '';
+                                                const validModel = (t.vehicles.model && t.vehicles.model !== 'null' && t.vehicles.model !== 'undefined') ? t.vehicles.model : '';
+                                                if (validBrand || validModel) return `${validBrand} ${validModel}`.trim();
+                                            }
+
+                                            // Priority 2: Customer fields
+                                            if (t.customers) {
+                                                if (t.customers.vehicle_brand || t.customers.vehicle_model) {
+                                                    return `${t.customers.vehicle_brand || ''} ${t.customers.vehicle_model || ''}`.trim();
+                                                }
+                                            }
+                                            
+                                            return 'Vehículo';
+                                        })()
+                                    }
+                                    <span style={{ fontWeight: 'bold', marginLeft: '0.5rem', color: 'var(--text-main)' }}>
+                                        {
+                                            selectedTransaction.vehicles?.plate ||
+                                            selectedTransaction.customers?.vehicle_plate ||
+                                            (Array.isArray(selectedTransaction.extras) ? selectedTransaction.extras.find(e => e.vehicle_plate)?.vehicle_plate : null) ||
+                                            'Sin Placa'
+                                        }
+                                    </span>
+                                </div>
                                 <span style={{
                                     backgroundColor: 'var(--bg-secondary)',
                                     padding: '0.25rem 0.75rem',
