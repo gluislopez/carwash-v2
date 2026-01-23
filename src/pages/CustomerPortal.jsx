@@ -636,7 +636,9 @@ const CustomerPortal = () => {
                     </div>
                     <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{selectedVehicleId ? filteredHistory.length : history.length}</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>
+                                {(selectedVehicleId ? filteredHistory.length : history.length) + (customer.manual_visit_count || 0)}
+                            </div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
                         <div style={{ textAlign: 'center', flex: 1 }}>
