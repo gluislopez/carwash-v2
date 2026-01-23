@@ -2995,15 +2995,53 @@ const Dashboard = () => {
 
                                                                 {/* VEHICLE SELECTOR ROW */}
                                                                 {formData.customerId && (
-                                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                        <div style={{ flex: 1, position: 'relative' }}>
-                                                                            <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Vehículo a lavar:</label>
-                                                                            <select
-                                                                                className="input"
-                                                                                required
-                                                                                value={formData.vehicleId}
-                                                                                onChange={(e) => {
-                                                                                    if (e.target.value === 'new_vehicle') {
+                                                                    <div style={{ marginBottom: '1.5rem' }}>
+                                                                        <label className="label" style={{ fontSize: '0.85rem', marginBottom: '0.75rem', display: 'block' }}>
+                                                                            {customerVehicles.length > 1 ? 'Selecciona el vehículo (Varios detectados):' : 'Vehículo a lavar:'}
+                                                                        </label>
+
+                                                                        {customerVehicles.length > 1 ? (
+                                                                            <div style={{
+                                                                                display: 'grid',
+                                                                                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                                                                                gap: '0.75rem'
+                                                                            }}>
+                                                                                {customerVehicles.map(v => (
+                                                                                    <div
+                                                                                        key={v.id}
+                                                                                        onClick={() => setFormData({ ...formData, vehicleId: v.id })}
+                                                                                        style={{
+                                                                                            padding: '0.75rem',
+                                                                                            borderRadius: '0.8rem',
+                                                                                            border: formData.vehicleId == v.id ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                                                                            backgroundColor: formData.vehicleId == v.id ? 'var(--primary-light)' : 'var(--bg-card)',
+                                                                                            cursor: 'pointer',
+                                                                                            transition: 'all 0.2s',
+                                                                                            textAlign: 'center',
+                                                                                            position: 'relative',
+                                                                                            display: 'flex',
+                                                                                            flexDirection: 'column',
+                                                                                            gap: '0.25rem'
+                                                                                        }}
+                                                                                    >
+                                                                                        <div style={{ fontSize: '1.1rem' }}>🚗</div>
+                                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: formData.vehicleId == v.id ? 'white' : 'var(--text-primary)' }}>{v.brand} {v.model}</div>
+                                                                                        <div style={{ fontSize: '0.75rem', color: formData.vehicleId == v.id ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>{v.plate || 'Sin Placa'}</div>
+                                                                                        <div style={{
+                                                                                            marginTop: '0.25rem',
+                                                                                            padding: '0.2rem 0.5rem',
+                                                                                            borderRadius: '1rem',
+                                                                                            backgroundColor: formData.vehicleId == v.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
+                                                                                            fontSize: '0.8rem',
+                                                                                            fontWeight: '800',
+                                                                                            color: formData.vehicleId == v.id ? 'white' : 'var(--success-color)'
+                                                                                        }}>
+                                                                                            {v.points || 0} pts
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                                <div
+                                                                                    onClick={() => {
                                                                                         const customer = customers.find(c => c.id == formData.customerId);
                                                                                         if (customer) {
                                                                                             setNewCustomer({
@@ -3017,82 +3055,120 @@ const Dashboard = () => {
                                                                                             });
                                                                                             setIsAddingCustomer(true);
                                                                                         }
-                                                                                    } else {
-                                                                                        setFormData({ ...formData, vehicleId: e.target.value });
-                                                                                    }
-                                                                                }}
-                                                                                style={{ width: '100%', backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
-                                                                            >
-                                                                                {customerVehicles.map(v => (
-                                                                                    <option key={v.id} value={v.id}>
-                                                                                        🚗 {v.brand} {v.model} ({v.plate})
-                                                                                    </option>
-                                                                                ))}
-                                                                                <option value="new_vehicle" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
-                                                                                    + Agregar Otro Vehículo
-                                                                                </option>
-                                                                            </select>
-                                                                        </div>
-
-                                                                        {/* REFERRER SEARCH FIELD (Moved to be side-by-side with vehicle or full width) */}
-                                                                        <div style={{ flex: 1, position: 'relative' }}>
-                                                                            <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
-                                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    className="input"
-                                                                                    placeholder="🔍 Buscar..."
-                                                                                    value={referrerSearch}
-                                                                                    onChange={(e) => {
-                                                                                        setReferrerSearch(e.target.value);
-                                                                                        setShowReferrerSearch(true);
                                                                                     }}
-                                                                                    style={{ fontSize: '0.85rem', flex: 1 }}
-                                                                                />
-                                                                                {formData.referrerId && (
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() => {
-                                                                                            setFormData({ ...formData, referrerId: '' });
-                                                                                            setReferrerSearch('');
-                                                                                        }}
-                                                                                        className="btn"
-                                                                                        style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '0 0.5rem' }}
-                                                                                    >
-                                                                                        ✕
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
-                                                                            {showReferrerSearch && referrerSearch.length > 0 && (
-                                                                                <div style={{
-                                                                                    position: 'absolute', top: '100%', left: 0, right: 0,
-                                                                                    backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                                                                    borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
-                                                                                    boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
-                                                                                }}>
-                                                                                    {customers
-                                                                                        .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()) && c.id != formData.customerId)
-                                                                                        .slice(0, 10)
-                                                                                        .map(c => (
-                                                                                            <div
-                                                                                                key={c.id}
-                                                                                                onClick={() => {
-                                                                                                    setFormData({ ...formData, referrerId: c.id });
-                                                                                                    setReferrerSearch(c.name);
-                                                                                                    setShowReferrerSearch(false);
-                                                                                                }}
-                                                                                                style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-                                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                                            >
-                                                                                                {c.name}
-                                                                                            </div>
-                                                                                        ))}
+                                                                                    style={{
+                                                                                        padding: '0.75rem',
+                                                                                        borderRadius: '0.8rem',
+                                                                                        border: '1px dashed var(--border-color)',
+                                                                                        display: 'flex',
+                                                                                        flexDirection: 'column',
+                                                                                        alignItems: 'center',
+                                                                                        justifyContent: 'center',
+                                                                                        cursor: 'pointer',
+                                                                                        color: 'var(--text-muted)',
+                                                                                        fontSize: '0.8rem'
+                                                                                    }}
+                                                                                >
+                                                                                    <span>+ Nuevo</span>
+                                                                                    <span>Auto</span>
                                                                                 </div>
-                                                                            )}
-                                                                        </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                                <select
+                                                                                    className="input"
+                                                                                    required
+                                                                                    value={formData.vehicleId}
+                                                                                    onChange={(e) => {
+                                                                                        if (e.target.value === 'new_vehicle') {
+                                                                                            const customer = customers.find(c => c.id == formData.customerId);
+                                                                                            if (customer) {
+                                                                                                setNewCustomer({
+                                                                                                    ...newCustomer,
+                                                                                                    name: customer.name,
+                                                                                                    phone: customer.phone,
+                                                                                                    email: customer.email,
+                                                                                                    vehicle_plate: '',
+                                                                                                    vehicle_brand: '',
+                                                                                                    vehicle_model: ''
+                                                                                                });
+                                                                                                setIsAddingCustomer(true);
+                                                                                            }
+                                                                                        } else {
+                                                                                            setFormData({ ...formData, vehicleId: e.target.value });
+                                                                                        }
+                                                                                    }}
+                                                                                    style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
+                                                                                >
+                                                                                    {customerVehicles.map(v => (
+                                                                                        <option key={v.id} value={v.id}>
+                                                                                            🚗 {v.brand} {v.model} ({v.plate}) — {v.points || 0} pts
+                                                                                        </option>
+                                                                                    ))}
+                                                                                    <option value="new_vehicle">+ Agregar Otro Vehículo</option>
+                                                                                </select>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
+
+                                                                {/* REFERRER SEARCH FIELD (Moved to be side-by-side with vehicle or full width) */}
+                                                                <div style={{ flex: 1, position: 'relative' }}>
+                                                                    <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
+                                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="input"
+                                                                            placeholder="🔍 Buscar..."
+                                                                            value={referrerSearch}
+                                                                            onChange={(e) => {
+                                                                                setReferrerSearch(e.target.value);
+                                                                                setShowReferrerSearch(true);
+                                                                            }}
+                                                                            style={{ fontSize: '0.85rem', flex: 1 }}
+                                                                        />
+                                                                        {formData.referrerId && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setFormData({ ...formData, referrerId: '' });
+                                                                                    setReferrerSearch('');
+                                                                                }}
+                                                                                className="btn"
+                                                                                style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '0 0.5rem' }}
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    {showReferrerSearch && referrerSearch.length > 0 && (
+                                                                        <div style={{
+                                                                            position: 'absolute', top: '100%', left: 0, right: 0,
+                                                                            backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                                                            borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
+                                                                            boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+                                                                        }}>
+                                                                            {customers
+                                                                                .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()) && c.id != formData.customerId)
+                                                                                .slice(0, 10)
+                                                                                .map(c => (
+                                                                                    <div
+                                                                                        key={c.id}
+                                                                                        onClick={() => {
+                                                                                            setFormData({ ...formData, referrerId: c.id });
+                                                                                            setReferrerSearch(c.name);
+                                                                                            setShowReferrerSearch(false);
+                                                                                        }}
+                                                                                        style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
+                                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                                    >
+                                                                                        {c.name}
+                                                                                    </div>
+                                                                                ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
