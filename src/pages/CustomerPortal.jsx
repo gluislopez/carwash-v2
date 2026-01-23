@@ -118,27 +118,36 @@ const CustomerPortal = () => {
     const [isBusinessOpen, setIsBusinessOpen] = useState(true);
 
     useEffect(() => {
-        // Fetch Business Status
-        const fetchStatus = async () => {
+        // Fetch Business Status & Portal Message
+        const fetchSettings = async () => {
             const { data } = await supabase
                 .from('business_settings')
-                .select('setting_value')
-                .eq('setting_key', 'is_open')
-                .single();
+                .select('setting_key, setting_value');
 
             if (data) {
-                setIsBusinessOpen(data.setting_value === 'true');
+                // 1. Business Status
+                const isOpen = data.find(s => s.setting_key === 'is_open');
+                if (isOpen) setIsBusinessOpen(isOpen.setting_value === 'true');
+
+                // 2. Portal Announcement (with expiration logic)
+                const msg = data.find(s => s.setting_key === 'portal_message')?.setting_value;
+                const msgDate = data.find(s => s.setting_key === 'portal_message_date')?.setting_value;
+                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+
+                if (msg && msgDate === today) {
+                    setPortalMessage(msg);
+                } else {
+                    setPortalMessage('');
+                }
             }
         };
-        fetchStatus();
+        fetchSettings();
 
-        // Realtime
+        // Realtime Subscription for ALL settings
         const channel = supabase
-            .channel('public:portal_settings')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, payload => {
-                if (payload.new && payload.new.setting_key === 'is_open') {
-                    setIsBusinessOpen(payload.new.setting_value === 'true');
-                }
+            .channel('public:business_settings_portal')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, () => {
+                fetchSettings(); // Simplify: just re-fetch everything on any change
             })
             .subscribe();
 
@@ -304,24 +313,6 @@ const CustomerPortal = () => {
             if (settings) {
                 const sLink = settings.find(s => s.key === 'stripe_link');
                 if (sLink) setStripeLink(sLink.value);
-            }
-
-            // 7. Fetch Portal Announcement
-            const { data: announcements } = await supabase
-                .from('business_settings')
-                .select('setting_key, setting_value')
-                .in('setting_key', ['portal_message', 'portal_message_date']);
-
-            if (announcements) {
-                const msg = announcements.find(a => a.setting_key === 'portal_message')?.setting_value;
-                const msgDate = announcements.find(a => a.setting_key === 'portal_message_date')?.setting_value;
-                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
-
-                if (msg && msgDate === today) {
-                    setPortalMessage(msg);
-                } else {
-                    setPortalMessage('');
-                }
             }
 
             setLoading(false);
