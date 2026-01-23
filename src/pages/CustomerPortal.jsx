@@ -307,13 +307,22 @@ const CustomerPortal = () => {
             }
 
             // 7. Fetch Portal Announcement
-            const { data: announce } = await supabase
+            const { data: announcements } = await supabase
                 .from('business_settings')
-                .select('setting_value')
-                .eq('setting_key', 'portal_message')
-                .maybeSingle();
+                .select('setting_key, setting_value')
+                .in('setting_key', ['portal_message', 'portal_message_date']);
 
-            if (announce) setPortalMessage(announce.setting_value);
+            if (announcements) {
+                const msg = announcements.find(a => a.setting_key === 'portal_message')?.setting_value;
+                const msgDate = announcements.find(a => a.setting_key === 'portal_message_date')?.setting_value;
+                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+
+                if (msg && msgDate === today) {
+                    setPortalMessage(msg);
+                } else {
+                    setPortalMessage('');
+                }
+            }
 
             setLoading(false);
         };

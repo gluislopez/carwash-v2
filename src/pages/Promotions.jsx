@@ -311,13 +311,18 @@ const PortalAnnouncement = () => {
 
     const handleSave = async () => {
         setIsSaving(true);
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+
         const { error } = await supabase
             .from('business_settings')
-            .upsert({ setting_key: 'portal_message', setting_value: message }, { onConflict: 'setting_key' });
+            .upsert([
+                { setting_key: 'portal_message', setting_value: message },
+                { setting_key: 'portal_message_date', setting_value: today }
+            ], { onConflict: 'setting_key' });
 
         setIsSaving(false);
         if (error) alert("Error al guardar: " + error.message);
-        else alert("¡Mensaje actualizado en todos los portales!");
+        else alert("¡Mensaje publicado! Se borrará automáticamente al finalizar el día.");
     };
 
     return (
