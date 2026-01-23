@@ -3025,7 +3025,21 @@ const Dashboard = () => {
                                                                                         }}
                                                                                     >
                                                                                         <div style={{ fontSize: '1.1rem' }}>🚗</div>
-                                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: formData.vehicleId == v.id ? 'white' : 'var(--text-primary)' }}>{v.brand} {v.model}</div>
+                                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: formData.vehicleId == v.id ? 'white' : 'var(--text-primary)' }}>
+                                                                                            {(() => {
+                                                                                                // 1. Try Vehicle Data
+                                                                                                if (v.brand || v.model) return `${v.brand || ''} ${v.model || ''}`;
+                                                                                                // 2. Try Customer Legacy Data (if plate matches)
+                                                                                                const selectedCustomer = customers.find(c => c.id == formData.customerId);
+                                                                                                if (selectedCustomer && (v.plate === selectedCustomer.vehicle_plate)) {
+                                                                                                    if (selectedCustomer.vehicle_brand || selectedCustomer.vehicle_model) {
+                                                                                                        return `${selectedCustomer.vehicle_brand || ''} ${selectedCustomer.vehicle_model || ''}`;
+                                                                                                    }
+                                                                                                }
+                                                                                                // 3. Fallback
+                                                                                                return 'Vehículo';
+                                                                                            })()}
+                                                                                        </div>
                                                                                         <div style={{ fontSize: '0.75rem', color: formData.vehicleId == v.id ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>{v.plate || 'Sin Placa'}</div>
                                                                                         <div style={{
                                                                                             marginTop: '0.25rem',
