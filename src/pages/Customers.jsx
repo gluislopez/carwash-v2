@@ -621,12 +621,25 @@ const Customers = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Car size={16} className="text-primary" />
-                                <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{customer.vehicle_model}</span>
-                                <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                    {customer.vehicle_plate}
-                                </span>
+                            <div style={{ marginBottom: '0.5rem' }}>
+                                {allVehicles[customer.id] && allVehicles[customer.id].length > 0 ? (
+                                    allVehicles[customer.id].map(v => (
+                                        <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                                            <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
+                                            <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                                {(v.brand || v.model) ? `${v.brand || ''} ${v.model || ''}` : 'Sin Modelo'}
+                                            </span>
+                                            <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                                {v.plate || 'Sin Placa'}
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.5 }}>
+                                        <Car size={16} />
+                                        <span>Sin Vehículos</span>
+                                    </div>
+                                )}
                             </div>
                             {customer.phone && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
