@@ -959,7 +959,7 @@ const CustomerPortal = () => {
                             <button
                                 onClick={() => {
                                     const message = `Hola, soy ${customer.name}, me gustaría cancelar mi suscripción ${membership.memberships.name}.`;
-                                    const whatsappUrl = `https://wa.me/17873602859?text=${encodeURIComponent(message)}`;
+                                    const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
                                     window.open(whatsappUrl, '_blank');
                                 }}
                                 style={{
@@ -1187,7 +1187,7 @@ const CustomerPortal = () => {
                                         <button
                                             onClick={() => {
                                                 const message = `Hola, soy ${customer.name}, me interesa suscribirme al plan *${plan.name}* de $${plan.price}.`;
-                                                const whatsappUrl = `https://wa.me/17873602859?text=${encodeURIComponent(message)}`;
+                                                const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
                                                 window.open(whatsappUrl, '_blank');
                                             }}
                                             style={{
