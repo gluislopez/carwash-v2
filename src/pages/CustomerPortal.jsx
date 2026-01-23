@@ -240,12 +240,8 @@ const CustomerPortal = () => {
 
                 if (vData) {
                     setVehicles(vData);
-                    // Default to FIRST vehicle if exists, otherwise null
-                    if (vData.length > 0) {
-                        setSelectedVehicleId(vData[0].id);
-                    } else {
-                        setSelectedVehicleId(null);
-                    }
+                    // Default to Global View (null) to show ALL visits/points
+                    setSelectedVehicleId(null);
                 }
 
                 // 3. Fetch History & Check Feedback
