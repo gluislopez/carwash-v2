@@ -14,6 +14,7 @@ const Customers = () => {
     const [editingVehicleId, setEditingVehicleId] = useState(null); // ID being edited
     const [editingVehicleData, setEditingVehicleData] = useState({ plate: '', model: '', brand: '' }); // Temp data
     const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
+    const [allVehicles, setAllVehicles] = useState({}); // Map: customerId -> [vehicles]
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
     const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0 });
 
@@ -198,9 +199,22 @@ const Customers = () => {
             if (plans) setAvailablePlans(plans);
         };
 
+        const getAllVehicles = async () => {
+            const { data } = await supabase.from('vehicles').select('*');
+            if (data) {
+                const map = {};
+                data.forEach(v => {
+                    if (!map[v.customer_id]) map[v.customer_id] = [];
+                    map[v.customer_id].push(v);
+                });
+                setAllVehicles(map);
+            }
+        };
+
         getUserRole();
         getVisitCounts();
         getMemberships();
+        getAllVehicles();
     }, []);
 
     const [formData, setFormData] = useState({
