@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History, ExternalLink, Share2, Save, XCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Phone, Mail, Car, Search, QrCode, X, MessageCircle, History, ExternalLink, Share2, Save, XCircle, ArrowRightLeft } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import { supabase } from '../supabase';
 import QRCode from 'react-qr-code';
@@ -13,6 +13,12 @@ const Customers = () => {
     const [newVehicle, setNewVehicle] = useState({ plate: '', model: '', brand: '' });
     const [editingVehicleId, setEditingVehicleId] = useState(null); // ID being edited
     const [editingVehicleData, setEditingVehicleData] = useState({ plate: '', model: '', brand: '' }); // Temp data
+    // TRANSFER VEHICLE STATE
+    const [transferringVehicleId, setTransferringVehicleId] = useState(null);
+    const [transferSearchTerm, setTransferSearchTerm] = useState('');
+    const [transferSearchResults, setTransferSearchResults] = useState([]);
+    const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+    const [newCustomerData, setNewCustomerData] = useState({ name: '', phone: '' });
     const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
     const [allVehicles, setAllVehicles] = useState({}); // Map: customerId -> [vehicles]
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
@@ -355,6 +361,78 @@ const Customers = () => {
             setEditingVehicleId(null);
         } catch (error) {
             alert('Error al actualizar vehículo: ' + error.message);
+        }
+    };
+
+    // TRANSFER VEHICLE LOGIC
+    const handleTransferSearch = (term) => {
+        setTransferSearchTerm(term);
+        if (term.length < 2) {
+            setTransferSearchResults([]);
+            return;
+        }
+
+        const results = customers.filter(c =>
+            c.id !== editingCustomer.id && (
+                c.name.toLowerCase().includes(term.toLowerCase()) ||
+                (c.phone && c.phone.includes(term))
+            )
+        );
+        setTransferSearchResults(results);
+    };
+
+    const executeTransfer = async (vehicleId, targetCustomerId) => {
+        if (!window.confirm('¿Confirmar transferencia de vehículo?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('vehicles')
+                .update({ customer_id: targetCustomerId })
+                .eq('id', vehicleId);
+
+            if (error) throw error;
+
+            // Remove from current customer list
+            setCustomerVehicles(customerVehicles.filter(v => v.id !== vehicleId));
+
+            // Update global map
+            setAllVehicles(prev => {
+                const newMap = { ...prev };
+                // Remove from old
+                if (newMap[editingCustomer.id]) {
+                    newMap[editingCustomer.id] = newMap[editingCustomer.id].filter(v => v.id !== vehicleId);
+                }
+                // Add to new (we might not have the full vehicle object easily, but we can try to find it or re-fetch)
+                // For simplicty, let's just clear the target customer's cache so it re-fetches next time
+                delete newMap[targetCustomerId];
+                return newMap;
+            });
+
+            setTransferringVehicleId(null); // Close transfer UI
+            setTransferSearchTerm('');
+            setTransferSearchResults([]);
+            alert('✅ Vehículo transferido exitosamente.');
+        } catch (error) {
+            alert('Error al transferir: ' + error.message);
+        }
+    };
+
+    const executeCreateAndTransfer = async (vehicleId) => {
+        if (!newCustomerData.name || !newCustomerData.phone) return alert('Nombre y Teléfono requeridos');
+
+        try {
+            const { data: newCust, error: createError } = await supabase
+                .from('customers')
+                .insert([{ ...newCustomerData }])
+                .select()
+                .single();
+
+            if (createError) throw createError;
+
+            await executeTransfer(vehicleId, newCust.id);
+            // executeTransfer handles UI resets
+        } catch (error) {
+            alert('Error al crear cliente y transferir: ' + error.message);
         }
     };
 
@@ -787,7 +865,78 @@ const Customers = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                                         {customerVehicles.map(v => (
                                             <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px' }}>
-                                                {editingVehicleId === v.id ? (
+                                                {transferringVehicleId === v.id ? (
+                                                    // TRANSFER MODE
+                                                    <div style={{ width: '100%', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
+                                                        <h5 style={{ margin: '0 0 0.5rem 0', color: 'orange' }}>Transferir: {v.plate} - {v.model}</h5>
+
+                                                        {showNewCustomerForm ? (
+                                                            // NEW CUSTOMER FORM
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                <input
+                                                                    placeholder="Nombre Nuevo Cliente"
+                                                                    className="input"
+                                                                    value={newCustomerData.name}
+                                                                    onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                                                />
+                                                                <input
+                                                                    placeholder="Teléfono"
+                                                                    className="input"
+                                                                    value={newCustomerData.phone}
+                                                                    onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                                                />
+                                                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                                    <button className="btn btn-primary" onClick={() => executeCreateAndTransfer(v.id)}>Crear y Transferir</button>
+                                                                    <button className="btn" onClick={() => setShowNewCustomerForm(false)} style={{ backgroundColor: 'transparent' }}>Cancelar</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            // SEARCH MODE
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                <input
+                                                                    placeholder="Buscar cliente destino..."
+                                                                    className="input"
+                                                                    value={transferSearchTerm}
+                                                                    onChange={e => handleTransferSearch(e.target.value)}
+                                                                />
+
+                                                                {/* RESULTS */}
+                                                                {transferSearchResults.length > 0 && (
+                                                                    <div style={{ maxHeight: '150px', overflowY: 'auto', backgroundColor: 'var(--bg-card)', borderRadius: '4px' }}>
+                                                                        {transferSearchResults.map(r => (
+                                                                            <div
+                                                                                key={r.id}
+                                                                                onClick={() => executeTransfer(v.id, r.id)}
+                                                                                style={{ padding: '0.5rem', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                                                                className="hover-bg"
+                                                                            >
+                                                                                <div style={{ fontWeight: 'bold' }}>{r.name}</div>
+                                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{r.phone}</div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                                                                    <button
+                                                                        className="btn btn-sm"
+                                                                        onClick={() => { setShowNewCustomerForm(true); setNewCustomerData({ name: '', phone: '' }); }}
+                                                                        style={{ backgroundColor: 'var(--bg-secondary)', fontSize: '0.8rem' }}
+                                                                    >
+                                                                        + Nuevo Cliente
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-sm"
+                                                                        onClick={() => setTransferringVehicleId(null)}
+                                                                        style={{ backgroundColor: 'transparent', color: 'var(--text-muted)' }}
+                                                                    >
+                                                                        Cancelar
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : editingVehicleId === v.id ? (
                                                     // EDIT MODE
                                                     <div style={{ display: 'flex', gap: '0.5rem', width: '100%', alignItems: 'center' }}>
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', flex: 1 }}>
@@ -839,6 +988,9 @@ const Customers = () => {
                                                             )}
                                                         </div>
                                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button type="button" onClick={() => { setTransferringVehicleId(v.id); setTransferSearchTerm(''); setShowNewCustomerForm(false); }} style={{ color: 'orange', background: 'none', border: 'none', cursor: 'pointer' }} title="Transferir a otro cliente">
+                                                                <ArrowRightLeft size={16} />
+                                                            </button>
                                                             <button type="button" onClick={() => handleEditVehicle(v)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }} title="Editar">
                                                                 <Edit size={16} />
                                                             </button>
