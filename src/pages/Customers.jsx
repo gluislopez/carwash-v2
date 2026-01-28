@@ -224,7 +224,8 @@ const Customers = () => {
         vehicle_plate: '',
         vehicle_model: '',
         points: 0,
-        membership_id: ''
+        membership_id: '',
+        stripe_subscription_id: ''
     });
 
     const openModal = async (customer) => {
@@ -243,12 +244,14 @@ const Customers = () => {
                 vehicle_plate: '', // Reset new vehicle inputs
                 vehicle_model: '',
                 points: customer.points || 0,
-                membership_id: activeSub ? activeSub.membership_id : ''
+                membership_id: activeSub ? activeSub.membership_id : '',
+                stripe_subscription_id: activeSub ? activeSub.stripe_subscription_id : ''
             });
         } else {
             setEditingCustomer(null);
             setCustomerVehicles([]);
-            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '' });
+            setCustomerVehicles([]);
+            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '', stripe_subscription_id: '' });
         }
         setEditingVehicleId(null); // Reset vehicle edit state
         setIsModalOpen(true);
@@ -358,7 +361,7 @@ const Customers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { membership_id, ...pureCustomerData } = formData;
+            const { membership_id, stripe_subscription_id, ...pureCustomerData } = formData;
             const customerData = {
                 ...pureCustomerData,
                 email: formData.email.trim() === '' ? null : formData.email.trim()
@@ -371,6 +374,7 @@ const Customers = () => {
                     await supabase.from('customer_memberships').upsert({
                         customer_id: editingCustomer.id,
                         membership_id: formData.membership_id,
+                        stripe_subscription_id: formData.stripe_subscription_id || null,
                         status: 'active'
                     }, { onConflict: 'customer_id' }); // Assuming one active membership per customer
                 } else {
@@ -382,6 +386,7 @@ const Customers = () => {
                     await supabase.from('customer_memberships').insert([{
                         customer_id: newCustomer.id,
                         membership_id: formData.membership_id,
+                        stripe_subscription_id: formData.stripe_subscription_id || null,
                         status: 'active'
                     }]);
                 }
@@ -941,6 +946,17 @@ const Customers = () => {
                                                 <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
                                             ))}
                                         </select>
+                                    </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label className="label">Stripe Subscription ID <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Opcional)</span></label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="sub_..."
+                                            value={formData.stripe_subscription_id}
+                                            onChange={(e) => setFormData({ ...formData, stripe_subscription_id: e.target.value })}
+                                            style={{ fontFamily: 'monospace' }}
+                                        />
                                     </div>
                                 </>
                             )}

@@ -967,15 +967,44 @@ const Dashboard = () => {
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
         const service = services.find(s => s.id === serviceId);
+
         if (service) {
             const extrasTotal = (formData.extras || []).reduce((sum, ex) => sum + ex.price, 0);
+            let finalPrice = service.price + extrasTotal;
+            let isMemberBenefit = false;
+
+            // MEMBERSHIP CHECK
+            if (customerMembership && customerMembership.status === 'active') {
+                const included = customerMembership.memberships.included_services || [];
+                // Check by Name or ID
+                const isIncluded = included.includes(service.name) || included.includes(service.id);
+
+                if (isIncluded) {
+                    // Check Daily Limit
+                    const lastUsed = customerMembership.last_used_at ? new Date(customerMembership.last_used_at) : null;
+                    const now = new Date();
+                    // Simple Day Check (works for single timezone usually)
+                    const isUsedToday = lastUsed && lastUsed.toDateString() === now.toDateString();
+
+                    if (!isUsedToday) {
+                        finalPrice = 0 + extrasTotal; // Base price 0
+                        isMemberBenefit = true;
+                    } else {
+                        // Notify user? We'll rely on UI to show "Used Today"
+                        alert(`⚠️ BENEFICIO DIARIO YA UTILIZADO\n\nEl cliente ya usó su beneficio de membresía hoy (${lastUsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).\n\nSe cobrará precio regular.`);
+                    }
+                }
+            }
+
+            setIsMembershipUsage(isMemberBenefit);
             setFormData({
                 ...formData,
                 serviceId,
-                price: service.price + extrasTotal,
+                price: finalPrice,
                 commissionAmount: service.commission || 0 // Use fixed commission
             });
         } else {
+            setIsMembershipUsage(false);
             setFormData({ ...formData, serviceId: '', price: '', commissionAmount: '' });
         }
     };
@@ -1241,10 +1270,13 @@ const Dashboard = () => {
                 }
             }
 
-            // [MEMBERSHIP] Increment Usage
+            // [MEMBERSHIP] Increment Usage & Timestamp
             if (isMembershipUsage && customerMembership) {
                 await supabase.from('customer_memberships')
-                    .update({ usage_count: (customerMembership.usage_count || 0) + 1 })
+                    .update({
+                        usage_count: (customerMembership.usage_count || 0) + 1,
+                        last_used_at: new Date().toISOString()
+                    })
                     .eq('id', customerMembership.id);
             }
 
@@ -3127,6 +3159,68 @@ const Dashboard = () => {
                                                                     </div>
                                                                 )}
 
+                                                                {/* MEMBERSHIP BADGE */}
+                                                                {customerMembership && (
+                                                                    <div style={{
+                                                                        padding: '1rem',
+                                                                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                                                        border: '1px solid #6366f1',
+                                                                        borderRadius: '0.8rem',
+                                                                        marginBottom: '1.5rem'
+                                                                    }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                            <div>
+                                                                                <div style={{ color: '#6366f1', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                                                    Membresía Activa
+                                                                                </div>
+                                                                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
+                                                                                    {customerMembership.memberships.name}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div style={{ textAlign: 'right' }}>
+                                                                                {(() => {
+                                                                                    const lastUsed = customerMembership.last_used_at ? new Date(customerMembership.last_used_at) : null;
+                                                                                    const now = new Date();
+                                                                                    const isUsedToday = lastUsed && lastUsed.toDateString() === now.toDateString();
+
+                                                                                    if (isUsedToday) {
+                                                                                        return (
+                                                                                            <span style={{
+                                                                                                display: 'inline-block',
+                                                                                                padding: '0.2rem 0.8rem',
+                                                                                                backgroundColor: '#fbbf24',
+                                                                                                color: 'black',
+                                                                                                fontWeight: 'bold',
+                                                                                                borderRadius: '2rem',
+                                                                                                fontSize: '0.8rem'
+                                                                                            }}>
+                                                                                                Usado Hoy ⚠️
+                                                                                            </span>
+                                                                                        );
+                                                                                    } else {
+                                                                                        return (
+                                                                                            <span style={{
+                                                                                                display: 'inline-block',
+                                                                                                padding: '0.2rem 0.8rem',
+                                                                                                backgroundColor: '#10b981',
+                                                                                                color: 'white',
+                                                                                                fontWeight: 'bold',
+                                                                                                borderRadius: '2rem',
+                                                                                                fontSize: '0.8rem'
+                                                                                            }}>
+                                                                                                Disponible ✅
+                                                                                            </span>
+                                                                                        );
+                                                                                    }
+                                                                                })()}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                                                            Incluye: <strong>{(customerMembership.memberships.included_services || []).join(', ')}</strong>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* REFERRER SEARCH FIELD (Moved to be side-by-side with vehicle or full width) */}
                                                                 <div style={{ flex: 1, position: 'relative' }}>
                                                                     <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
@@ -3720,7 +3814,7 @@ const Dashboard = () => {
                                     {
                                         (() => {
                                             const t = selectedTransaction;
-                                            
+
                                             // Priority 0: Lookup in standard Vehicles Array (Most Reliable)
                                             if (t.vehicle_id) {
                                                 const v = vehicles.find(veh => veh.id === t.vehicle_id);
@@ -3744,7 +3838,7 @@ const Dashboard = () => {
                                                     return `${t.customers.vehicle_brand || ''} ${t.customers.vehicle_model || ''}`.trim();
                                                 }
                                             }
-                                            
+
                                             return 'Vehículo';
                                         })()
                                     }
