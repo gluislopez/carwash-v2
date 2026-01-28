@@ -748,6 +748,18 @@ const Customers = () => {
                                             </span>
                                         </div>
                                     ))
+                                ) : (customer.vehicle_model || customer.vehicle_plate) ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                                        <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
+                                        <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                            {customer.vehicle_model || 'Sin Modelo'}
+                                        </span>
+                                        {customer.vehicle_plate && (
+                                            <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                                {customer.vehicle_plate}
+                                            </span>
+                                        )}
+                                    </div>
                                 ) : (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.5 }}>
                                         <Car size={16} />
