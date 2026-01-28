@@ -308,14 +308,28 @@ const CustomerPortal = () => {
                     if (payments) setSubPayments(payments);
                 }
 
-                // 4.1 Fetch Available Plans (for Modal)
+                // 4.1 Fetch Available Plans (for Modal) - SORTED: Unlimited First, then Price
                 const { data: plans } = await supabase
                     .from('memberships')
                     .select('*')
-                    .eq('active', true)
-                    .order('price', { ascending: true });
+                    .eq('active', true);
 
-                if (plans) setAvailablePlans(plans);
+                if (plans) {
+                    const sortedPlans = plans.sort((a, b) => {
+                        // Helper to determine if a plan is effectively unlimited
+                        const isUnlimited = (p) => (p.type === 'unlimited' || p.name.toLowerCase().includes('ilimitado') || p.name.toLowerCase().includes('unlimited'));
+
+                        const aUnlimited = isUnlimited(a) ? 1 : 0;
+                        const bUnlimited = isUnlimited(b) ? 1 : 0;
+
+                        // 1. Unlimited priority
+                        if (aUnlimited !== bUnlimited) return bUnlimited - aUnlimited;
+
+                        // 2. Price ascending
+                        return a.price - b.price;
+                    });
+                    setAvailablePlans(sortedPlans);
+                }
 
                 // 6. Fetch Global Settings (Stripe Link)
                 const { data: settings } = await supabase
@@ -1149,58 +1163,67 @@ const CustomerPortal = () => {
                             </div>
 
                             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {availablePlans.map(plan => (
-                                    <div key={plan.id} style={{
-                                        backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-                                        border: '1px solid #e2e8f0',
-                                        position: 'relative', overflow: 'hidden'
-                                    }}>
-                                        {plan.type === 'unlimited' && (
-                                            <div style={{
-                                                position: 'absolute', top: '12px', right: '-30px',
-                                                backgroundColor: '#10b981', color: 'white',
-                                                fontSize: '0.7rem', fontWeight: 'bold',
-                                                padding: '0.2rem 2.5rem', transform: 'rotate(45deg)',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                            }}>
-                                                POPULAR
-                                            </div>
-                                        )}
+                                {availablePlans.map(plan => {
+                                    const isUnlimited = (plan.type === 'unlimited' || plan.name.toLowerCase().includes('ilimitado') || plan.name.toLowerCase().includes('unlimited'));
 
-                                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.2rem' }}>{plan.name}</h3>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginBottom: '1rem' }}>
-                                            <span style={{ fontSize: '1.8rem', fontWeight: '900', color: '#3b82f6' }}>${parseInt(plan.price)}</span>
-                                            <span style={{ color: '#64748b' }}>/ mes</span>
-                                        </div>
-
-                                        <ul style={{ marginBottom: '1.5rem', paddingLeft: '1.2rem', color: '#475569', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                                            {plan.description ? plan.description.split('.').filter(i => i.trim()).map((feat, i) => (
-                                                <li key={i}>{feat.trim()}</li>
-                                            )) : (
-                                                <li>Beneficios exclusivos</li>
+                                    return (
+                                        <div key={plan.id} style={{
+                                            backgroundColor: isUnlimited ? '#f0fdf4' : 'white', // Light Green hint for unlimited
+                                            background: isUnlimited ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' : 'white',
+                                            borderRadius: '1rem', padding: '1.5rem',
+                                            boxShadow: isUnlimited ? '0 10px 15px -3px rgba(16, 185, 129, 0.2)' : '0 4px 6px -1px rgba(0,0,0,0.05)',
+                                            border: isUnlimited ? '2px solid #10b981' : '1px solid #e2e8f0',
+                                            position: 'relative', overflow: 'hidden',
+                                            transform: isUnlimited ? 'scale(1.02)' : 'scale(1)',
+                                            transition: 'all 0.2s',
+                                            marginBottom: '1rem' // spacing fix
+                                        }}>
+                                            {isUnlimited && (
+                                                <div style={{
+                                                    position: 'absolute', top: '12px', right: '-30px',
+                                                    backgroundColor: '#10b981', color: 'white',
+                                                    fontSize: '0.7rem', fontWeight: 'bold',
+                                                    padding: '0.2rem 2.5rem', transform: 'rotate(45deg)',
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}>
+                                                    POPULAR
+                                                </div>
                                             )}
-                                        </ul>
 
-                                        <button
-                                            onClick={() => {
-                                                const message = `Hola, soy ${customer.name}, me interesa suscribirme al plan *${plan.name}* de $${plan.price}.`;
-                                                const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
-                                                window.open(whatsappUrl, '_blank');
-                                            }}
-                                            style={{
-                                                width: '100%', padding: '0.8rem',
-                                                backgroundColor: '#3b82f6', color: 'white',
-                                                fontWeight: 'bold', borderRadius: '0.8rem',
-                                                border: 'none', fontSize: '1rem',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                cursor: 'pointer', boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
-                                            }}
-                                        >
-                                            Suscribirme <span style={{ fontSize: '0.8rem' }}>via WhatsApp</span>
-                                        </button>
-                                    </div>
-                                ))}
+                                            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.2rem' }}>{plan.name}</h3>
+                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginBottom: '1rem' }}>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: '900', color: '#3b82f6' }}>${parseInt(plan.price)}</span>
+                                                <span style={{ color: '#64748b' }}>/ mes</span>
+                                            </div>
+
+                                            <ul style={{ marginBottom: '1.5rem', paddingLeft: '1.2rem', color: '#475569', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                                {plan.description ? plan.description.split('.').filter(i => i.trim()).map((feat, i) => (
+                                                    <li key={i}>{feat.trim()}</li>
+                                                )) : (
+                                                    <li>Beneficios exclusivos</li>
+                                                )}
+                                            </ul>
+
+                                            <button
+                                                onClick={() => {
+                                                    const message = `Hola, soy ${customer.name}, me interesa suscribirme al plan *${plan.name}* de $${plan.price}.`;
+                                                    const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
+                                                    window.open(whatsappUrl, '_blank');
+                                                }}
+                                                style={{
+                                                    width: '100%', padding: '0.8rem',
+                                                    backgroundColor: '#3b82f6', color: 'white',
+                                                    fontWeight: 'bold', borderRadius: '0.8rem',
+                                                    border: 'none', fontSize: '1rem',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                    cursor: 'pointer', boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+                                                }}
+                                            >
+                                                Suscribirme <span style={{ fontSize: '0.8rem' }}>via WhatsApp</span>
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
