@@ -213,6 +213,10 @@ const Reports = () => {
         .filter(t => t.payment_method === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
+    const totalCard = dateFilteredTxs
+        .filter(t => t.payment_method === 'card' && (t.status === 'completed' || t.status === 'paid'))
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+
     const totalPending = dateFilteredTxs
         .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
@@ -385,6 +389,7 @@ const Reports = () => {
         income: acc.income + (row.income || 0),
         cashIncome: acc.cashIncome + (row.cashIncome || 0),
         transferIncome: acc.transferIncome + (row.transferIncome || 0),
+        cardIncome: acc.cardIncome + (row.cardIncome || 0),
         pending: acc.pending + (row.pending || 0),
         commissions: acc.commissions + (row.commissions || 0),
         productExpenses: acc.productExpenses + (row.productExpenses || 0),
@@ -750,6 +755,7 @@ const Reports = () => {
                                 income: totalIncome,
                                 totalCash: totalCash,
                                 totalTransfer: totalTransfer,
+                                totalCard: totalCard,
                                 expenses: totalCommissions + totalProductExpenses,
                                 net: adminNet
                             };
@@ -801,6 +807,24 @@ const Reports = () => {
                     >
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EFECTIVO</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalCash.toFixed(2)}</span>
+                    </button>
+
+                    <button
+                        onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'card' ? 'all' : 'card')}
+                        title={paymentMethodFilter === 'card' ? "Mostrar Todos" : "Filtrar solo Tarjeta"}
+                        style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '0.3rem 0.8rem',
+                            border: '1px solid #3B82F6',
+                            borderRadius: '6px',
+                            backgroundColor: paymentMethodFilter === 'card' ? '#3B82F6' : 'transparent',
+                            color: paymentMethodFilter === 'card' ? 'white' : '#3B82F6',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>TARJETAS</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalCard.toFixed(2)}</span>
                     </button>
 
                     <div style={{
