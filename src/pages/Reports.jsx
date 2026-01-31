@@ -286,16 +286,34 @@ const Reports = () => {
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
-        const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+        const totalBaseComm = (parseFloat(t.commission_amount) || 0);
+        const totalTip = (parseFloat(t.tip) || 0);
         const employeeCount = (t.transaction_assignments && t.transaction_assignments.length > 0)
             ? t.transaction_assignments.length
             : 1;
 
-        // If Admin, show total commission generated. If Employee, show their share.
+        // ADMIN: Show TOTAL generated (all commissions + all tips)
         if (userRole === 'admin') {
-            return sum + txTotalCommission;
-        } else {
-            return sum + (txTotalCommission / employeeCount);
+            return sum + totalBaseComm + totalTip;
+        }
+
+        // EMPLOYEE: Calculate THEIR share (matching the table logic)
+        else {
+            const allAssignedExtras = t.extras?.filter(e => e.assignedTo) || [];
+            const allAssignedCommission = allAssignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+            // 1. Shared Commission (Base - Assigned Extras)
+            const sharedPool = Math.max(0, totalBaseComm - allAssignedCommission);
+            const myShareBase = sharedPool / employeeCount;
+
+            // 2. My Tips
+            const myShareTip = totalTip / employeeCount;
+
+            // 3. My Assigned Extras
+            const myExtras = t.extras?.filter(e => e.assignedTo === myEmployeeId) || [];
+            const myExtrasCommission = myExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
+
+            return sum + myShareBase + myShareTip + myExtrasCommission;
         }
     }, 0);
 
@@ -1588,68 +1606,105 @@ const Reports = () => {
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
-                                    <th style={{ padding: '0.5rem' }}>Empleado</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Bruto</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--danger)' }}>Almuerzos</th>
-                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>A Pagar</th>
+                                    <th style={{ padding: '0.5rem' }}>Fecha</th>
+                                    <th style={{ padding: '0.5rem' }}>Servicio / Concepto</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Tipo</th>
+                                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Monto</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {(() => {
-                                    const totalsByEmp = {};
-                                    // 1. Calc Gross Commissions (Base + Extras + Tips)
+                                    // Group details by employee
+                                    const detailsByEmp = {};
+
                                     filteredTransactions.forEach(t => {
                                         const count = t.transaction_assignments?.length || 1;
-                                        // Base
-                                        // Heuristic Re-Calc (Simplified)
-                                        // For report breakdown we can use stored 'assignedTo' for extras but shared part is tricky without service base price known perfectly here.
-                                        // BUT for 'totalCommissions' we used a simple sum.
-                                        // For accurate breakdown per employee we need to iterate assignments.
+                                        const totalTxComm = (parseFloat(t.commission_amount) || 0); // Base Only
+                                        const tip = parseFloat(t.tip) || 0;
 
-                                        // Let's use simpler approach:
-                                        // Total Commission for TX
-                                        const totalTxComm = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
-
-                                        // Split Logic
-                                        // Any assigned Extra goes to specific person.
+                                        // Extras Logic
                                         const assignedExtras = t.extras?.filter(e => e.assignedTo) || [];
                                         const assignedExtrasSum = assignedExtras.reduce((s, e) => s + (parseFloat(e.commission) || 0), 0);
 
-                                        const sharedPool = Math.max(0, parseFloat(t.commission_amount) - assignedExtrasSum); // Only base commission is shared, tips are usually shared?
-                                        // Wait, tip logic in Employees.jsx splits tips evenly.
-                                        // Commission logic: storedTotal - allAssignedExtras = SharedBase.
-
-                                        const tip = parseFloat(t.tip) || 0;
+                                        // Shared Base Logic
+                                        const sharedPool = Math.max(0, totalTxComm - assignedExtrasSum);
                                         const sharedBasePerPerson = sharedPool / count;
                                         const tipPerPerson = tip / count;
 
+                                        // 1. Assign Shared Base + Tips
                                         t.transaction_assignments?.forEach(a => {
-                                            if (!totalsByEmp[a.employee_id]) totalsByEmp[a.employee_id] = { gross: 0, lunch: 0 };
-                                            totalsByEmp[a.employee_id].gross += (sharedBasePerPerson + tipPerPerson);
+                                            if (!detailsByEmp[a.employee_id]) detailsByEmp[a.employee_id] = { items: [], totalGross: 0, totalLunch: 0 };
+
+                                            const amount = sharedBasePerPerson + tipPerPerson;
+                                            if (amount > 0) {
+                                                detailsByEmp[a.employee_id].items.push({
+                                                    date: t.date,
+                                                    desc: getServiceName(t.service_id, servicesList),
+                                                    amount: amount,
+                                                    type: 'Comisión'
+                                                });
+                                                detailsByEmp[a.employee_id].totalGross += amount;
+                                            }
                                         });
 
-                                        // Add Extras
+                                        // 2. Assign Specific Extras
                                         assignedExtras.forEach(e => {
-                                            if (!totalsByEmp[e.assignedTo]) totalsByEmp[e.assignedTo] = { gross: 0, lunch: 0 };
-                                            totalsByEmp[e.assignedTo].gross += (parseFloat(e.commission) || 0);
+                                            if (!detailsByEmp[e.assignedTo]) detailsByEmp[e.assignedTo] = { items: [], totalGross: 0, totalLunch: 0 };
+
+                                            const amount = parseFloat(e.commission) || 0;
+                                            detailsByEmp[e.assignedTo].items.push({
+                                                date: t.date,
+                                                desc: `Extra: ${e.name}`,
+                                                amount: amount,
+                                                type: 'Extra'
+                                            });
+                                            detailsByEmp[e.assignedTo].totalGross += amount;
                                         });
                                     });
 
-                                    // 2. Add Lunches
+                                    // Add Lunches
                                     filteredExpenses.forEach(e => {
                                         if (e.category === 'lunch' && e.employee_id) {
-                                            if (!totalsByEmp[e.employee_id]) totalsByEmp[e.employee_id] = { gross: 0, lunch: 0 };
-                                            totalsByEmp[e.employee_id].lunch += (parseFloat(e.amount) || 0);
+                                            if (!detailsByEmp[e.employee_id]) detailsByEmp[e.employee_id] = { items: [], totalGross: 0, totalLunch: 0 };
+                                            const amount = parseFloat(e.amount) || 0;
+                                            detailsByEmp[e.employee_id].items.push({
+                                                date: e.date,
+                                                desc: 'Almuerzo',
+                                                amount: -amount, // Negative for display/logic? Or just track separate
+                                                type: 'Almuerzo'
+                                            });
+                                            detailsByEmp[e.employee_id].totalLunch += amount;
                                         }
                                     });
 
-                                    return Object.entries(totalsByEmp).map(([empId, stats]) => (
-                                        <tr key={empId} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                            <td style={{ padding: '0.5rem' }}>{getEmployeeName(empId, employeesList)}</td>
-                                            <td style={{ padding: '0.5rem', textAlign: 'right' }}>${stats.gross.toFixed(2)}</td>
-                                            <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--danger)' }}>-${stats.lunch.toFixed(2)}</td>
-                                            <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold' }}>${(stats.gross - stats.lunch).toFixed(2)}</td>
-                                        </tr>
+                                    return Object.entries(detailsByEmp).map(([empId, stats]) => (
+                                        <React.Fragment key={empId}>
+                                            <tr style={{ backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}>
+                                                <td colSpan="4" style={{ padding: '0.75rem' }}>
+                                                    {getEmployeeName(empId, employeesList)}
+                                                </td>
+                                            </tr>
+                                            {stats.items.sort((a, b) => new Date(a.date) - new Date(b.date)).map((item, idx) => (
+                                                <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
+                                                    <td style={{ padding: '0.5rem 0.5rem 0.5rem 1.5rem', color: 'var(--text-muted)' }}>
+                                                        {new Date(item.date).toLocaleDateString('es-PR')}
+                                                    </td>
+                                                    <td style={{ padding: '0.5rem' }}>{item.desc}</td>
+                                                    <td style={{ padding: '0.5rem', textAlign: 'right', color: item.type === 'Almuerzo' ? 'var(--danger)' : 'inherit' }}>
+                                                        {item.type === 'Almuerzo' ? 'Almuerzo' : ''}
+                                                    </td>
+                                                    <td style={{ padding: '0.5rem', textAlign: 'right', color: item.type === 'Almuerzo' ? 'var(--danger)' : 'var(--success)' }}>
+                                                        {item.type === 'Almuerzo' ? '-' : ''}${Math.abs(item.amount).toFixed(2)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            <tr style={{ borderTop: '2px solid var(--border-color)', fontWeight: 'bold' }}>
+                                                <td colSpan="3" style={{ padding: '0.75rem 1.5rem', textAlign: 'right' }}>Total a Pagar:</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'right', color: 'var(--primary)' }}>
+                                                    ${(stats.totalGross - stats.totalLunch).toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        </React.Fragment>
                                     ));
                                 })()}
                             </tbody>
