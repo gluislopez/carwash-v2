@@ -1,1 +1,1 @@
-Trigger deployment: Detailed Commission Reports with Dates - 2026-01-31 16:51
+Trigger deployment: Fix Commission Date Display - 2026-01-31 16:54

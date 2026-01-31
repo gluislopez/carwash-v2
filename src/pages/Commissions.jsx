@@ -373,7 +373,7 @@ const Commissions = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                                         <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t.customers?.name || 'Cliente Casual'}</span>
                                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                            {new Date(t.date || t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(t.date || t.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit' })}  {new Date(t.date || t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                     <div style={{ color: 'var(--text-main)', marginBottom: '0.25rem' }}>
