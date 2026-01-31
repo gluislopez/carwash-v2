@@ -1755,7 +1755,7 @@ const Dashboard = () => {
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                             >
-                                <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso **</h3>
+                                <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem' }}>En Proceso</h3>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <Droplets size={24} color="#3B82F6" />
                                     <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
@@ -2501,8 +2501,8 @@ const Dashboard = () => {
                                                                                         </span>}
                                                                                 </div>
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                                                                                    <div style={{ color: 'red', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                                                                        {getServiceName(t.service_id)} - Total: ${((parseFloat(t.price) || 0) + (t.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}
+                                                                                    <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>
+                                                                                        {getServiceName(t.service_id)} - ${((parseFloat(t.price) || 0) + (t.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}
                                                                                     </div>
                                                                                     <div style={{
                                                                                         fontSize: '0.8rem',
