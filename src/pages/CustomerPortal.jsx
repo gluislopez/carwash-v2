@@ -403,7 +403,8 @@ const CustomerPortal = () => {
             <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem 3.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <img src="/logo.jpg" alt="Express CarWash" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', border: '3px solid rgba(255,255,255,0.2)' }} />
                 <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
-                <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '1.5rem' }}>Centro de Cuidado Automotriz</p>
+                <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '0.2rem' }}>Centro de Cuidado Automotriz</p>
+                <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '1.5rem', fontWeight: '500' }}>Martes a Sábado de 8:00 am a 4:30 pm</p>
 
                 {/* QUEUE COUNTER & STATUS (RESTORED TO HEADER) */}
                 <div style={{ display: 'flex', gap: '2.5rem', marginBottom: '1.5rem' }}>
