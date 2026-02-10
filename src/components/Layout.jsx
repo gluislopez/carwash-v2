@@ -11,31 +11,36 @@ const Layout = ({ children }) => {
 
     // Business Status State
     const [isBusinessOpen, setIsBusinessOpen] = useState(true);
+    const [branding, setBranding] = useState({ name: 'Express CarWash', logo: '/logo.jpg' });
 
     const location = useLocation();
 
-    // Fetch Business Status
+    // Fetch Business Status & Branding
     useEffect(() => {
-        const fetchStatus = async () => {
+        const fetchSettings = async () => {
             const { data } = await supabase
                 .from('business_settings')
-                .select('setting_value')
-                .eq('setting_key', 'is_open')
-                .single();
+                .select('*');
 
             if (data) {
-                setIsBusinessOpen(data.setting_value === 'true');
+                const settings = {};
+                data.forEach(s => settings[s.setting_key] = s.setting_value);
+
+                if (settings.is_open) setIsBusinessOpen(settings.is_open === 'true');
+
+                setBranding({
+                    name: settings.business_name || 'Express CarWash',
+                    logo: settings.business_logo_url || '/logo.jpg'
+                });
             }
         };
-        fetchStatus();
+        fetchSettings();
 
         // Subscribe to changes
         const channel = supabase
-            .channel('public:business_settings')
+            .channel('public:business_settings_layout')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, payload => {
-                if (payload.new && payload.new.setting_key === 'is_open') {
-                    setIsBusinessOpen(payload.new.setting_value === 'true');
-                }
+                fetchSettings(); // Refresh all on any change
             })
             .subscribe();
 
@@ -97,6 +102,7 @@ const Layout = ({ children }) => {
         navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
         navItems.push({ path: '/promotions', label: 'Promociones', icon: <Megaphone size={20} /> });
         navItems.push({ path: '/memberships', label: 'Membresías', icon: <Award size={20} /> });
+        navItems.push({ path: '/settings', label: 'Configuración Negocio', icon: <Settings size={20} /> });
     }
 
     // Inventory for Admin and Manager
@@ -174,9 +180,9 @@ const Layout = ({ children }) => {
 
                 <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src="/logo.jpg" alt="CarWash Logo" style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--bg-secondary)' }} />
+                        <img src={branding.logo} alt="Logo" style={{ width: '120px', height: '120px', borderRadius: '1rem', objectFit: 'contain', backgroundColor: 'transparent' }} />
                     </div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>Express CarWash</h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>{branding.name}</h2>
                     {/* Close button for mobile - moved to absolute position */}
                     <button
                         onClick={() => setIsMobileMenuOpen(false)}

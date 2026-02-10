@@ -45,6 +45,7 @@ const CustomerPortal = () => {
     const [showMembershipModal, setShowMembershipModal] = useState(false); // NEW MODAL FOR MEMBERSHIPS
     const [availablePlans, setAvailablePlans] = useState([]); // Store all plans
     const [portalMessage, setPortalMessage] = useState(''); // Global announcement
+    const [branding, setBranding] = useState({ name: 'Express CarWash', logo: '/logo.jpg' });
 
     // PWA State
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -158,6 +159,15 @@ const CustomerPortal = () => {
                 } else {
                     setPortalMessage('');
                 }
+
+                // 3. Branding
+                const bName = data.find(s => s.setting_key === 'business_name')?.setting_value;
+                const bLogo = data.find(s => s.setting_key === 'business_logo_url')?.setting_value;
+
+                setBranding({
+                    name: bName || 'Express CarWash',
+                    logo: bLogo || '/logo.jpg'
+                });
             }
         };
         fetchSettings();
@@ -401,8 +411,8 @@ const CustomerPortal = () => {
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
             {/* HERDER */}
             <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem 3.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img src="/logo.jpg" alt="Express CarWash" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', border: '3px solid rgba(255,255,255,0.2)' }} />
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Express CarWash</h1>
+                <img src={branding.logo} alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', objectFit: 'contain', backgroundColor: 'transparent' }} />
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{branding.name}</h1>
                 <p style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '0.2rem' }}>Centro de Cuidado Automotriz</p>
                 <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '1.5rem', fontWeight: '500' }}>Martes a Sábado de 8:00 am a 4:30 pm</p>
 
