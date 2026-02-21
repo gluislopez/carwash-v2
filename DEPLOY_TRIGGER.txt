@@ -1,1 +1,1 @@
-Trigger deployment: Add Sequential Customer Number (custom column) - 2026-02-20 23:21
+Trigger deployment: Add total customer count to Clients page header - 2026-02-20 23:24

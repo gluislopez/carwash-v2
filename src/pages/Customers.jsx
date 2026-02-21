@@ -552,7 +552,12 @@ const Customers = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1>
+                        <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            Clientes
+                            <span style={{ fontSize: '1rem', backgroundColor: 'var(--primary)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontWeight: 'bold' }}>
+                                {customers.length}
+                            </span>
+                        </h1>
                         <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p>
                     </div>
 
