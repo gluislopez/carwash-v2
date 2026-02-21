@@ -244,3 +244,19 @@ body {
     gap: 1rem;
     align-items: start;
 }
+
+/* Customer Card Specifics */
+.customer-info-container {
+    flex: 1;
+    min-width: 0;
+    padding-right: 120px;
+}
+
+.customer-actions-container {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+}

@@ -80,6 +80,19 @@
         border-radius: var(--radius-md) !important;
     }
 
+    .customer-info-container {
+        padding-right: 0px !important;
+    }
+
+    .customer-actions-container {
+        position: static !important;
+        margin-top: 1rem;
+        justify-content: flex-end;
+        width: 100%;
+        border-top: 1px solid var(--border-color);
+        padding-top: 0.75rem;
+    }
+
     /* Grid Stacking */
     div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;

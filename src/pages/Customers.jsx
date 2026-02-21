@@ -692,7 +692,7 @@ const Customers = () => {
                                     {customer.name.charAt(0).toUpperCase()}
                                 </span>
                             </div>
-                            <div style={{ flex: 1, minWidth: 0, paddingRight: '120px' }}>
+                            <div className="customer-info-container">
                                 <h3 style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', wordBreak: 'break-word' }}>
                                     <span>{customer.name}</span>
                                     {customer.customer_number && (
@@ -798,7 +798,7 @@ const Customers = () => {
                         </div>
 
                         {/* ACTIONS - Always visible (View/Share) + Restricted (Edit/Delete) */}
-                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem', zIndex: 10 }}>
+                        <div className="customer-actions-container">
                             <button
                                 onClick={() => window.open(`/portal/${customer.id}`, '_blank')}
                                 style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
