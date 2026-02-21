@@ -1,1 +1,1 @@
-Trigger deployment: Mobile layout fix for customer cards - 2026-02-21 00:14
+Trigger deployment: Restore missing isScanning state - 2026-02-21 00:18

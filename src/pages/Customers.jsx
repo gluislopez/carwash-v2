@@ -62,6 +62,7 @@ const Customers = () => {
 
     // DUPLICATE DETECTION STATE
     const [duplicateGroups, setDuplicateGroups] = useState([]);
+    const [isScanning, setIsScanning] = useState(false);
     const [showDuplicateResults, setShowDuplicateResults] = useState(false);
 
     // PAGINATION STATE (Performance optimization for mobile)
