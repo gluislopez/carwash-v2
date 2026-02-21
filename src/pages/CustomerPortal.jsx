@@ -650,7 +650,12 @@ const CustomerPortal = () => {
                 {/* CUSTOMER GREETING & STATS (INTEGRATED LOYALTY) */}
                 <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', marginBottom: '1.5rem', position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b' }}>Hola, {customer.name}</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Hola, {customer.name}</h2>
+                            <span style={{ fontSize: '0.9rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 'bold' }}>
+                                #{customer.id.toString().padStart(4, '0')}
+                            </span>
+                        </div>
                         <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
                             {selectedVehicle ? getVehicleDisplayName(selectedVehicle, customer) : 'Vista General'}
                         </div>

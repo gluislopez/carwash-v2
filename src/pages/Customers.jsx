@@ -541,6 +541,7 @@ const Customers = () => {
 
     // Filter customers
     const filteredCustomers = customers.filter(c =>
+        c.id.toString() === searchTerm.trim() ||
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.vehicle_plate && c.vehicle_plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.phone && c.phone.includes(searchTerm))
@@ -581,7 +582,7 @@ const Customers = () => {
                     <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, tablilla o teléfono..."
+                        placeholder="Buscar por # cliente, nombre, tablilla o teléfono..."
                         className="input"
                         style={{
                             paddingLeft: '3rem',
@@ -682,7 +683,12 @@ const Customers = () => {
                                 </span>
                             </div>
                             <div>
-                                <h3 style={{ fontWeight: 'bold' }}>{customer.name}</h3>
+                                <h3 style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span>{customer.name}</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'normal' }}>
+                                        #{customer.id.toString().padStart(4, '0')}
+                                    </span>
+                                </h3>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <span style={{
                                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -832,7 +838,14 @@ const Customers = () => {
                     backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
                 }}>
                     <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
+                        <h3 style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</span>
+                            {editingCustomer && (
+                                <span style={{ fontSize: '1rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
+                                    #{editingCustomer.id.toString().padStart(4, '0')}
+                                </span>
+                            )}
+                        </h3>
                         <form onSubmit={handleSubmit}>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label className="label">Nombre Completo</label>
