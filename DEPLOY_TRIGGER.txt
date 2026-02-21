@@ -1,1 +1,1 @@
-Trigger deployment: Fix Layout issue on Desktop for Customers page - 2026-02-21 00:04
+Trigger deployment: Add pagination to Customers list for mobile performance - 2026-02-21 00:07

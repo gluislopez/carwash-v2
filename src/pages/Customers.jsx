@@ -62,8 +62,10 @@ const Customers = () => {
 
     // DUPLICATE DETECTION STATE
     const [duplicateGroups, setDuplicateGroups] = useState([]);
-    const [isScanning, setIsScanning] = useState(false);
     const [showDuplicateResults, setShowDuplicateResults] = useState(false);
+
+    // PAGINATION STATE (Performance optimization for mobile)
+    const [visibleCount, setVisibleCount] = useState(30);
 
     const handleScanDuplicates = () => {
         setIsScanning(true);
@@ -600,7 +602,10 @@ const Customers = () => {
                             paddingBottom: '0.75rem'
                         }}
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setVisibleCount(30); // Reset visible count on new search
+                        }}
                     />
                 </div>
 
@@ -675,7 +680,7 @@ const Customers = () => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                {filteredCustomers.map((customer) => (
+                {filteredCustomers.slice(0, visibleCount).map((customer) => (
                     <div key={customer.id} className="card" style={{ position: 'relative' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{
@@ -838,6 +843,19 @@ const Customers = () => {
                     )
                 }
             </div>
+
+            {/* LOAD MORE BUTTON */}
+            {visibleCount < filteredCustomers.length && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem', marginBottom: '4rem' }}>
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => setVisibleCount(prev => prev + 30)}
+                        style={{ padding: '0.75rem 2rem', borderRadius: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        Cargar más clientes ({filteredCustomers.length - visibleCount} restantes)
+                    </button>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div style={{
