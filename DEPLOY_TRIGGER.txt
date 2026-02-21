@@ -1,1 +1,1 @@
-Trigger deployment: Add Customer Number - 2026-02-20 23:14
+Trigger deployment: Fix Customer Number Format (UUID) - 2026-02-20 23:17

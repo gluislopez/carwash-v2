@@ -541,7 +541,7 @@ const Customers = () => {
 
     // Filter customers
     const filteredCustomers = customers.filter(c =>
-        c.id.toString() === searchTerm.trim() ||
+        c.id.toString().substring(0, 5) === searchTerm.trim().toLowerCase() ||
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.vehicle_plate && c.vehicle_plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.phone && c.phone.includes(searchTerm))
@@ -686,7 +686,7 @@ const Customers = () => {
                                 <h3 style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span>{customer.name}</span>
                                     <span style={{ fontSize: '0.8rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'normal' }}>
-                                        #{customer.id.toString().padStart(4, '0')}
+                                        #{customer.id.toString().substring(0, 5).toUpperCase()}
                                     </span>
                                 </h3>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -842,7 +842,7 @@ const Customers = () => {
                             <span>{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</span>
                             {editingCustomer && (
                                 <span style={{ fontSize: '1rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
-                                    #{editingCustomer.id.toString().padStart(4, '0')}
+                                    #{editingCustomer.id.toString().substring(0, 5).toUpperCase()}
                                 </span>
                             )}
                         </h3>

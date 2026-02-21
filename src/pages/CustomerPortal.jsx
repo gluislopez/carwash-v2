@@ -653,7 +653,7 @@ const CustomerPortal = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Hola, {customer.name}</h2>
                             <span style={{ fontSize: '0.9rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 'bold' }}>
-                                #{customer.id.toString().padStart(4, '0')}
+                                #{customer.id.toString().substring(0, 5).toUpperCase()}
                             </span>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 'bold', backgroundColor: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '0.5rem' }}>
