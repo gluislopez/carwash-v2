@@ -1,1 +1,1 @@
-Trigger deployment: Restore missing isScanning state - 2026-02-21 00:18
+Trigger deployment: Fix search bar logic for plates and numbers - 2026-02-21 00:21

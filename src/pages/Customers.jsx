@@ -543,12 +543,30 @@ const Customers = () => {
     };
 
     // Filter customers
-    const filteredCustomers = customers.filter(c =>
-        (c.customer_number && c.customer_number.toString().padStart(2, '0') === searchTerm.trim()) ||
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.vehicle_plate && c.vehicle_plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (c.phone && c.phone.includes(searchTerm))
-    );
+    const filteredCustomers = customers.filter(c => {
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) return true;
+
+        // Exact padded number logic or partial number match
+        const matchesNumber = c.customer_number && (c.customer_number.toString().padStart(2, '0') === term || c.customer_number.toString() === term || `#${c.customer_number.toString().padStart(2, '0')}`.includes(term));
+        const matchesName = c.name && c.name.toLowerCase().includes(term);
+        const matchesPhone = c.phone && c.phone.includes(term);
+
+        // Check legacy vehicle data on customer object
+        let matchesVehicle = (c.vehicle_plate && c.vehicle_plate.toLowerCase().includes(term)) ||
+            (c.vehicle_model && c.vehicle_model.toLowerCase().includes(term));
+
+        // Check the new relational vehicle data
+        if (!matchesVehicle && allVehicles[c.id]) {
+            matchesVehicle = allVehicles[c.id].some(v =>
+                (v.plate && v.plate.toLowerCase().includes(term)) ||
+                (v.model && v.model.toLowerCase().includes(term)) ||
+                (v.brand && v.brand.toLowerCase().includes(term))
+            );
+        }
+
+        return matchesNumber || matchesName || matchesPhone || matchesVehicle;
+    });
 
     return (
         <div>
