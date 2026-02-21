@@ -679,7 +679,7 @@ const Customers = () => {
                     <div key={customer.id} className="card" style={{ position: 'relative' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{
-                                width: '50px', height: '50px', borderRadius: '50%',
+                                width: '50px', height: '50px', borderRadius: '50%', flexShrink: 0,
                                 backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
@@ -687,16 +687,16 @@ const Customers = () => {
                                     {customer.name.charAt(0).toUpperCase()}
                                 </span>
                             </div>
-                            <div>
-                                <h3 style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ flex: 1, minWidth: 0, paddingRight: '120px' }}>
+                                <h3 style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', wordBreak: 'break-word' }}>
                                     <span>{customer.name}</span>
                                     {customer.customer_number && (
-                                        <span style={{ fontSize: '0.8rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'normal' }}>
+                                        <span style={{ fontSize: '0.8rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'normal', whiteSpace: 'nowrap' }}>
                                             #{customer.customer_number.toString().padStart(2, '0')}
                                         </span>
                                     )}
                                 </h3>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                                     <span style={{
                                         backgroundColor: 'rgba(99, 102, 241, 0.1)',
                                         color: 'var(--primary)',
