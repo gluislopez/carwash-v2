@@ -541,7 +541,7 @@ const Customers = () => {
 
     // Filter customers
     const filteredCustomers = customers.filter(c =>
-        c.id.toString().substring(0, 5) === searchTerm.trim().toLowerCase() ||
+        (c.customer_number && c.customer_number.toString().padStart(2, '0') === searchTerm.trim()) ||
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.vehicle_plate && c.vehicle_plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.phone && c.phone.includes(searchTerm))
@@ -685,9 +685,11 @@ const Customers = () => {
                             <div>
                                 <h3 style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span>{customer.name}</span>
-                                    <span style={{ fontSize: '0.8rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'normal' }}>
-                                        #{customer.id.toString().substring(0, 5).toUpperCase()}
-                                    </span>
+                                    {customer.customer_number && (
+                                        <span style={{ fontSize: '0.8rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'normal' }}>
+                                            #{customer.customer_number.toString().padStart(2, '0')}
+                                        </span>
+                                    )}
                                 </h3>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <span style={{
@@ -840,9 +842,9 @@ const Customers = () => {
                     <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
                         <h3 style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</span>
-                            {editingCustomer && (
+                            {editingCustomer && editingCustomer.customer_number && (
                                 <span style={{ fontSize: '1rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
-                                    #{editingCustomer.id.toString().substring(0, 5).toUpperCase()}
+                                    #{editingCustomer.customer_number.toString().padStart(2, '0')}
                                 </span>
                             )}
                         </h3>

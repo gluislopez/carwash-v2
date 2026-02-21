@@ -1,1 +1,1 @@
-Trigger deployment: Fix Customer Number Format (UUID) - 2026-02-20 23:17
+Trigger deployment: Add Sequential Customer Number (custom column) - 2026-02-20 23:21
