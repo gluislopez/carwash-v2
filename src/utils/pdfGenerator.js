@@ -448,23 +448,27 @@ export const generateMembershipTermsPDF = async (customerName = '', membershipNa
             content: 'Los beneficios de la membresía (lavados limitados o ilimitados según el plan) son intransferibles y no pueden ser aplicados a un vehículo diferente al registrado originalmente. Cualquier intento de usar la membresía en un vehículo no autorizado resultará en la cancelación inmediata del servicio sin derecho a reembolso.'
         },
         {
-            title: '3. Pagos y Ciclo de Facturación',
+            title: '3. Condiciones del Vehículo (Suciedad Extrema)',
+            content: 'Los planes de membresía cubren un nivel de suciedad regular generado por el uso cotidiano. En situaciones donde el vehículo presente condiciones de suciedad extrema (tales como lodo excesivo, derrames severos, exceso de pelo de mascota o acumulación profunda de residuos), Express CarWash se reserva el derecho de aplicar un cargo adicional por reacondicionamiento. Dicho cargo será evaluado e informado al cliente previo a comenzar el servicio.'
+        },
+        {
+            title: '4. Pagos y Ciclo de Facturación',
             content: 'El cargo de la membresía se realiza de manera anticipada. El ciclo de beneficios es mensual o anual, dependiendo del acuerdo. No se emitirán reembolsos parciales o totales por meses no utilizados o por cancelación a mitad del ciclo.'
         },
         {
-            title: '4. Renovación Automática de Lavados (Límites)',
+            title: '5. Renovación Automática de Lavados (Límites)',
             content: 'Para los planes con límite de lavados (Ej. "Plan Smart"), el sistema restablecerá la cantidad de usos disponibles automáticamente a los 30 días de su fecha de corte original. Los lavados no utilizados durante un mes no son acumulables ni se transfieren al mes siguiente.'
         },
         {
-            title: '5. Cancelación de Membresía',
+            title: '6. Cancelación de Membresía',
             content: 'El cliente puede cancelar su membresía en cualquier momento solicitándolo directamente a la administración. La cancelación detendrá futuras renovaciones o facturaciones, pero el cliente podrá seguir disfrutando de sus beneficios restantes hasta que finalice el ciclo pre-pagado actual.'
         },
         {
-            title: '6. Limitaciones de Responsabilidad',
+            title: '7. Limitaciones de Responsabilidad',
             content: 'Express CarWash se reserva el derecho de cerrar sus facilidades temporalmente debido a inclemencias del tiempo, mantenimiento de equipos, o días feriados. Estos cierres no otorgan derecho a prórrogas o devoluciones sobre el pago de la membresía.'
         },
         {
-            title: '7. Modificaciones a los Términos',
+            title: '8. Modificaciones a los Términos',
             content: 'Express CarWash se reserva el derecho de modificar las tarifas, planes o estos términos y condiciones. Cualquier cambio será notificado al cliente con al menos 15 días de anticipación.'
         }
     ];
