@@ -489,28 +489,35 @@ const Dashboard = () => {
     };
 
     const handleAssignMembership = async (membershipId) => {
-        if (!formData.customerId || !membershipId) return;
+        console.log("INICIANDO ASIGNACIÓN DE MEMBRESÍA:", { customerId: formData.customerId, membershipId });
+
+        if (!formData.customerId) {
+            alert("❌ Error: No hay un cliente seleccionado.");
+            return;
+        }
+        if (!membershipId) {
+            alert("❌ Error: ID de membresía inválido.");
+            return;
+        }
 
         try {
-            // 1. CLEANUP: Remove any existing membership record for this customer (active or inactive)
-            // This prevents unique constraint or "multiple rows" errors.
-            await supabase
+            // Use UPSERT to either update the existing membership or insert a new one
+            // This is safer than delete+insert because it is atomic and avoids unique constraint errors.
+            const { error: opError } = await supabase
                 .from('customer_memberships')
-                .delete()
-                .eq('customer_id', formData.customerId);
-
-            // 2. INSERT: Create the new record
-            const { error: insError } = await supabase
-                .from('customer_memberships')
-                .insert({
+                .upsert({
                     customer_id: formData.customerId,
                     membership_id: membershipId,
                     status: 'active',
                     start_date: new Date().toISOString(),
-                    last_reset_at: new Date().toISOString()
-                });
+                    last_reset_at: new Date().toISOString(),
+                    usage_count: 0 // Reset usage on new assignment
+                }, { onConflict: 'customer_id' });
 
-            if (insError) throw insError;
+            if (opError) {
+                console.error("UPSERT Error:", opError);
+                throw opError;
+            }
 
             // 3. REFRESH: Fetch the newly created record to update UI state
             const { data: updatedMembership, error: fetchErr } = await supabase
@@ -540,17 +547,17 @@ const Dashboard = () => {
 
                     if (txError) throw txError;
                     refreshTransactions(); // Ensure it shows up in history/reports
-                    alert("Membresía asignada correctamente y registrada en finanzas.");
+                    alert("✅ Membresía asignada correctamente y registrada en finanzas.");
                 } catch (err) {
                     console.error("Error al registrar venta de membresía:", err);
-                    alert("Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + err.message);
+                    alert("⚠️ Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + err.message);
                 }
             } else {
-                alert("Membresía asignada correctamente.");
+                alert("✅ Membresía asignada correctamente.");
             }
         } catch (opError) {
-            console.error("Error assigning membership:", opError);
-            alert("Error al asignar membresía: " + opError.message);
+            console.error("Error general en handleAssignMembership:", opError);
+            alert("❌ Error al asignar membresía: " + (opError.message || JSON.stringify(opError)));
         }
     };
 

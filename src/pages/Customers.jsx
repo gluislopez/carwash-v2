@@ -452,21 +452,22 @@ const Customers = () => {
                 await update(editingCustomer.id, customerData);
                 // Handle Membership Assignment
                 if (formData.membership_id) {
-                    // CLEANUP: Remove any existing membership record for this customer
-                    await supabase
+                    // UPSERT
+                    const { error: upErr } = await supabase
                         .from('customer_memberships')
-                        .delete()
-                        .eq('customer_id', editingCustomer.id);
+                        .upsert({
+                            customer_id: editingCustomer.id,
+                            membership_id: formData.membership_id,
+                            stripe_subscription_id: formData.stripe_subscription_id || null,
+                            status: 'active',
+                            start_date: new Date().toISOString(),
+                            last_reset_at: new Date().toISOString()
+                        }, { onConflict: 'customer_id' });
 
-                    // INSERT
-                    await supabase.from('customer_memberships').insert({
-                        customer_id: editingCustomer.id,
-                        membership_id: formData.membership_id,
-                        stripe_subscription_id: formData.stripe_subscription_id || null,
-                        status: 'active',
-                        start_date: new Date().toISOString(),
-                        last_reset_at: new Date().toISOString()
-                    });
+                    if (upErr) {
+                        console.error("Membership Upsert Error:", upErr);
+                        alert("Error al guardar membresía: " + upErr.message);
+                    }
                 } else {
                     // If empty, delete any existing membership for this customer
                     const { error: delError } = await supabase
