@@ -417,6 +417,7 @@ const Dashboard = () => {
             .from('customer_memberships')
             .select('*, memberships(*)')
             .eq('customer_id', customerId)
+            .is('cancelled_at', null)
             .eq('status', 'active')
             .single();
 

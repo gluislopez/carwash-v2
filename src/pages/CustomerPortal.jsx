@@ -307,6 +307,7 @@ const CustomerPortal = () => {
                     .select('*, memberships(*)')
                     .eq('customer_id', customerId)
                     .is('cancelled_at', null)
+                    .eq('status', 'active')
                     .single();
 
                 if (memberSub) {

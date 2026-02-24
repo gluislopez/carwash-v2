@@ -58,7 +58,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 .from('customer_memberships')
                 .select('*, memberships(*)')
                 .eq('customer_id', cId)
+                .is('cancelled_at', null)
+                .eq('status', 'active')
                 .single();
+
+            console.log("DEBUG: Fetched customer membership for cId", cId, data, error);
+
             if (data) {
                 setCustomerMembership(data);
                 // Si la membresía es válida, por default preparamos para usarla (a menos que no quieran)
