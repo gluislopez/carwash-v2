@@ -476,7 +476,12 @@ const Dashboard = () => {
         if (existing) {
             const { error } = await supabase
                 .from('customer_memberships')
-                .update({ membership_id: membershipId, status: 'active' })
+                .update({
+                    membership_id: membershipId,
+                    status: 'active',
+                    usage_count: 0,
+                    last_reset_at: new Date().toISOString()
+                })
                 .eq('id', existing.id);
             opError = error;
         } else {
