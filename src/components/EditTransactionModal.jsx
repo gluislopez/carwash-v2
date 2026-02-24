@@ -207,6 +207,25 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
     }, [formData.price, formData.serviceId, selectedEmployeeIds, extras, services]);
 
+    // Auto-calculate total price when membership/extras/service change
+    React.useEffect(() => {
+        if (!services || services.length === 0) return;
+
+        const service = services.find(s => s.id === formData.serviceId);
+        const servicePrice = service ? parseFloat(service.price) : 0;
+        const extrasTotal = extras.reduce((sum, ex) => sum + ex.price, 0);
+
+        // If membership is used, base service is $0. Only charge extras.
+        const newPrice = isMembershipUsage ? extrasTotal : (servicePrice + extrasTotal);
+
+        setFormData(prev => {
+            if (parseFloat(prev.price) !== newPrice) {
+                return { ...prev, price: newPrice };
+            }
+            return prev;
+        });
+    }, [isMembershipUsage, formData.serviceId, extras, services]);
+
     const [showPaymentConfModal, setShowPaymentConfModal] = useState(false);
 
     const handlePaymentConfirm = (method) => {
@@ -419,7 +438,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         const isCompleting = nextStatus === 'paid' || nextStatus === 'completed';
 
         if (isCompleting) {
-            setShowPaymentConfModal(true);
+            // If membership covers everything (price is 0), skip payment modal
+            if (isMembershipUsage && parseFloat(formData.price || 0) === 0) {
+                processTransaction('membership');
+            } else {
+                setShowPaymentConfModal(true);
+            }
         } else {
             processTransaction();
         }
@@ -976,7 +1000,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             )}
                             <button type="button" onClick={handleSaveClick} className="btn btn-primary" disabled={isUploading}>
                                 {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} style={{ marginRight: '0.5rem' }} />}
-                                {isUploading ? ' Procesando...' : 'Guardar'}
+                                {isUploading ? ' Procesando...' : (isMembershipUsage ? 'Registrar Servicio' : 'Guardar')}
                             </button>
                         </div>
                     </div>
