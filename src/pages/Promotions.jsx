@@ -391,6 +391,7 @@ const PortalAnnouncement = () => {
 
 const LegalDocumentsTab = ({ customers, memberships }) => {
     const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
     const [membershipName, setMembershipName] = useState('');
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -406,6 +407,7 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
 
         const found = customers?.find(c => c.name === val);
         if (found) {
+            setCustomerPhone(found.phone || '');
             const { data } = await supabase.from('vehicles').select('*').eq('customer_id', found.id);
             if (data && data.length > 0) {
                 setCustomerVehicles(data);
@@ -421,6 +423,7 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
                 setVehicleInfoText(fallbackInfo);
             }
         } else {
+            setCustomerPhone('');
             setCustomerVehicles([]);
             setSelectedVehicleId('');
             setVehicleInfoText('');
@@ -463,6 +466,52 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
         } catch (error) {
             console.error("Error generando PDF:", error);
             alert("Hubo un error al generar el PDF.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleShareWhatsApp = async () => {
+        if (!customerName) {
+            alert("Por favor selecciona un cliente para enviarle el documento por WhatsApp.");
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const { blob, fileName } = await generateMembershipTermsPDF(customerName, membershipName, vehicleInfoText, startDate);
+            const file = new File([blob], fileName, { type: 'application/pdf' });
+
+            // Try Native Share API First (works on Mobile and Safari)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Términos y Condiciones',
+                    text: `Hola ${customerName}, adjunto tus Términos y Condiciones de la membresía ${membershipName}.`
+                });
+            } else {
+                // Fallback: Download and open WhatsApp Web
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                if (customerPhone) {
+                    const cleanPhone = customerPhone.replace(/\D/g, '');
+                    // Puerto Rico area code fallback if not starting with 1
+                    const phonePrefix = cleanPhone.length === 10 ? '1' : '';
+                    const message = encodeURIComponent(`Hola ${customerName}, te comparto tus Términos y Condiciones de la membresía ${membershipName}. El documento se ha descargado en mi dispositivo para enviártelo.`);
+                    window.open(`https://wa.me/${phonePrefix}${cleanPhone}?text=${message}`, '_blank');
+                } else {
+                    alert('El PDF se ha descargado. Como el cliente no tiene teléfono, deberás adjuntarlo manualmente preionando el botón clip en WhatsApp.');
+                }
+            }
+        } catch (error) {
+            console.error("Error al compartir PDF:", error);
+            alert("Hubo un error al generar o compartir el PDF.");
         } finally {
             setIsGenerating(false);
         }
@@ -571,9 +620,9 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
                         style={{
                             padding: '0.75rem 1.5rem',
                             borderRadius: '0.5rem',
-                            border: 'none',
-                            backgroundColor: 'var(--primary)',
-                            color: 'white',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: 'var(--bg-card)',
+                            color: 'var(--text-primary)',
                             fontWeight: 'bold',
                             cursor: isGenerating ? 'not-allowed' : 'pointer',
                             display: 'flex',
@@ -583,7 +632,28 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
                         }}
                     >
                         <Download size={18} />
-                        {isGenerating ? 'Generando PDF...' : 'Descargar T&C en PDF'}
+                        Descargar PDF
+                    </button>
+
+                    <button
+                        onClick={handleShareWhatsApp}
+                        disabled={isGenerating || !customerName}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '0.5rem',
+                            border: 'none',
+                            backgroundColor: '#25D366', // WhatsApp Green
+                            color: 'white',
+                            fontWeight: 'bold',
+                            cursor: (isGenerating || !customerName) ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            opacity: (isGenerating || !customerName) ? 0.7 : 1
+                        }}
+                    >
+                        <MessageSquare size={18} />
+                        A WhatsApp
                     </button>
 
                     <div style={{ marginLeft: '1.5rem', alignSelf: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
