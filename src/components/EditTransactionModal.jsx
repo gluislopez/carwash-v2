@@ -51,6 +51,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         if (!cId) return;
 
         const fetchCustomerMembership = async () => {
+            // First, trigger automatic renewal if needed
+            await supabase.rpc('check_and_renew_membership', { p_customer_id: cId });
+
             const { data, error } = await supabase
                 .from('customer_memberships')
                 .select('*, memberships(*)')

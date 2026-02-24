@@ -298,6 +298,9 @@ const CustomerPortal = () => {
                     setQueueCount(count);
                 }
 
+                // Check and Renew Membership (if month passed)
+                await supabase.rpc('check_and_renew_membership', { p_customer_id: customerId });
+
                 // 4. Fetch Membership Details (Safe check for limit_count vs wash_limit)
                 const { data: memberSub } = await supabase
                     .from('customer_memberships')
@@ -694,7 +697,67 @@ const CustomerPortal = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* MEMBERSHIP STATUS BANNER */}
+                    {membership && (
+                        <div style={{
+                            marginTop: '1.25rem',
+                            padding: '1rem',
+                            backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                            border: '1px solid rgba(34, 197, 94, 0.2)',
+                            borderRadius: '0.75rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '1.25rem' }}>💎</span>
+                                    <span style={{ fontWeight: 'bold', color: '#166534', fontSize: '1.1rem' }}>
+                                        {membership.memberships?.name}
+                                    </span>
+                                </div>
+                                <span style={{
+                                    fontSize: '0.75rem',
+                                    backgroundColor: '#22c55e',
+                                    color: 'white',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '1rem',
+                                    fontWeight: 'bold'
+                                }}>
+                                    ACTIVO
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#166534', marginTop: '0.25rem' }}>
+                                <span style={{ fontWeight: '500' }}>
+                                    {membership.memberships?.type === 'unlimited'
+                                        ? 'Lavados Ilimitados'
+                                        : `Lavados disponibles: ${Math.max(0, (membership.memberships?.wash_limit || 0) - (membership.usage_count || 0))} de ${membership.memberships?.wash_limit || 0}`}
+                                </span>
+                                {membership.last_reset_at && (
+                                    <span style={{ fontSize: '0.75rem', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                        <Calendar size={12} />
+                                        Renovación: {new Date(new Date(membership.last_reset_at).setMonth(new Date(membership.last_reset_at).getMonth() + 1)).toLocaleDateString()}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Membership Progress Bar (for limited plans) */}
+                            {membership.memberships?.type !== 'unlimited' && membership.memberships?.wash_limit > 0 && (
+                                <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(34, 197, 94, 0.2)', borderRadius: '3px', overflow: 'hidden', marginTop: '0.5rem' }}>
+                                    <div style={{
+                                        height: '100%',
+                                        backgroundColor: '#22c55e',
+                                        width: `${Math.max(0, 100 - ((membership.usage_count || 0) / membership.memberships.wash_limit) * 100)}%`,
+                                        transition: 'width 0.5s ease-out'
+                                    }}></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
+
 
                 {/* ACTIVE SERVICE (MOVED TO TOP) */}
                 {activeService && (

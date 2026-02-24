@@ -410,6 +410,9 @@ const Dashboard = () => {
         }
 
         // 4. Membership Check
+        // Trigger auto-renewal check first if a month has passed
+        await supabase.rpc('check_and_renew_membership', { p_customer_id: customerId });
+
         const { data: memberSub } = await supabase
             .from('customer_memberships')
             .select('*, memberships(*)')
