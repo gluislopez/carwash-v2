@@ -423,7 +423,7 @@ const Dashboard = () => {
         if (memberSub) {
             setCustomerMembership(memberSub);
             // Auto-check if it's unlimited or has washes left
-            if (memberSub.memberships.type === 'unlimited' || (memberSub.usage_count < memberSub.memberships.wash_limit)) {
+            if (memberSub.memberships.type === 'unlimited' || (memberSub.usage_count < memberSub.memberships.limit_count)) {
                 // We could auto-enable it, but better let users choose
             }
         } else {
@@ -3507,7 +3507,7 @@ const Dashboard = () => {
                                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                                                     {customerMembership.memberships?.type === 'unlimited'
                                                                         ? 'Lavados Ilimitados'
-                                                                        : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships?.wash_limit || 0}`}
+                                                                        : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships?.limit_count || 0}`}
                                                                 </div>
                                                             </div>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -3522,7 +3522,7 @@ const Dashboard = () => {
                                                         </div>
 
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
-                                                            {(customerMembership.memberships?.type === 'unlimited' || customerMembership.usage_count < (customerMembership.memberships?.wash_limit || 0)) ? (
+                                                            {(customerMembership.memberships?.type === 'unlimited' || customerMembership.usage_count < (customerMembership.memberships?.limit_count || 0)) ? (
                                                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                                                                     <input
                                                                         type="checkbox"

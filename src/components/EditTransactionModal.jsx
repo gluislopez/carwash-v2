@@ -66,7 +66,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             if (data) {
                 setCustomerMembership(data);
                 // Si la membresía es válida, por default preparamos para usarla (a menos que no quieran)
-                if (data.memberships?.type === 'unlimited' || data.usage_count < data.memberships?.wash_limit) {
+                if (data.memberships?.type === 'unlimited' || data.usage_count < data.memberships?.limit_count) {
                     setIsMembershipUsage(true);
                 }
             }
@@ -666,13 +666,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                             {customerMembership.memberships?.type === 'unlimited'
                                                 ? 'Lavados Ilimitados'
-                                                : `Lavados Usados: ${customerMembership.usage_count || 0} / ${customerMembership.memberships?.wash_limit || 0}`}
+                                                : `Lavados Usados: ${customerMembership.usage_count || 0} / ${customerMembership.memberships?.limit_count || 0}`}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
-                                    {(customerMembership.memberships?.type === 'unlimited' || (customerMembership.usage_count || 0) < (customerMembership.memberships?.wash_limit || 0)) ? (
+                                    {(customerMembership.memberships?.type === 'unlimited' || (customerMembership.usage_count || 0) < (customerMembership.memberships?.limit_count || 0)) ? (
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                                             <input
                                                 type="checkbox"

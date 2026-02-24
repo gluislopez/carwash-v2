@@ -733,7 +733,7 @@ const CustomerPortal = () => {
                                 <span style={{ fontWeight: '500' }}>
                                     {membership.memberships?.type === 'unlimited'
                                         ? 'Lavados Ilimitados'
-                                        : `Lavados disponibles: ${Math.max(0, (membership.memberships?.wash_limit || 0) - (membership.usage_count || 0))} de ${membership.memberships?.wash_limit || 0}`}
+                                        : `Lavados disponibles: ${Math.max(0, (membership.memberships?.limit_count || 0) - (membership.usage_count || 0))} de ${membership.memberships?.limit_count || 0}`}
                                 </span>
                                 {membership.last_reset_at && (
                                     <span style={{ fontSize: '0.75rem', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
@@ -744,12 +744,12 @@ const CustomerPortal = () => {
                             </div>
 
                             {/* Membership Progress Bar (for limited plans) */}
-                            {membership.memberships?.type !== 'unlimited' && membership.memberships?.wash_limit > 0 && (
+                            {membership.memberships?.type !== 'unlimited' && membership.memberships?.limit_count > 0 && (
                                 <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(34, 197, 94, 0.2)', borderRadius: '3px', overflow: 'hidden', marginTop: '0.5rem' }}>
                                     <div style={{
                                         height: '100%',
                                         backgroundColor: '#22c55e',
-                                        width: `${Math.max(0, 100 - ((membership.usage_count || 0) / membership.memberships.wash_limit) * 100)}%`,
+                                        width: `${Math.max(0, 100 - ((membership.usage_count || 0) / membership.memberships.limit_count) * 100)}%`,
                                         transition: 'width 0.5s ease-out'
                                     }}></div>
                                 </div>
@@ -1008,7 +1008,7 @@ const CustomerPortal = () => {
                             <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
                                 {membership.memberships.type === 'unlimited'
                                     ? '✨ Lavados Ilimitados'
-                                    : `📦 ${membership.memberships.wash_limit} Lavados Premium`}
+                                    : `📦 ${membership.memberships.limit_count} Lavados Premium`}
                             </div>
                         </div>
 
@@ -1016,11 +1016,11 @@ const CustomerPortal = () => {
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
                                     <span>Uso del Plan</span>
-                                    <span>{membership.usage_count} / {membership.memberships.wash_limit}</span>
+                                    <span>{membership.usage_count} / {membership.memberships.limit_count}</span>
                                 </div>
                                 <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
                                     <div style={{
-                                        width: `${(membership.usage_count / membership.memberships.wash_limit) * 100}%`,
+                                        width: `${(membership.usage_count / membership.memberships.limit_count) * 100}%`,
                                         height: '100%',
                                         backgroundColor: '#4ade80',
                                         borderRadius: '4px',
