@@ -449,14 +449,30 @@ const Dashboard = () => {
 
     const handleAssignMembership = async (membershipId) => {
         if (!formData.customerId || !membershipId) return;
-        const { error } = await supabase.from('customer_memberships').upsert({
-            customer_id: formData.customerId,
-            membership_id: membershipId,
-            status: 'active'
-        }, { onConflict: 'customer_id' });
 
-        if (error) {
-            console.error("Error assigning membership:", error);
+        // Check if exists first
+        const { data: existing } = await supabase
+            .from('customer_memberships')
+            .select('id')
+            .eq('customer_id', formData.customerId)
+            .maybeSingle();
+
+        let opError;
+        if (existing) {
+            const { error } = await supabase
+                .from('customer_memberships')
+                .update({ membership_id: membershipId, status: 'active' })
+                .eq('id', existing.id);
+            opError = error;
+        } else {
+            const { error } = await supabase
+                .from('customer_memberships')
+                .insert({ customer_id: formData.customerId, membership_id: membershipId, status: 'active' });
+            opError = error;
+        }
+
+        if (opError) {
+            console.error("Error assigning membership:", opError);
             alert("Error al asignar membresía");
             return;
         }

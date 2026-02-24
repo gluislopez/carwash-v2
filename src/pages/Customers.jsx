@@ -452,12 +452,26 @@ const Customers = () => {
                 await update(editingCustomer.id, customerData);
                 // Handle Membership Assignment
                 if (formData.membership_id) {
-                    await supabase.from('customer_memberships').upsert({
-                        customer_id: editingCustomer.id,
-                        membership_id: formData.membership_id,
-                        stripe_subscription_id: formData.stripe_subscription_id || null,
-                        status: 'active'
-                    }, { onConflict: 'customer_id' }); // Assuming one active membership per customer
+                    const { data: existing } = await supabase
+                        .from('customer_memberships')
+                        .select('id')
+                        .eq('customer_id', editingCustomer.id)
+                        .maybeSingle();
+
+                    if (existing) {
+                        await supabase.from('customer_memberships').update({
+                            membership_id: formData.membership_id,
+                            stripe_subscription_id: formData.stripe_subscription_id || null,
+                            status: 'active'
+                        }).eq('id', existing.id);
+                    } else {
+                        await supabase.from('customer_memberships').insert({
+                            customer_id: editingCustomer.id,
+                            membership_id: formData.membership_id,
+                            stripe_subscription_id: formData.stripe_subscription_id || null,
+                            status: 'active'
+                        });
+                    }
                 } else {
                     // If empty, we could deactivate or ignore. Let's ignore for now.
                 }
