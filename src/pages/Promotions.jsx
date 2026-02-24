@@ -7,6 +7,7 @@ const Promotions = () => {
     const [activeTab, setActiveTab] = useState('templates'); // 'templates' | 'campaign'
     const [templates, setTemplates] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [memberships, setMemberships] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Template Form State
@@ -30,6 +31,11 @@ const Promotions = () => {
         // Fetch Customers for Campaign
         const { data: customersData } = await supabase.from('customers').select('*').order('name');
         if (customersData) setCustomers(customersData);
+
+        // Fetch Memberships for Legal Documents Dropdown
+        const { data: membershipsData } = await supabase.from('memberships').select('*').order('name');
+        if (membershipsData) setMemberships(membershipsData);
+
         setLoading(false);
     };
 
@@ -144,7 +150,7 @@ const Promotions = () => {
             {activeTab === 'portal' && <PortalAnnouncement />}
 
             {/* TAB CONTENT: LEGAL DOCUMENTS */}
-            {activeTab === 'legal' && <LegalDocumentsTab customers={customers} />}
+            {activeTab === 'legal' && <LegalDocumentsTab customers={customers} memberships={memberships} />}
 
             {/* TAB CONTENT: TEMPLATES */}
             {activeTab === 'templates' && (
@@ -383,7 +389,7 @@ const PortalAnnouncement = () => {
     );
 };
 
-const LegalDocumentsTab = ({ customers }) => {
+const LegalDocumentsTab = ({ customers, memberships }) => {
     const [customerName, setCustomerName] = useState('');
     const [membershipName, setMembershipName] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -500,12 +506,18 @@ const LegalDocumentsTab = ({ customers }) => {
                         <div style={{ flex: 1, minWidth: '200px' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Plan Seleccionado</label>
                             <input
+                                list="membership-list-legal"
                                 type="text"
                                 value={membershipName}
                                 onChange={e => setMembershipName(e.target.value)}
-                                placeholder="Ej. Plan Detailing"
+                                placeholder="Escribe para buscar o elige uno..."
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
                             />
+                            <datalist id="membership-list-legal">
+                                {memberships?.map(m => (
+                                    <option key={m.id} value={m.name} />
+                                ))}
+                            </datalist>
                         </div>
                     </div>
 
