@@ -452,21 +452,37 @@ const Customers = () => {
                 await update(editingCustomer.id, customerData);
                 // Handle Membership Assignment
                 if (formData.membership_id) {
-                    // UPSERT
+                    // UPSERT - Dynamic object to avoid sending columns that might not exist in older schemas
+                    const membershipData = {
+                        customer_id: editingCustomer.id,
+                        membership_id: formData.membership_id,
+                        status: 'active',
+                        start_date: new Date().toISOString(),
+                        last_reset_at: new Date().toISOString()
+                    };
+
+                    // Only add Stripe ID if it exists and has a value, to be safer
+                    if (formData.stripe_subscription_id) {
+                        membershipData.stripe_subscription_id = formData.stripe_subscription_id;
+                    }
+
                     const { error: upErr } = await supabase
                         .from('customer_memberships')
-                        .upsert({
-                            customer_id: editingCustomer.id,
-                            membership_id: formData.membership_id,
-                            stripe_subscription_id: formData.stripe_subscription_id || null,
-                            status: 'active',
-                            start_date: new Date().toISOString(),
-                            last_reset_at: new Date().toISOString()
-                        }, { onConflict: 'customer_id' });
+                        .upsert(membershipData, { onConflict: 'customer_id' });
 
                     if (upErr) {
                         console.error("Membership Upsert Error:", upErr);
-                        alert("Error al guardar membresía: " + upErr.message);
+                        // If the error is about missing column, try one more time without stripe_id
+                        if (upErr.message.includes("stripe_subscription_id")) {
+                            console.log("Retrying without stripe_subscription_id...");
+                            delete membershipData.stripe_subscription_id;
+                            const { error: retryErr } = await supabase
+                                .from('customer_memberships')
+                                .upsert(membershipData, { onConflict: 'customer_id' });
+                            if (retryErr) alert("Error al guardar membresía: " + retryErr.message);
+                        } else {
+                            alert("Error al guardar membresía: " + upErr.message);
+                        }
                     }
                 } else {
                     // If empty, delete any existing membership for this customer
