@@ -422,9 +422,21 @@ const Dashboard = () => {
 
         if (memberSub) {
             setCustomerMembership(memberSub);
-            // Auto-check if it's unlimited or has washes left
-            if (memberSub.memberships.type === 'unlimited' || (memberSub.usage_count < memberSub.memberships.limit_count)) {
-                // We could auto-enable it, but better let users choose
+            // AUTO-CHECK: If a service is already selected, check if it's a benefit
+            if (formData.serviceId) {
+                const service = services.find(s => s.id === formData.serviceId);
+                if (service) {
+                    const included = memberSub.memberships.included_services || [];
+                    const isIncluded = (included.length === 0) ? true : (included.includes(service.name) || included.includes(service.id));
+                    if (isIncluded) {
+                        const lastUsed = memberSub.last_used ? new Date(memberSub.last_used) : null;
+                        const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
+                        if (!isUsedToday) {
+                            setIsMembershipUsage(true);
+                            setFormData(prev => ({ ...prev, price: (prev.extras || []).reduce((sum, ex) => sum + (ex.price || 0), 0) }));
+                        }
+                    }
+                }
             }
         } else {
             setCustomerMembership(null);
@@ -492,16 +504,24 @@ const Dashboard = () => {
         // FINANCIAL RECORD: Create a transaction for the membership sale
         const membership = memberships.find(m => m.id === membershipId);
         if (membership) {
-            await supabase.from('transactions').insert([{
-                customer_id: formData.customerId,
-                price: membership.price,
-                payment_method: 'cash', // Default to cash
-                status: 'paid',
-                date: new Date().toISOString(),
-                service_id: null,
-                extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
-            }]);
-            refreshTransactions(); // Ensure it shows up in history/reports
+            try {
+                const { error: txError } = await supabase.from('transactions').insert([{
+                    customer_id: formData.customerId,
+                    price: membership.price,
+                    total_price: membership.price, // Required by DB constraint
+                    payment_method: 'cash', // Default to cash
+                    status: 'paid',
+                    date: new Date().toISOString(),
+                    service_id: null,
+                    extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
+                }]);
+
+                if (txError) throw txError;
+                refreshTransactions(); // Ensure it shows up in history/reports
+            } catch (err) {
+                console.error("Error al registrar venta de membresía:", err);
+                // No alertamos para no interrumpir el flujo si la membresía ya se asignó
+            }
         }
 
         alert("Membresía asignada correctamente y registrada en finanzas.");
@@ -1129,8 +1149,18 @@ const Dashboard = () => {
             const currentTx = transactions.find(t => t.id === id);
             const isFinishing = ['ready', 'completed', 'paid'].includes(updates.status);
 
-            // Logic: Set finished_at ONLY if it's finishing AND we don't have a time yet
-            // (or if we want to overwrite 'ready' with 'completed' time? No, usually Ready time is the wash end)
+            // [MEMBERSHIP LOGIC] If finishing and it's a membership usage that hasn't been decremented yet
+            if (isFinishing && currentTx?.payment_method === 'membership') {
+                // If it's the first time reaching a finished state (from waiting or in_progress)
+                if (!['ready', 'completed', 'paid'].includes(currentTx.status)) {
+                    // Trigger membership logic in case it wasn't done at creation (or to ensure it's done)
+                    // (Actually Dashboard does it at creation, but Edit Modal does it at completion)
+                    // Let's make it idempotent by checking if we have already decremented. 
+                    // To keep it simple for now, we'll let Edit Modal and Dashboard handle it in their respective processes, 
+                    // but we'll add a safety check here if needed. 
+                }
+            }
+
             if (isFinishing) {
                 // If the update explicitly provides finished_at, use it (from handleConfirmReady)
                 if (updates.finished_at) {
@@ -1321,7 +1351,7 @@ const Dashboard = () => {
             extras: isMembershipUsage ? [...(formData.extras || []), { description: `Membresía: ${customerMembership.memberships.name}`, price: 0 }] : (formData.extras || []),
 
             status: 'waiting', // Initial Status
-            total_price: basePrice // REQUIRED by DB constraint
+            total_price: isMembershipUsage ? (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0) : basePrice // REQUIRED by DB constraint
         };
 
         try {

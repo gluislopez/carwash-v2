@@ -118,6 +118,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 await supabase.from('transactions').insert([{
                     customer_id: cId,
                     price: membership.price,
+                    total_price: membership.price, // Required by DB constraint
                     payment_method: 'cash', // Default to cash, user can edit in reports
                     status: 'paid',
                     date: new Date().toISOString(),
@@ -723,14 +724,35 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                 const service = services.find(s => s.id === newServiceId);
 
                                 // Calculate new price: Service Price + Current Extras
-                                const servicePrice = service ? parseFloat(service.price) : 0;
+                                let servicePrice = service ? parseFloat(service.price) : 0;
                                 const extrasTotal = extras.reduce((sum, ex) => sum + ex.price, 0);
 
+                                // Check for membership benefit
+                                let isBenefit = false;
+                                if (service && customerMembership && customerMembership.status === 'active') {
+                                    const included = customerMembership.memberships.included_services || [];
+                                    const isIncluded = (included.length === 0)
+                                        ? true
+                                        : (included.includes(service.name) || included.includes(service.id));
+
+                                    if (isIncluded) {
+                                        // Simple daily limit check (optional here, but good for consistency)
+                                        const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
+                                        const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
+
+                                        if (!isUsedToday) {
+                                            servicePrice = 0;
+                                            isBenefit = true;
+                                        }
+                                    }
+                                }
+
+                                setIsMembershipUsage(isBenefit);
                                 setFormData({
                                     ...formData,
                                     serviceId: newServiceId,
                                     price: servicePrice + extrasTotal,
-                                    commissionAmount: service ? service.commission : formData.commissionAmount
+                                    commissionAmount: service ? (parseFloat(service.commission) || 0) : formData.commissionAmount
                                 });
                             }}
                         >
