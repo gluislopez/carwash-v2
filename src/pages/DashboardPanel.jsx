@@ -488,7 +488,23 @@ const Dashboard = () => {
             .single();
 
         setCustomerMembership(updatedMembership);
-        alert("Membresía asignada correctamente.");
+
+        // FINANCIAL RECORD: Create a transaction for the membership sale
+        const membership = memberships.find(m => m.id === membershipId);
+        if (membership) {
+            await supabase.from('transactions').insert([{
+                customer_id: formData.customerId,
+                price: membership.price,
+                payment_method: 'cash', // Default to cash
+                status: 'paid',
+                date: new Date().toISOString(),
+                service_id: null,
+                extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
+            }]);
+            refreshTransactions(); // Ensure it shows up in history/reports
+        }
+
+        alert("Membresía asignada correctamente y registrada en finanzas.");
     };
 
     const handleRemoveMembership = async () => {
@@ -1043,8 +1059,10 @@ const Dashboard = () => {
             // MEMBERSHIP CHECK
             if (customerMembership && customerMembership.status === 'active') {
                 const included = customerMembership.memberships.included_services || [];
-                // Check by Name or ID
-                const isIncluded = included.includes(service.name) || included.includes(service.id);
+                // Check by Name or ID. If the list is empty, we assume ALL services are included for this plan.
+                const isIncluded = (included.length === 0)
+                    ? true
+                    : (included.includes(service.name) || included.includes(service.id));
 
                 if (isIncluded) {
                     // Check Daily Limit
