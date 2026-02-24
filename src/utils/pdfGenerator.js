@@ -342,7 +342,7 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
     doc.save(`reporte_${dateRange}_${Date.now()}.pdf`);
 };
 
-export const generateMembershipTermsPDF = async (customerName = '', membershipName = '', vehicleInfo = '') => {
+export const generateMembershipTermsPDF = async (customerName = '', membershipName = '', vehicleInfo = '', startDate = '') => {
     // Carta size (Letter): 215.9 x 279.4 mm
     const doc = new jsPDF({
         orientation: 'portrait',
@@ -416,11 +416,11 @@ export const generateMembershipTermsPDF = async (customerName = '', membershipNa
     y += 5;
 
     // Optional: Personalization
-    if (customerName || membershipName || vehicleInfo) {
+    if (customerName || membershipName || vehicleInfo || startDate) {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(15, 23, 42); // Slate-900
-        doc.text('Detalles del Contrato:', margin, y);
+        doc.text('Detalles de membresías:', margin, y);
         y += 6;
 
         doc.setFont('helvetica', 'normal');
@@ -429,7 +429,11 @@ export const generateMembershipTermsPDF = async (customerName = '', membershipNa
             y += 6;
         }
         if (membershipName) {
-            doc.text(`Plan Seleccionado: ${membershipName}`, margin, y);
+            let planText = `Plan Seleccionado: ${membershipName}`;
+            if (startDate) {
+                planText += ` (Inicio: ${startDate})`;
+            }
+            doc.text(planText, margin, y);
             y += 6;
         }
         if (vehicleInfo) {

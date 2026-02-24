@@ -392,6 +392,7 @@ const PortalAnnouncement = () => {
 const LegalDocumentsTab = ({ customers, memberships }) => {
     const [customerName, setCustomerName] = useState('');
     const [membershipName, setMembershipName] = useState('');
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Vehicle Selection States
@@ -447,7 +448,7 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
     const handleDownloadPDF = async () => {
         setIsGenerating(true);
         try {
-            const { blob, fileName } = await generateMembershipTermsPDF(customerName, membershipName, vehicleInfoText);
+            const { blob, fileName } = await generateMembershipTermsPDF(customerName, membershipName, vehicleInfoText, startDate);
 
             // Create download link
             const url = URL.createObjectURL(blob);
@@ -518,6 +519,15 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
                                     <option key={m.id} value={m.name} />
                                 ))}
                             </datalist>
+                        </div>
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Fecha de Comienzo</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                            />
                         </div>
                     </div>
 
