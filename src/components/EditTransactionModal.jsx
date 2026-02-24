@@ -58,7 +58,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 .from('customer_memberships')
                 .select('*, memberships(*)')
                 .eq('customer_id', cId)
-                .is('cancelled_at', null)
                 .eq('status', 'active')
                 .single();
 
@@ -613,7 +612,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         </div>
                     )}
 
-                    {/* MEMBERSHIP INDICATOR / MANAGER (Only for in_progress/waiting/pending) */}
+                    {/* MEMBERSHIP ASSIGNMENT (Only for in_progress/waiting/pending) */}
                     {(transaction.status === 'in_progress' || transaction.status === 'waiting' || transaction.status === 'pending') && (
                         <div style={{ marginBottom: '1rem' }}>
                             {(transaction.customer_id || transaction.customers) && !customerMembership && (
@@ -645,52 +644,56 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                     </div>
                                 </div>
                             )}
-
-                            {customerMembership && (
-                                <div style={{
-                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                                    border: '1px solid #22C55E',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '0.75rem'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
-                                            <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships?.name || 'Cargando...'}</div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                {customerMembership.memberships?.type === 'unlimited'
-                                                    ? 'Lavados Ilimitados'
-                                                    : `Lavados Usados: ${customerMembership.usage_count || 0} / ${customerMembership.memberships?.wash_limit || 0}`}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
-                                        {(customerMembership.memberships?.type === 'unlimited' || (customerMembership.usage_count || 0) < (customerMembership.memberships?.wash_limit || 0)) ? (
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isMembershipUsage}
-                                                    onChange={(e) => {
-                                                        setIsMembershipUsage(e.target.checked);
-                                                        if (e.target.checked) {
-                                                            alert("Recordatorio: Saldar con membresía cambia el método de pago a 'Membresía', pero los Extras u otros montos deben ajustarse manualmente si lo requieres.");
-                                                        }
-                                                    }}
-                                                    style={{ width: '20px', height: '20px' }}
-                                                />
-                                                <span style={{ fontWeight: 'bold' }}>Saldar este servicio con Membresía</span>
-                                            </label>
-                                        ) : (
-                                            <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>⚠️ Límite de lavados alcanzado</span>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
+
+                    {/* MEMBERSHIP ACTIVE INDICATOR (Always show if they have one) */}
+                    <div style={{ marginBottom: '1rem' }}>
+
+                        {customerMembership && (
+                            <div style={{
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                border: '1px solid #22C55E',
+                                padding: '0.75rem',
+                                borderRadius: '0.5rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.75rem'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships?.name || 'Cargando...'}</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                            {customerMembership.memberships?.type === 'unlimited'
+                                                ? 'Lavados Ilimitados'
+                                                : `Lavados Usados: ${customerMembership.usage_count || 0} / ${customerMembership.memberships?.wash_limit || 0}`}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
+                                    {(customerMembership.memberships?.type === 'unlimited' || (customerMembership.usage_count || 0) < (customerMembership.memberships?.wash_limit || 0)) ? (
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isMembershipUsage}
+                                                onChange={(e) => {
+                                                    setIsMembershipUsage(e.target.checked);
+                                                    if (e.target.checked) {
+                                                        alert("Recordatorio: Saldar con membresía cambia el método de pago a 'Membresía', pero los Extras u otros montos deben ajustarse manualmente si lo requieres.");
+                                                    }
+                                                }}
+                                                style={{ width: '20px', height: '20px' }}
+                                            />
+                                            <span style={{ fontWeight: 'bold' }}>Saldar este servicio con Membresía</span>
+                                        </label>
+                                    ) : (
+                                        <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>⚠️ Límite de lavados alcanzado</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     <div style={{ marginBottom: '1rem' }}>
                         <label className="label">Servicio Base</label>
