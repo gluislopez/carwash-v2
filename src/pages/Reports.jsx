@@ -230,6 +230,10 @@ const Reports = () => {
         .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
+    const membershipUsageCount = dateFilteredTxs
+        .filter(t => t.payment_method === 'membership' && (t.status === 'completed' || t.status === 'paid'))
+        .length;
+
     const getFilteredExpenses = () => {
         if (!expenses) return [];
 
@@ -928,6 +932,17 @@ const Reports = () => {
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                                     Ingresos por ventas de planes mensuales.
+                                </div>
+                            </div>
+
+                            <div className="card" style={{ border: '1px solid #8b5cf6' }}>
+                                <h3 className="label" style={{ color: '#8b5cf6' }}>Usos de Membresía 🚗</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <CheckCircle size={32} style={{ color: '#8b5cf6' }} />
+                                    <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6' }}>{membershipUsageCount}</p>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                    Lavados realizados usando beneficios de membresía.
                                 </div>
                             </div>
                         </>

@@ -468,20 +468,36 @@ const Customers = () => {
 
                     const { error: upErr } = await supabase
                         .from('customer_memberships')
-                        .upsert(membershipData, { onConflict: 'customer_id' });
+                        .upsert({
+                            ...membershipData,
+                            usage_count: 0
+                        }, { onConflict: 'customer_id' });
 
                     if (upErr) {
                         console.error("Membership Upsert Error:", upErr);
-                        // If the error is about missing column, try one more time without stripe_id
                         if (upErr.message.includes("stripe_subscription_id")) {
-                            console.log("Retrying without stripe_subscription_id...");
                             delete membershipData.stripe_subscription_id;
                             const { error: retryErr } = await supabase
                                 .from('customer_memberships')
-                                .upsert(membershipData, { onConflict: 'customer_id' });
+                                .upsert({ ...membershipData, usage_count: 0 }, { onConflict: 'customer_id' });
                             if (retryErr) alert("Error al guardar membresía: " + retryErr.message);
                         } else {
                             alert("Error al guardar membresía: " + upErr.message);
+                        }
+                    } else {
+                        // FINANCIAL RECORD
+                        const plan = availablePlans.find(p => p.id === formData.membership_id);
+                        if (plan) {
+                            await supabase.from('transactions').insert([{
+                                customer_id: editingCustomer.id,
+                                price: plan.price,
+                                total_price: plan.price,
+                                payment_method: 'cash',
+                                status: 'paid',
+                                date: new Date().toISOString(),
+                                service_id: null,
+                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: plan.price }]
+                            }]);
                         }
                     }
                 } else {
@@ -496,12 +512,32 @@ const Customers = () => {
             } else {
                 const newCustomer = await create(customerData);
                 if (newCustomer && formData.membership_id) {
-                    await supabase.from('customer_memberships').insert([{
+                    const { data: newSub, error: insError } = await supabase.from('customer_memberships').insert([{
                         customer_id: newCustomer.id,
                         membership_id: formData.membership_id,
                         stripe_subscription_id: formData.stripe_subscription_id || null,
-                        status: 'active'
-                    }]);
+                        status: 'active',
+                        usage_count: 0,
+                        start_date: new Date().toISOString(),
+                        last_reset_at: new Date().toISOString()
+                    }]).select();
+
+                    if (!insError && newSub) {
+                        // FINANCIAL RECORD
+                        const plan = availablePlans.find(p => p.id === formData.membership_id);
+                        if (plan) {
+                            await supabase.from('transactions').insert([{
+                                customer_id: newCustomer.id,
+                                price: plan.price,
+                                total_price: plan.price,
+                                payment_method: 'cash',
+                                status: 'paid',
+                                date: new Date().toISOString(),
+                                service_id: null,
+                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: plan.price }]
+                            }]);
+                        }
+                    }
                 }
             }
             setIsModalOpen(false);
