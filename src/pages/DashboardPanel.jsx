@@ -87,6 +87,7 @@ const Dashboard = () => {
     const [feedbacks, setFeedbacks] = useState([]); // Nuevo: Estado para las reseñas privadas
     const [qrTransactionId, setQrTransactionId] = useState(null); // ID para mostrar modal QR
     const [viewMode, setViewMode] = useState('ops'); // 'ops' | 'reports'
+    const [memberships, setMemberships] = useState([]); // Nuevo: Todos los planes de membresía
 
     useEffect(() => {
         const getUser = async () => {
@@ -135,6 +136,15 @@ const Dashboard = () => {
             }
         };
         getUser();
+    }, []);
+
+    useEffect(() => {
+        const fetchMemberships = async () => {
+            const { data, error } = await supabase.from('memberships').select('*');
+            if (data) setMemberships(data);
+            if (error) console.error("Error fetching memberships", error);
+        };
+        fetchMemberships();
     }, []);
 
     const { data: servicesData } = useSupabase('services');
@@ -435,6 +445,47 @@ const Dashboard = () => {
         } else {
             setCustomerVehicles([]);
         }
+    };
+
+    const handleAssignMembership = async (membershipId) => {
+        if (!formData.customerId || !membershipId) return;
+        const { error } = await supabase.from('customer_memberships').upsert({
+            customer_id: formData.customerId,
+            membership_id: membershipId,
+            status: 'active'
+        }, { onConflict: 'customer_id' });
+
+        if (error) {
+            console.error("Error assigning membership:", error);
+            alert("Error al asignar membresía");
+            return;
+        }
+
+        // Recuperar y actualizar el estado
+        const { data: updatedMembership } = await supabase
+            .from('customer_memberships')
+            .select('*, memberships(*)')
+            .eq('customer_id', formData.customerId)
+            .single();
+
+        setCustomerMembership(updatedMembership);
+        alert("Membresía asignada correctamente.");
+    };
+
+    const handleRemoveMembership = async () => {
+        if (!formData.customerId) return;
+        if (!window.confirm("¿Seguro que deseas eliminar/cancelar la membresía de este cliente?")) return;
+
+        const { error } = await supabase.from('customer_memberships').delete().eq('customer_id', formData.customerId);
+        if (error) {
+            console.error("Error removing membership:", error);
+            alert("Error al cancelar la membresía");
+            return;
+        }
+
+        setCustomerMembership(null);
+        setIsMembershipUsage(false);
+        alert("Membresía cancelada.");
     };
 
     const applyLastService = () => {
@@ -3388,7 +3439,37 @@ const Dashboard = () => {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
 
-                                                {/* MEMBERSHIP INDICATOR */}
+                                                {/* MEMBERSHIP INDICATOR / MANAGER */}
+                                                {formData.customerId && !customerMembership && (
+                                                    <div style={{
+                                                        backgroundColor: 'var(--bg-secondary)',
+                                                        border: '1px dashed var(--border-color)',
+                                                        padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem'
+                                                    }}>
+                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                                                            💎 Añadir Membresía
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <select id="new-membership-select" className="input" style={{ flex: 1, padding: '0.5rem' }}>
+                                                                <option value="">Seleccionar plan...</option>
+                                                                {memberships.map(m => (
+                                                                    <option key={m.id} value={m.id}>{m.name} - ${m.price}</option>
+                                                                ))}
+                                                            </select>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary"
+                                                                onClick={() => {
+                                                                    const sel = document.getElementById('new-membership-select');
+                                                                    if (sel && sel.value) handleAssignMembership(sel.value);
+                                                                }}
+                                                            >
+                                                                Asignar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {customerMembership && (
                                                     <div style={{
                                                         gridColumn: 'span 2',
@@ -3398,28 +3479,64 @@ const Dashboard = () => {
                                                         borderRadius: '0.5rem',
                                                         marginBottom: '1rem',
                                                         display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center'
+                                                        flexDirection: 'column',
+                                                        gap: '0.75rem'
                                                     }}>
-                                                        <div>
-                                                            <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships.name}</div>
-                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                                {customerMembership.memberships.type === 'unlimited'
-                                                                    ? 'Lavados Ilimitados'
-                                                                    : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships.wash_limit}`}
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                            <div>
+                                                                <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships?.name || 'Cargando...'}</div>
+                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                    {customerMembership.memberships?.type === 'unlimited'
+                                                                        ? 'Lavados Ilimitados'
+                                                                        : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships?.wash_limit || 0}`}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleRemoveMembership}
+                                                                    style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                                                                >
+                                                                    Cancelar Plan
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                        {(customerMembership.memberships.type === 'unlimited' || customerMembership.usage_count < customerMembership.memberships.wash_limit) && (
-                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isMembershipUsage}
-                                                                    onChange={(e) => setIsMembershipUsage(e.target.checked)}
-                                                                    style={{ width: '20px', height: '20px' }}
-                                                                />
-                                                                <span style={{ fontWeight: 'bold' }}>Saldar con Membresía</span>
-                                                            </label>
-                                                        )}
+
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
+                                                            {(customerMembership.memberships?.type === 'unlimited' || customerMembership.usage_count < (customerMembership.memberships?.wash_limit || 0)) ? (
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isMembershipUsage}
+                                                                        onChange={(e) => setIsMembershipUsage(e.target.checked)}
+                                                                        style={{ width: '20px', height: '20px' }}
+                                                                    />
+                                                                    <span style={{ fontWeight: 'bold' }}>Saldar con Membresía</span>
+                                                                </label>
+                                                            ) : (
+                                                                <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>Límite de lavados alcanzado</span>
+                                                            )}
+
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <select
+                                                                    className="input"
+                                                                    style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', width: 'auto' }}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.value) {
+                                                                            if (window.confirm("¿Cambiar el plan de membresía?")) {
+                                                                                handleAssignMembership(e.target.value);
+                                                                            }
+                                                                            e.target.value = "";
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <option value="">Cambiar Plan...</option>
+                                                                    {memberships.map(m => (
+                                                                        <option key={m.id} value={m.id}>{m.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
 
