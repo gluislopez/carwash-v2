@@ -135,7 +135,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             // FINANCIAL RECORD: Create a transaction for the membership sale
             const membership = memberships.find(m => m.id === membershipId);
             if (membership) {
-                await supabase.from('transactions').insert([{
+                const { error: txError } = await supabase.from('transactions').insert([{
                     customer_id: cId,
                     price: membership.price,
                     total_price: membership.price, // Required by DB constraint
@@ -145,9 +145,16 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                     service_id: null,
                     extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
                 }]);
-            }
 
-            alert("Membresía asignada correctamente y registrada en finanzas.");
+                if (txError) {
+                    console.error("Error al registrar venta de membresía:", txError);
+                    alert("Membresía asignada, pero hubo un error al registrar el ingreso: " + txError.message);
+                } else {
+                    alert("Membresía asignada correctamente y registrada en finanzas.");
+                }
+            } else {
+                alert("Membresía asignada correctamente.");
+            }
 
         } catch (error) {
             console.error("Error asignando membresía:", error);

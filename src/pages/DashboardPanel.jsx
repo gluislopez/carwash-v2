@@ -538,13 +538,14 @@ const Dashboard = () => {
 
                 if (txError) throw txError;
                 refreshTransactions(); // Ensure it shows up in history/reports
+                alert("Membresía asignada correctamente y registrada en finanzas.");
             } catch (err) {
                 console.error("Error al registrar venta de membresía:", err);
-                // No alertamos para no interrumpir el flujo si la membresía ya se asignó
+                alert("Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + err.message);
             }
+        } else {
+            alert("Membresía asignada correctamente.");
         }
-
-        alert("Membresía asignada correctamente y registrada en finanzas.");
     };
 
     const handleRemoveMembership = async () => {

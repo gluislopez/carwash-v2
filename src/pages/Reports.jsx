@@ -155,8 +155,9 @@ const Reports = () => {
                 return false;
             }
 
-            // Role Filter: Admin sees all, Employee sees assigned
-            if (userRole === 'admin') return true;
+            // Role Filter: Admin/Manager sees all, Employees see assigned + Membership sales (for transparency)
+            if (userRole === 'admin' || userRole === 'manager') return true;
+            if (!t.service_id) return true; // Show membership/miscellaneous sales to everyone
 
             const isAssigned = t.transaction_assignments?.some(a => a.employee_id === myEmployeeId);
             const isPrimary = t.employee_id === myEmployeeId;
