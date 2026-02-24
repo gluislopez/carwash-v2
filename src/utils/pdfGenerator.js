@@ -341,3 +341,216 @@ export const generateReportPDF = (transactions, dateRange, stats, userRole) => {
 
     doc.save(`reporte_${dateRange}_${Date.now()}.pdf`);
 };
+
+export const generateMembershipTermsPDF = async (customerName = '', membershipName = '') => {
+    // Carta size (Letter): 215.9 x 279.4 mm
+    const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'letter' // Standard Letter size for documents
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    let y = margin;
+
+    // --- LOGO TOP ---
+    try {
+        const logoUrl = '/logo.jpg';
+        const img = new Image();
+        img.src = logoUrl;
+
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+        });
+
+        const logoWidth = 35;
+        const logoHeight = logoWidth;
+        const logoX = margin;
+
+        const canvas = document.createElement('canvas');
+        const size = Math.min(img.width, img.height);
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+
+        const xOffset = (img.width - size) / 2;
+        const yOffset = (img.height - size) / 2;
+        ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, size, size);
+
+        const roundLogoData = canvas.toDataURL('image/png');
+
+        doc.addImage(roundLogoData, 'PNG', logoX, y, logoWidth, logoHeight);
+
+        // Header Text aligned next to logo
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 41, 59); // Slate-800
+        doc.text('Términos y Condiciones', logoX + logoWidth + 10, y + 15);
+
+        doc.setFontSize(14);
+        doc.setTextColor(100, 116, 139); // Slate-500
+        doc.text('Programa de Membresías', logoX + logoWidth + 10, y + 23);
+
+        y += Math.max(logoHeight, 30) + 15;
+
+    } catch (e) {
+        console.warn('Could not load logo for T&C:', e);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Términos y Condiciones - Membresías', margin, y + 10);
+        y += 25;
+    }
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(203, 213, 225); // Slate-300
+    doc.line(margin, y - 5, pageWidth - margin, y - 5);
+    y += 5;
+
+    // Optional: Personalization
+    if (customerName || membershipName) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42); // Slate-900
+        doc.text('Detalles del Contrato:', margin, y);
+        y += 6;
+
+        doc.setFont('helvetica', 'normal');
+        if (customerName) {
+            doc.text(`Cliente: ${customerName}`, margin, y);
+            y += 6;
+        }
+        if (membershipName) {
+            doc.text(`Plan Seleccionado: ${membershipName}`, margin, y);
+            y += 6;
+        }
+        y += 5;
+        doc.line(margin, y - 5, pageWidth - margin, y - 5);
+        y += 5;
+    }
+
+    // --- Content Details ---
+    const sections = [
+        {
+            title: '1. Condiciones Generales',
+            content: 'La membresía de Express CarWash es un acuerdo de servicio prepagado que otorga beneficios exclusivos al cliente suscrito. La membresía está ligada a un (1) solo vehículo especificado al momento de la inscripción a través de su tablilla (placa).'
+        },
+        {
+            title: '2. Uso y Transferencia',
+            content: 'Los beneficios de la membresía (lavados limitados o ilimitados según el plan) son intransferibles y no pueden ser aplicados a un vehículo diferente al registrado originalmente. Cualquier intento de usar la membresía en un vehículo no autorizado resultará en la cancelación inmediata del servicio sin derecho a reembolso.'
+        },
+        {
+            title: '3. Pagos y Ciclo de Facturación',
+            content: 'El cargo de la membresía se realiza de manera anticipada. El ciclo de beneficios es mensual o anual, dependiendo del acuerdo. No se emitirán reembolsos parciales o totales por meses no utilizados o por cancelación a mitad del ciclo.'
+        },
+        {
+            title: '4. Renovación Automática de Lavados (Límites)',
+            content: 'Para los planes con límite de lavados (Ej. "Plan Smart"), el sistema restablecerá la cantidad de usos disponibles automáticamente a los 30 días de su fecha de corte original. Los lavados no utilizados durante un mes no son acumulables ni se transfieren al mes siguiente.'
+        },
+        {
+            title: '5. Cancelación de Membresía',
+            content: 'El cliente puede cancelar su membresía en cualquier momento solicitándolo directamente a la administración. La cancelación detendrá futuras renovaciones o facturaciones, pero el cliente podrá seguir disfrutando de sus beneficios restantes hasta que finalice el ciclo pre-pagado actual.'
+        },
+        {
+            title: '6. Limitaciones de Responsabilidad',
+            content: 'Express CarWash se reserva el derecho de cerrar sus facilidades temporalmente debido a inclemencias del tiempo, mantenimiento de equipos, o días feriados. Estos cierres no otorgan derecho a prórrogas o devoluciones sobre el pago de la membresía.'
+        },
+        {
+            title: '7. Modificaciones a los Términos',
+            content: 'Express CarWash se reserva el derecho de modificar las tarifas, planes o estos términos y condiciones. Cualquier cambio será notificado al cliente con al menos 15 días de anticipación.'
+        }
+    ];
+
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85); // Slate-700
+    doc.setFont('helvetica', 'normal');
+
+    sections.forEach(sec => {
+        // Check Page break before Title
+        if (y > pageHeight - margin - 20) {
+            doc.addPage();
+            y = margin;
+        }
+
+        // Title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42); // Slate-900
+        doc.text(sec.title, margin, y);
+        y += 5;
+
+        // Content
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(71, 85, 105); // Slate-600
+
+        const splitText = doc.splitTextToSize(sec.content, contentWidth);
+        const textHeight = splitText.length * 5; // Approx 5mm per line
+
+        // Check page break during content
+        if (y + textHeight > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+
+        doc.text(splitText, margin, y);
+        y += textHeight + 6; // Add space between sections
+    });
+
+    y += 10;
+
+    // Check page break for signatures
+    if (y + 40 > pageHeight - margin) {
+        doc.addPage();
+        y = margin + 10;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Al recibir este documento o activar su suscripción, usted acepta los términos y condiciones estipulados.', margin, y);
+
+    y += 30;
+
+    // Signature Lines
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(148, 163, 184); // Slate-400
+
+    const signatureWidth = 70;
+    const centerGap = 20;
+    const adminSigX = (pageWidth / 2) - signatureWidth - (centerGap / 2);
+    const clientSigX = (pageWidth / 2) + (centerGap / 2);
+
+    doc.line(adminSigX, y, adminSigX + signatureWidth, y);
+    doc.line(clientSigX, y, clientSigX + signatureWidth, y);
+
+    y += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Express CarWash', adminSigX + (signatureWidth / 2), y, { align: 'center' });
+    doc.text('Firma del Cliente', clientSigX + (signatureWidth / 2), y, { align: 'center' });
+
+    // Footer
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184); // Slate-400
+        doc.text(`Generado: ${new Date().toLocaleDateString('es-PR')}`, margin, pageHeight - 10);
+        doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
+
+    const nameForFile = customerName ? customerName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'generico';
+    const fileName = `TyC_Membresia_${nameForFile}.pdf`;
+    const blob = doc.output('blob');
+
+    return { blob, fileName, doc };
+};

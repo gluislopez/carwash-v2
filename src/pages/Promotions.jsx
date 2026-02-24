@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Trash2, Send, MessageSquare, Search, Users, Edit2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Send, MessageSquare, Search, Users, Edit2, Save, X, FileText, Download } from 'lucide-react';
+import { generateMembershipTermsPDF } from '../utils/pdfGenerator';
 
 const Promotions = () => {
     const [activeTab, setActiveTab] = useState('templates'); // 'templates' | 'campaign'
@@ -127,10 +128,23 @@ const Promotions = () => {
                 >
                     3. Anuncio en Portal 🆕
                 </button>
+                <button
+                    onClick={() => setActiveTab('legal')}
+                    style={{
+                        padding: '1rem', border: 'none', background: 'none', cursor: 'pointer',
+                        fontWeight: 'bold', color: activeTab === 'legal' ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: activeTab === 'legal' ? '3px solid var(--primary)' : 'none'
+                    }}
+                >
+                    4. Documentos Legales
+                </button>
             </div>
 
             {/* TAB CONTENT: PORTAL ANNOUNCEMENT */}
             {activeTab === 'portal' && <PortalAnnouncement />}
+
+            {/* TAB CONTENT: LEGAL DOCUMENTS */}
+            {activeTab === 'legal' && <LegalDocumentsTab />}
 
             {/* TAB CONTENT: TEMPLATES */}
             {activeTab === 'templates' && (
@@ -365,6 +379,109 @@ const PortalAnnouncement = () => {
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const LegalDocumentsTab = () => {
+    const [customerName, setCustomerName] = useState('');
+    const [membershipName, setMembershipName] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleDownloadPDF = async () => {
+        setIsGenerating(true);
+        try {
+            const { blob, fileName } = await generateMembershipTermsPDF(customerName, membershipName);
+
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error("Error generando PDF:", error);
+            alert("Hubo un error al generar el PDF.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <div style={{ maxWidth: '800px' }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--border-color)', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '0.5rem' }}>
+                        <FileText size={24} />
+                    </div>
+                    <div>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>Términos y Condiciones de Membresías</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            Genera un documento PDF profesional con los términos legales de suscripción. Puedes enviarlo por WhatsApp o imprimirlo.
+                        </p>
+                    </div>
+                </div>
+
+                <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
+                    <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '0.95rem' }}>Opcional: Personalizar Documento</h4>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Si dejas estos campos en blanco, se generará un documento genérico.</p>
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Nombre del Cliente</label>
+                            <input
+                                type="text"
+                                value={customerName}
+                                onChange={e => setCustomerName(e.target.value)}
+                                placeholder="Ej. Juan Pérez"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Plan Seleccionado</label>
+                            <input
+                                type="text"
+                                value={membershipName}
+                                onChange={e => setMembershipName(e.target.value)}
+                                placeholder="Ej. Plan Detailing"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <button
+                        onClick={handleDownloadPDF}
+                        disabled={isGenerating}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '0.5rem',
+                            border: 'none',
+                            backgroundColor: 'var(--primary)',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            cursor: isGenerating ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            opacity: isGenerating ? 0.7 : 1
+                        }}
+                    >
+                        <Download size={18} />
+                        {isGenerating ? 'Generando PDF...' : 'Descargar T&C en PDF'}
+                    </button>
+
+                    <div style={{ marginLeft: '1.5rem', alignSelf: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', marginRight: '5px' }}></span>
+                        {customerName ? 'Generando PDF personalizado' : 'Generando PDF genérico'}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
