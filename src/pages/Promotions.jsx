@@ -144,7 +144,7 @@ const Promotions = () => {
             {activeTab === 'portal' && <PortalAnnouncement />}
 
             {/* TAB CONTENT: LEGAL DOCUMENTS */}
-            {activeTab === 'legal' && <LegalDocumentsTab />}
+            {activeTab === 'legal' && <LegalDocumentsTab customers={customers} />}
 
             {/* TAB CONTENT: TEMPLATES */}
             {activeTab === 'templates' && (
@@ -383,15 +383,65 @@ const PortalAnnouncement = () => {
     );
 };
 
-const LegalDocumentsTab = () => {
+const LegalDocumentsTab = ({ customers }) => {
     const [customerName, setCustomerName] = useState('');
     const [membershipName, setMembershipName] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
+    // Vehicle Selection States
+    const [customerVehicles, setCustomerVehicles] = useState([]);
+    const [selectedVehicleId, setSelectedVehicleId] = useState('');
+    const [vehicleInfoText, setVehicleInfoText] = useState('');
+
+    const handleCustomerChange = async (e) => {
+        const val = e.target.value;
+        setCustomerName(val);
+
+        const found = customers?.find(c => c.name === val);
+        if (found) {
+            const { data } = await supabase.from('vehicles').select('*').eq('customer_id', found.id);
+            if (data && data.length > 0) {
+                setCustomerVehicles(data);
+                setSelectedVehicleId(data[0].id);
+                setVehicleInfoText(`${data[0].brand || ''} ${data[0].model || ''} (${data[0].plate || ''})`.trim());
+            } else {
+                setCustomerVehicles([]);
+                setSelectedVehicleId('');
+                // Fallback to customer direct fields if no vehicles array
+                const fallbackInfo = (found.vehicle_model || found.vehicle_plate)
+                    ? `${found.vehicle_brand || ''} ${found.vehicle_model || ''} (${found.vehicle_plate || ''})`.trim()
+                    : '';
+                setVehicleInfoText(fallbackInfo);
+            }
+        } else {
+            setCustomerVehicles([]);
+            setSelectedVehicleId('');
+            setVehicleInfoText('');
+        }
+    };
+
+    const handleVehicleChange = (e) => {
+        const vId = e.target.value;
+        setSelectedVehicleId(vId);
+        if (vId) {
+            const v = customerVehicles.find(veh => veh.id === vId);
+            if (v) {
+                setVehicleInfoText(`${v.brand || ''} ${v.model || ''} (${v.plate || ''})`.trim());
+            }
+        } else {
+            setVehicleInfoText('');
+        }
+    };
+
+    // Allow manual overrides for the final string sent to PDF
+    const handleVehicleTextChange = (e) => {
+        setVehicleInfoText(e.target.value);
+    };
+
     const handleDownloadPDF = async () => {
         setIsGenerating(true);
         try {
-            const { blob, fileName } = await generateMembershipTermsPDF(customerName, membershipName);
+            const { blob, fileName } = await generateMembershipTermsPDF(customerName, membershipName, vehicleInfoText);
 
             // Create download link
             const url = URL.createObjectURL(blob);
@@ -428,18 +478,24 @@ const LegalDocumentsTab = () => {
 
                 <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem' }}>
                     <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '0.95rem' }}>Opcional: Personalizar Documento</h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Si dejas estos campos en blanco, se generará un documento genérico.</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Busca un cliente para generar el PDF con sus datos o déjalo en blanco para uno genérico.</p>
 
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                         <div style={{ flex: 1, minWidth: '200px' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Nombre del Cliente</label>
                             <input
+                                list="customer-list-legal"
                                 type="text"
                                 value={customerName}
-                                onChange={e => setCustomerName(e.target.value)}
-                                placeholder="Ej. Juan Pérez"
+                                onChange={handleCustomerChange}
+                                placeholder="Escribe para buscar..."
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
                             />
+                            <datalist id="customer-list-legal">
+                                {customers?.map(c => (
+                                    <option key={c.id} value={c.name} />
+                                ))}
+                            </datalist>
                         </div>
                         <div style={{ flex: 1, minWidth: '200px' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Plan Seleccionado</label>
@@ -452,6 +508,38 @@ const LegalDocumentsTab = () => {
                             />
                         </div>
                     </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        {customerVehicles.length > 0 && (
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                                    Vehículo a Suscribir ({customerVehicles.length} disponibles)
+                                </label>
+                                <select
+                                    value={selectedVehicleId}
+                                    onChange={handleVehicleChange}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '2px solid var(--primary)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                                >
+                                    {customerVehicles.map(v => (
+                                        <option key={v.id} value={v.id}>
+                                            {`${v.brand || ''} ${v.model || ''} (${v.plate || ''})`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <div style={{ flex: 2, minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Info del Vehículo (Impreso en el PDF)</label>
+                            <input
+                                type="text"
+                                value={vehicleInfoText}
+                                onChange={handleVehicleTextChange}
+                                placeholder="Ej. Toyota Corolla (ABC1234)"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                    </div>
+
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
