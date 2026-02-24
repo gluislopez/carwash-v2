@@ -30,6 +30,90 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [pendingExtra, setPendingExtra] = useState(null);
 
+    // NEW MEMBERSHIP STATES
+    const [memberships, setMemberships] = useState([]);
+    const [customerMembership, setCustomerMembership] = useState(null);
+    const [isMembershipUsage, setIsMembershipUsage] = useState(false);
+
+    // Load memberships and current customer membership
+    React.useEffect(() => {
+        const fetchMemberships = async () => {
+            const { data, error } = await supabase.from('memberships').select('*');
+            if (data) setMemberships(data);
+            if (error) console.error("Error fetching memberships", error);
+        };
+        fetchMemberships();
+    }, []);
+
+    React.useEffect(() => {
+        // Find the customer ID, it might be heavily nested or missing if the object is weird
+        const cId = transaction?.customer_id || (transaction?.customers && transaction.customers.id);
+        if (!cId) return;
+
+        const fetchCustomerMembership = async () => {
+            const { data, error } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(*)')
+                .eq('customer_id', cId)
+                .single();
+            if (data) {
+                setCustomerMembership(data);
+                // Si la membresía es válida, por default preparamos para usarla (a menos que no quieran)
+                if (data.memberships?.type === 'unlimited' || data.usage_count < data.memberships?.wash_limit) {
+                    setIsMembershipUsage(true);
+                }
+            }
+            if (error && error.code !== 'PGRST116') console.error("Error fetching customer membership", error); // Ignore no rows error
+        };
+        fetchCustomerMembership();
+    }, [transaction]);
+
+    const handleAssignMembership = async (membershipId) => {
+        const cId = transaction?.customer_id || (transaction?.customers && transaction.customers.id);
+        if (!cId || !membershipId) return;
+
+        try {
+            const { error } = await supabase.from('customer_memberships').upsert({
+                customer_id: cId,
+                membership_id: membershipId,
+                status: 'active'
+            }, { onConflict: 'customer_id' });
+
+            if (error) throw error;
+
+            const { data: updatedMembership } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(*)')
+                .eq('customer_id', cId)
+                .single();
+
+            setCustomerMembership(updatedMembership);
+            setIsMembershipUsage(true);
+            alert("Membresía asignada correctamente al cliente.");
+
+        } catch (error) {
+            console.error("Error asignando membresía:", error);
+            alert("Error al asignar membresía: " + error.message);
+        }
+    };
+
+    const handleRemoveMembership = async () => {
+        const cId = transaction?.customer_id || (transaction?.customers && transaction.customers.id);
+        if (!cId) return;
+        if (!window.confirm("¿Seguro que deseas eliminar/cancelar la membresía de este cliente?")) return;
+
+        const { error } = await supabase.from('customer_memberships').delete().eq('customer_id', cId);
+        if (error) {
+            console.error("Error removing membership:", error);
+            alert("Error al cancelar la membresía");
+            return;
+        }
+
+        setCustomerMembership(null);
+        setIsMembershipUsage(false);
+        alert("Membresía cancelada.");
+    };
+
     const addExtraToState = (extra, empId) => {
         const item = { ...extra, assignedTo: empId };
         const updatedExtras = [...extras, item];
@@ -249,11 +333,36 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             // B. Recalculate Commission -  NOW WE TRUST FORMDATA (Auto-calculated or Admin Edited)
             const finalCommission = parseFloat(formData.commissionAmount) || 0;
 
+            let finalPaymentMethod = methodToUse;
+            let currentPrice = parseFloat(formData.price);
+
+            // C. Proceso de Membresía
+            // Solo si isMembershipUsage es Válido y estamos cobrando
+            if (isCompleting && isMembershipUsage && customerMembership && transaction.payment_method !== 'membership') {
+                finalPaymentMethod = 'membership';
+
+                // Incrementar uso de membresía en Supabase
+                const newUsageCount = (customerMembership.usage_count || 0) + 1;
+                const { error: mError } = await supabase
+                    .from('customer_memberships')
+                    .update({ usage_count: newUsageCount, last_used: new Date().toISOString() })
+                    .eq('id', customerMembership.id)
+                    .eq('customer_id', transaction.customer_id);
+
+                if (mError) {
+                    console.error("Error al descontar membresía:", mError);
+                    alert("No se pudo actualizar el contador de la membresía. Continúe con precaución.");
+                }
+
+                // Generalmente si usa membresía, el costo base se hace \$0, pero pagaría extras
+                // Aquí usamos su valor actual ingresado en UI
+            }
+
             // 4. UPDATE TRANSACTION
             await onUpdate(transaction.id, {
                 service_id: formData.serviceId,
-                price: parseFloat(formData.price),
-                payment_method: methodToUse, // Use the confirmed method
+                price: currentPrice,
+                payment_method: finalPaymentMethod, // Use adapted method
                 tip: parseFloat(formData.tip) || 0,
                 commission_amount: finalCommission,
                 status: newStatus,
@@ -452,6 +561,85 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             ) : (
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                     {transaction.vehicles?.model || transaction.customers?.vehicle_model} {(transaction.vehicles?.plate || transaction.customers?.vehicle_plate) && `(${transaction.vehicles?.plate || transaction.customers?.vehicle_plate})`}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* MEMBERSHIP INDICATOR / MANAGER (Only for in_progress/waiting/pending) */}
+                    {(transaction.status === 'in_progress' || transaction.status === 'waiting' || transaction.status === 'pending') && (
+                        <div style={{ marginBottom: '1rem' }}>
+                            {(transaction.customer_id || transaction.customers) && !customerMembership && (
+                                <div style={{
+                                    backgroundColor: 'var(--bg-secondary)',
+                                    border: '1px dashed var(--border-color)',
+                                    padding: '0.75rem', borderRadius: '0.5rem'
+                                }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                                        💎 Añadir Membresía
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <select id="edit-membership-select" className="input" style={{ flex: 1, padding: '0.5rem' }}>
+                                            <option value="">Seleccionar plan...</option>
+                                            {memberships.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name} - ${m.price}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary"
+                                            onClick={() => {
+                                                const sel = document.getElementById('edit-membership-select');
+                                                if (sel && sel.value) handleAssignMembership(sel.value);
+                                            }}
+                                        >
+                                            Asignar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {customerMembership && (
+                                <div style={{
+                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                    border: '1px solid #22C55E',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.75rem'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships?.name || 'Cargando...'}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                {customerMembership.memberships?.type === 'unlimited'
+                                                    ? 'Lavados Ilimitados'
+                                                    : `Lavados Usados: ${customerMembership.usage_count || 0} / ${customerMembership.memberships?.wash_limit || 0}`}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
+                                        {(customerMembership.memberships?.type === 'unlimited' || (customerMembership.usage_count || 0) < (customerMembership.memberships?.wash_limit || 0)) ? (
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isMembershipUsage}
+                                                    onChange={(e) => {
+                                                        setIsMembershipUsage(e.target.checked);
+                                                        if (e.target.checked) {
+                                                            alert("Recordatorio: Saldar con membresía cambia el método de pago a 'Membresía', pero los Extras u otros montos deben ajustarse manualmente si lo requieres.");
+                                                        }
+                                                    }}
+                                                    style={{ width: '20px', height: '20px' }}
+                                                />
+                                                <span style={{ fontWeight: 'bold' }}>Saldar este servicio con Membresía</span>
+                                            </label>
+                                        ) : (
+                                            <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>⚠️ Límite de lavados alcanzado</span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
