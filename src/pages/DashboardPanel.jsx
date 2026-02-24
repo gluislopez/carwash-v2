@@ -374,6 +374,21 @@ const Dashboard = () => {
     const [customerMembership, setCustomerMembership] = useState(null);
     const [isMembershipUsage, setIsMembershipUsage] = useState(false);
 
+    // SYNC PRICE: Recalculate anytime membership usage, service, or extras change
+    useEffect(() => {
+        if (!formData.serviceId) return;
+        const service = services.find(s => s.id === formData.serviceId);
+        if (!service) return;
+
+        const basePrice = isMembershipUsage ? 0 : (parseFloat(service.price) || 0);
+        const extrasTotal = (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0);
+
+        setFormData(prev => ({
+            ...prev,
+            price: basePrice + extrasTotal
+        }));
+    }, [isMembershipUsage, formData.serviceId, formData.extras, services]);
+
     const handleCustomerSelect = async (customerId) => {
         if (!customerId) {
             setVipInfo(null);
@@ -1077,31 +1092,23 @@ const Dashboard = () => {
         const service = services.find(s => s.id === serviceId);
 
         if (service) {
-            const extrasTotal = (formData.extras || []).reduce((sum, ex) => sum + ex.price, 0);
-            let finalPrice = service.price + extrasTotal;
             let isMemberBenefit = false;
 
             // MEMBERSHIP CHECK
             if (customerMembership && customerMembership.status === 'active') {
                 const included = customerMembership.memberships.included_services || [];
-                // Check by Name or ID. If the list is empty, we assume ALL services are included for this plan.
                 const isIncluded = (included.length === 0)
                     ? true
                     : (included.includes(service.name) || included.includes(service.id));
 
                 if (isIncluded) {
-                    // Check Daily Limit
                     const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
-                    const now = new Date();
-                    // Simple Day Check (works for single timezone usually)
-                    const isUsedToday = lastUsed && lastUsed.toDateString() === now.toDateString();
+                    const isUsedToday = lastUsed && new Date(lastUsed).toDateString() === new Date().toDateString();
 
                     if (!isUsedToday) {
-                        finalPrice = 0 + extrasTotal; // Base price 0
                         isMemberBenefit = true;
                     } else {
-                        // Notify user? We'll rely on UI to show "Used Today"
-                        alert(`⚠️ BENEFICIO DIARIO YA UTILIZADO\n\nEl cliente ya usó su beneficio de membresía hoy (${lastUsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).\n\nSe cobrará precio regular.`);
+                        alert(`⚠️ BENEFICIO DIARIO YA UTILIZADO\n\nEl cliente ya usó su beneficio de membresía hoy. Se cobrará precio regular.`);
                     }
                 }
             }
@@ -1110,12 +1117,12 @@ const Dashboard = () => {
             setFormData({
                 ...formData,
                 serviceId,
-                price: finalPrice,
-                commissionAmount: service.commission || 0 // Use fixed commission
+                commissionAmount: parseFloat(service.commission) || 0
             });
+            // Note: Price is handled by the useEffect above
         } else {
             setIsMembershipUsage(false);
-            setFormData({ ...formData, serviceId: '', price: '', commissionAmount: '' });
+            setFormData({ ...formData, serviceId: '', price: 0, commissionAmount: 0 });
         }
     };
 

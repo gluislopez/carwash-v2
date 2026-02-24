@@ -75,6 +75,21 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         fetchCustomerMembership();
     }, [transaction]);
 
+    // SYNC PRICE: Recalculate anytime membership usage, service, or extras change
+    React.useEffect(() => {
+        if (!formData.serviceId) return;
+        const service = services.find(s => s.id === formData.serviceId);
+        if (!service) return;
+
+        const basePrice = isMembershipUsage ? 0 : (parseFloat(service.price) || 0);
+        const extrasTotal = (extras || []).reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0);
+
+        setFormData(prev => ({
+            ...prev,
+            price: basePrice + extrasTotal
+        }));
+    }, [isMembershipUsage, formData.serviceId, extras, services]);
+
     const handleAssignMembership = async (membershipId) => {
         const cId = transaction?.customer_id || (transaction?.customers && transaction.customers.id);
         if (!cId || !membershipId) return;
@@ -728,37 +743,35 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                 const newServiceId = e.target.value;
                                 const service = services.find(s => s.id === newServiceId);
 
-                                // Calculate new price: Service Price + Current Extras
-                                let servicePrice = service ? parseFloat(service.price) : 0;
-                                const extrasTotal = extras.reduce((sum, ex) => sum + ex.price, 0);
+                                if (service) {
+                                    // Check for membership benefit
+                                    let isBenefit = false;
+                                    if (customerMembership && customerMembership.status === 'active') {
+                                        const included = customerMembership.memberships.included_services || [];
+                                        const isIncluded = (included.length === 0)
+                                            ? true
+                                            : (included.includes(service.name) || included.includes(service.id));
 
-                                // Check for membership benefit
-                                let isBenefit = false;
-                                if (service && customerMembership && customerMembership.status === 'active') {
-                                    const included = customerMembership.memberships.included_services || [];
-                                    const isIncluded = (included.length === 0)
-                                        ? true
-                                        : (included.includes(service.name) || included.includes(service.id));
+                                        if (isIncluded) {
+                                            const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
+                                            const isUsedToday = lastUsed && new Date(lastUsed).toDateString() === new Date().toDateString();
 
-                                    if (isIncluded) {
-                                        // Simple daily limit check (optional here, but good for consistency)
-                                        const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
-                                        const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
-
-                                        if (!isUsedToday) {
-                                            servicePrice = 0;
-                                            isBenefit = true;
+                                            if (!isUsedToday) {
+                                                isBenefit = true;
+                                            }
                                         }
                                     }
-                                }
 
-                                setIsMembershipUsage(isBenefit);
-                                setFormData({
-                                    ...formData,
-                                    serviceId: newServiceId,
-                                    price: servicePrice + extrasTotal,
-                                    commissionAmount: service ? (parseFloat(service.commission) || 0) : formData.commissionAmount
-                                });
+                                    setIsMembershipUsage(isBenefit);
+                                    setFormData({
+                                        ...formData,
+                                        serviceId: newServiceId,
+                                        commissionAmount: parseFloat(service.commission) || 0
+                                    });
+                                } else {
+                                    setIsMembershipUsage(false);
+                                    setFormData({ ...formData, serviceId: '', price: 0, commissionAmount: 0 });
+                                }
                             }}
                         >
                             <option value="">Seleccionar Servicio...</option>
