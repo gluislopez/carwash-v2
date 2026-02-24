@@ -1433,12 +1433,20 @@ const Dashboard = () => {
 
             // [MEMBERSHIP] Increment Usage & Timestamp
             if (isMembershipUsage && customerMembership) {
-                await supabase.from('customer_memberships')
+                console.log("INCREMENTANDO USO DE MEMBRESÍA:", customerMembership.id, "Valor previo:", customerMembership.usage_count);
+                const { error: usageErr } = await supabase.from('customer_memberships')
                     .update({
                         usage_count: (customerMembership.usage_count || 0) + 1,
                         last_used: new Date().toISOString()
                     })
                     .eq('id', customerMembership.id);
+
+                if (usageErr) {
+                    console.error("Error al incrementar uso de membresía:", usageErr);
+                    alert("⚠️ No se pudo registrar el uso en el saldo de la membresía. Contacte a soporte.");
+                } else {
+                    console.log("Uso de membresía incrementado correctamente.");
+                }
             }
 
             setIsSubmitting(true); // Disable button

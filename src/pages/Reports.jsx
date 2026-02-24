@@ -80,8 +80,8 @@ const Reports = () => {
         }
     };
 
-    // Fetch all transactions with assignments
-    const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), services(name), vehicles(brand, model), transaction_assignments(*)');
+    // Fetch all transactions with assignments - ORDER BY date DESC to ensure today is first!
+    const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), services(name), vehicles(brand, model), transaction_assignments(*)', { orderBy: { column: 'date', ascending: false } });
 
     const { data: expenses } = useSupabase('expenses');
     const { data: allNotes } = useSupabase('daily_notes');
@@ -208,19 +208,23 @@ const Reports = () => {
     const dateFilteredTxs = getDateFilteredTransactions();
     const totalCash = dateFilteredTxs
         .filter(t => t.payment_method === 'cash' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
 
     const totalTransfer = dateFilteredTxs
         .filter(t => t.payment_method === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
 
     const totalCard = dateFilteredTxs
         .filter(t => t.payment_method === 'card' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+        .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
         .filter(t => !t.service_id && (t.status === 'completed' || t.status === 'paid')) // No service_id = Membership sale
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+        .reduce((sum, t) => {
+            // For membership sales, we trust total_price if exists, or price if not. 
+            // We avoid summing extras manually here because sometimes they are double-recorded for description.
+            return sum + (parseFloat(t.total_price || t.price) || 0);
+        }, 0);
 
     const totalPending = dateFilteredTxs
         .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
