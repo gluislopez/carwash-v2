@@ -111,7 +111,22 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             setCustomerMembership(updatedMembership);
             setIsMembershipUsage(true);
-            alert("Membresía asignada correctamente al cliente.");
+
+            // FINANCIAL RECORD: Create a transaction for the membership sale
+            const membership = memberships.find(m => m.id === membershipId);
+            if (membership) {
+                await supabase.from('transactions').insert([{
+                    customer_id: cId,
+                    price: membership.price,
+                    payment_method: 'cash', // Default to cash, user can edit in reports
+                    status: 'paid',
+                    date: new Date().toISOString(),
+                    service_id: null,
+                    extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
+                }]);
+            }
+
+            alert("Membresía asignada correctamente y registrada en finanzas.");
 
         } catch (error) {
             console.error("Error asignando membresía:", error);
@@ -386,7 +401,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 const newUsageCount = (customerMembership.usage_count || 0) + 1;
                 const { error: mError } = await supabase
                     .from('customer_memberships')
-                    .update({ usage_count: newUsageCount, last_used: new Date().toISOString() })
+                    .update({
+                        usage_count: newUsageCount,
+                        last_used: new Date().toISOString() // Unified column name
+                    })
                     .eq('id', customerMembership.id)
                     .eq('customer_id', transaction.customer_id);
 

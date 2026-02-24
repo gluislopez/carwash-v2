@@ -217,6 +217,10 @@ const Reports = () => {
         .filter(t => t.payment_method === 'card' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
+    const totalMembershipsRevenue = dateFilteredTxs
+        .filter(t => !t.service_id && (t.status === 'completed' || t.status === 'paid')) // No service_id = Membership sale
+        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+
     const totalPending = dateFilteredTxs
         .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
@@ -353,7 +357,7 @@ const Reports = () => {
         filteredTransactions.forEach(t => {
             const dateKey = getPRDateString(t.date);
             if (!groups[dateKey]) {
-                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0 };
+                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, membershipIncome: 0 };
             }
 
             const isPaid = t.status === 'completed' || t.status === 'paid';
@@ -372,6 +376,10 @@ const Reports = () => {
                 if (t.payment_method === 'cash') groups[dateKey].cashIncome += txIncome;
                 else if (t.payment_method === 'transfer') groups[dateKey].transferIncome += txIncome;
                 else if (t.payment_method === 'card') groups[dateKey].cardIncome += txIncome;
+
+                if (!t.service_id) {
+                    groups[dateKey].membershipIncome += (parseFloat(t.price) || 0);
+                }
             }
         });
 
@@ -857,6 +865,19 @@ const Reports = () => {
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>PENDIENTE</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalPending.toFixed(2)}</span>
                     </div>
+
+                    <div style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        padding: '0.3rem 0.8rem',
+                        border: '1px solid #ec4899',
+                        borderRadius: '6px',
+                        backgroundColor: 'transparent',
+                        color: '#ec4899',
+                        cursor: 'default'
+                    }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>MEMBRESÍAS</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalMembershipsRevenue.toFixed(2)}</span>
+                    </div>
                 </div>
             )}
 
@@ -876,22 +897,35 @@ const Reports = () => {
 
                 {
                     userRole === 'admin' && (
-                        <div
-                            className="card"
-                            onClick={() => setActiveModal('income')}
-                            style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                        >
-                            <h3 className="label">Ingresos Totales</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <DollarSign size={32} className="text-success" />
-                                <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
+                        <>
+                            <div
+                                className="card"
+                                onClick={() => setActiveModal('income')}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                                <h3 className="label">Ingresos Totales</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <DollarSign size={32} className="text-success" />
+                                    <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>${totalIncome.toFixed(2)}</p>
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'right' }}>
+                                    Ver detalle &rarr;
+                                </div>
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'right' }}>
-                                Ver detalle &rarr;
+
+                            <div className="card" style={{ border: '1px solid #ec4899' }}>
+                                <h3 className="label" style={{ color: '#ec4899' }}>Venta Membresías 💎</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <RefreshCw size={32} style={{ color: '#ec4899' }} />
+                                    <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ec4899' }}>${totalMembershipsRevenue.toFixed(2)}</p>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                    Ingresos por ventas de planes mensuales.
+                                </div>
                             </div>
-                        </div>
+                        </>
                     )
                 }
 

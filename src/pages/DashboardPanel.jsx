@@ -1048,7 +1048,7 @@ const Dashboard = () => {
 
                 if (isIncluded) {
                     // Check Daily Limit
-                    const lastUsed = customerMembership.last_used_at ? new Date(customerMembership.last_used_at) : null;
+                    const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
                     const now = new Date();
                     // Simple Day Check (works for single timezone usually)
                     const isUsedToday = lastUsed && lastUsed.toDateString() === now.toDateString();
@@ -1342,7 +1342,7 @@ const Dashboard = () => {
                 await supabase.from('customer_memberships')
                     .update({
                         usage_count: (customerMembership.usage_count || 0) + 1,
-                        last_used_at: new Date().toISOString()
+                        last_used: new Date().toISOString()
                     })
                     .eq('id', customerMembership.id);
             }
@@ -3248,7 +3248,7 @@ const Dashboard = () => {
                                                                             </div>
                                                                             <div style={{ textAlign: 'right' }}>
                                                                                 {(() => {
-                                                                                    const lastUsed = customerMembership.last_used_at ? new Date(customerMembership.last_used_at) : null;
+                                                                                    const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
                                                                                     const now = new Date();
                                                                                     const isUsedToday = lastUsed && lastUsed.toDateString() === now.toDateString();
 

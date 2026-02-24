@@ -1,6 +1,9 @@
 export const getCustomerName = (id, customersList) => customersList?.find(c => c.id === id)?.name || 'Cliente Casual';
 
-export const getServiceName = (id, servicesList) => servicesList?.find(s => s.id === id)?.name || 'Servicio Desconocido';
+export const getServiceName = (id, servicesList) => {
+    if (!id) return 'Membresía / Misceláneo';
+    return servicesList?.find(s => s.id === id)?.name || 'Servicio Desconocido';
+};
 
 export const getEmployeeName = (id, employeesList) => employeesList?.find(e => e.id === id)?.name || 'Desconocido';
 
