@@ -897,7 +897,7 @@ const Reports = () => {
                 </div>
 
                 {
-                    userRole === 'admin' && (
+                    (userRole === 'admin' || userRole === 'manager') && (
                         <>
                             <div
                                 className="card"
@@ -930,7 +930,7 @@ const Reports = () => {
                     )
                 }
 
-                {userRole === 'admin' ? (
+                {(userRole === 'admin' || userRole === 'manager') ? (
                     <>
                         <div
                             className="card"

@@ -446,9 +446,20 @@ const Dashboard = () => {
                     if (isIncluded) {
                         const lastUsed = memberSub.last_used ? new Date(memberSub.last_used) : null;
                         const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
-                        if (!isUsedToday) {
-                            setIsMembershipUsage(true);
-                            setFormData(prev => ({ ...prev, price: (prev.extras || []).reduce((sum, ex) => sum + (ex.price || 0), 0) }));
+
+                        // RELAXED CHECK: Unlimited plans still once-per-day. 
+                        // Limited plans can use multiple washes as long as they have balance.
+                        if (memberSub.memberships?.type === 'unlimited') {
+                            if (!isUsedToday) {
+                                setIsMembershipUsage(true);
+                                setFormData(prev => ({ ...prev, price: (prev.extras || []).reduce((sum, ex) => sum + (ex.price || 0), 0) }));
+                            }
+                        } else {
+                            // Limited: Check balance
+                            if ((memberSub.usage_count || 0) < (memberSub.memberships?.limit_count || 0)) {
+                                setIsMembershipUsage(true);
+                                setFormData(prev => ({ ...prev, price: (prev.extras || []).reduce((sum, ex) => sum + (ex.price || 0), 0) }));
+                            }
                         }
                     }
                 }
@@ -561,7 +572,19 @@ const Dashboard = () => {
 
         setCustomerMembership(null);
         setIsMembershipUsage(false);
+
+        // Update the main customers list if it's being used for a shared state
+        // Actually DashboardPanel fetches per customer, so clearing local state is enough for the form.
+        // But let's trigger a fresh fetch just in case to be 100% sure the DB state is reflected
         alert("Membresía cancelada.");
+
+        // Refresh the form data if customer is still selected
+        if (formData.customerId) {
+            // This will re-trigger the membership check
+            const currentId = formData.customerId;
+            setFormData(prev => ({ ...prev, customerId: '' }));
+            setTimeout(() => setFormData(prev => ({ ...prev, customerId: currentId })), 100);
+        }
     };
 
     const applyLastService = () => {
@@ -1106,10 +1129,20 @@ const Dashboard = () => {
                     const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
                     const isUsedToday = lastUsed && new Date(lastUsed).toDateString() === new Date().toDateString();
 
-                    if (!isUsedToday) {
-                        isMemberBenefit = true;
+                    // RELAXED CHECK
+                    if (customerMembership.memberships?.type === 'unlimited') {
+                        if (!isUsedToday) {
+                            isMemberBenefit = true;
+                        } else {
+                            alert(`⚠️ BENEFICIO DIARIO YA UTILIZADO\n\nLos planes ilimitados están limitados a 1 lavado diario.`);
+                        }
                     } else {
-                        alert(`⚠️ BENEFICIO DIARIO YA UTILIZADO\n\nEl cliente ya usó su beneficio de membresía hoy. Se cobrará precio regular.`);
+                        // Limited: Allow multiple uses if they have balance
+                        if ((customerMembership.usage_count || 0) < (customerMembership.memberships?.limit_count || 0)) {
+                            isMemberBenefit = true;
+                        } else {
+                            alert(`⚠️ LÍMITE ALCANZADO\n\nEl cliente ya utilizó todos los lavados de su plan mensual.`);
+                        }
                     }
                 }
             }

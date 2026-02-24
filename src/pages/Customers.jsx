@@ -22,7 +22,7 @@ const Customers = () => {
     const [selectedQrCustomer, setSelectedQrCustomer] = useState(null); // State for QR Modal
     const [allVehicles, setAllVehicles] = useState({}); // Map: customerId -> [vehicles]
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
-    const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0 });
+    const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0, usage_count: 0 });
 
     // Search and Stats State
     const [searchTerm, setSearchTerm] = useState('');
@@ -473,7 +473,13 @@ const Customers = () => {
                         });
                     }
                 } else {
-                    // If empty, we could deactivate or ignore. Let's ignore for now.
+                    // If empty, delete any existing membership for this customer
+                    const { error: delError } = await supabase
+                        .from('customer_memberships')
+                        .delete()
+                        .eq('customer_id', editingCustomer.id);
+
+                    if (delError) console.error("Error deleting membership:", delError);
                 }
             } else {
                 const newCustomer = await create(customerData);
@@ -510,9 +516,11 @@ const Customers = () => {
 
     const openStatsModal = (customer) => {
         setEditingCustomer(customer);
+        const activeSub = activeMemberships[customer.id];
         setStatsFormData({
             points: customer.points || 0,
-            manual_visit_count: customer.manual_visit_count || 0
+            manual_visit_count: customer.manual_visit_count || 0,
+            usage_count: activeSub ? activeSub.usage_count : 0
         });
         setIsStatsModalOpen(true);
     };
@@ -524,6 +532,20 @@ const Customers = () => {
                 points: parseInt(statsFormData.points) || 0,
                 manual_visit_count: parseInt(statsFormData.manual_visit_count) || 0
             });
+
+            // If there's an active membership, update its usage count
+            const activeSub = activeMemberships[editingCustomer.id];
+            if (activeSub) {
+                const { error: subErr } = await supabase
+                    .from('customer_memberships')
+                    .update({ usage_count: parseInt(statsFormData.usage_count) || 0 })
+                    .eq('id', activeSub.id);
+
+                if (subErr) console.error("Error updating usage count:", subErr);
+            }
+
+            // Refresh local state
+            await getMemberships();
             setIsStatsModalOpen(false);
             setEditingCustomer(null);
         } catch (error) {
@@ -1367,6 +1389,27 @@ const Customers = () => {
                                         Total Mostrado: {(visitCounts[editingCustomer?.id] || 0) + (parseInt(statsFormData.manual_visit_count) || 0)}
                                     </p>
                                 </div>
+
+                                {activeMemberships[editingCustomer?.id] && (
+                                    <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '0.5rem', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                                        <label className="label" style={{ color: '#166534' }}>💎 Uso de Memebresía ({activeMemberships[editingCustomer?.id].memberships.name})</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                value={statsFormData.usage_count}
+                                                onChange={(e) => setStatsFormData({ ...statsFormData, usage_count: e.target.value })}
+                                                style={{ width: '80px' }}
+                                            />
+                                            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                                / {activeMemberships[editingCustomer?.id].memberships.limit_count || '∞'} lavados
+                                            </span>
+                                        </div>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                            Cambia este número para resetear lavados (ej. de 2 a 0).
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                                     <button type="button" className="btn" onClick={() => setIsStatsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>

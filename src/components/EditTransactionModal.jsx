@@ -65,9 +65,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             if (data) {
                 setCustomerMembership(data);
-                // Si la membresía es válida, por default preparamos para usarla (a menos que no quieran)
-                if (data.memberships?.type === 'unlimited' || data.usage_count < data.memberships?.limit_count) {
+
+                // CRITICAL FIX: Only auto-enable if the transaction already IS a membership usage
+                // OR if it's a brand new selection in the dashboard (this is the Edit modal, so we respect transaction state)
+                if (transaction.payment_method === 'membership') {
                     setIsMembershipUsage(true);
+                } else {
+                    setIsMembershipUsage(false);
                 }
             }
             if (error && error.code !== 'PGRST116') console.error("Error fetching customer membership", error); // Ignore no rows error
@@ -763,8 +767,15 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                                             const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
                                             const isUsedToday = lastUsed && new Date(lastUsed).toDateString() === new Date().toDateString();
 
-                                            if (!isUsedToday) {
-                                                isBenefit = true;
+                                            // RELAXED CHECK: Unlimited plans still once-per-day. 
+                                            // Limited plans can use multiple washes as long as they have balance.
+                                            if (customerMembership.memberships?.type === 'unlimited') {
+                                                if (!isUsedToday) isBenefit = true;
+                                            } else {
+                                                // Limited: Check balance instead of date
+                                                if ((customerMembership.usage_count || 0) < (customerMembership.memberships?.limit_count || 0)) {
+                                                    isBenefit = true;
+                                                }
                                             }
                                         }
                                     }
@@ -950,7 +961,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                             <button
                                 type="button"
-                                onClick={() => (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) && setFormData({ ...formData, paymentMethod: 'cash' })}
+                                onClick={() => {
+                                    if (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) {
+                                        setFormData({ ...formData, paymentMethod: 'cash' });
+                                        setIsMembershipUsage(false);
+                                    }
+                                }}
                                 style={{
                                     padding: '0.75rem',
                                     borderRadius: '0.5rem',
@@ -967,7 +983,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             </button>
                             <button
                                 type="button"
-                                onClick={() => (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) && setFormData({ ...formData, paymentMethod: 'card' })}
+                                onClick={() => {
+                                    if (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) {
+                                        setFormData({ ...formData, paymentMethod: 'card' });
+                                        setIsMembershipUsage(false);
+                                    }
+                                }}
                                 style={{
                                     padding: '0.75rem',
                                     borderRadius: '0.5rem',
@@ -984,7 +1005,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                             </button>
                             <button
                                 type="button"
-                                onClick={() => (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) && setFormData({ ...formData, paymentMethod: 'transfer' })}
+                                onClick={() => {
+                                    if (userRole === 'admin' || userRole === 'manager' || (transaction.status !== 'paid' && transaction.status !== 'completed')) {
+                                        setFormData({ ...formData, paymentMethod: 'transfer' });
+                                        setIsMembershipUsage(false);
+                                    }
+                                }}
                                 style={{
                                     padding: '0.75rem',
                                     borderRadius: '0.5rem',
