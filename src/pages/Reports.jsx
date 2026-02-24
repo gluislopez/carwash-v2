@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw, Settings } from 'lucide-react';
+import { Calendar, DollarSign, Car, Users, Filter, X, Download, Clock, RefreshCw, Settings, CheckCircle } from 'lucide-react';
 import { getEmployeeName, getServiceName, getCustomerName, getVehicleInfo } from '../utils/relationshipHelpers';
 import { formatDuration } from '../utils/formatUtils';
 import { formatToFraction } from '../utils/fractionUtils';
