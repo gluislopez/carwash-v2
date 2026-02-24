@@ -491,71 +491,66 @@ const Dashboard = () => {
     const handleAssignMembership = async (membershipId) => {
         if (!formData.customerId || !membershipId) return;
 
-        // Check if exists first
-        const { data: existing } = await supabase
-            .from('customer_memberships')
-            .select('id')
-            .eq('customer_id', formData.customerId)
-            .maybeSingle();
-
-        let opError;
-        if (existing) {
-            const { error } = await supabase
+        try {
+            // 1. CLEANUP: Remove any existing membership record for this customer (active or inactive)
+            // This prevents unique constraint or "multiple rows" errors.
+            await supabase
                 .from('customer_memberships')
-                .update({
+                .delete()
+                .eq('customer_id', formData.customerId);
+
+            // 2. INSERT: Create the new record
+            const { error: insError } = await supabase
+                .from('customer_memberships')
+                .insert({
+                    customer_id: formData.customerId,
                     membership_id: membershipId,
                     status: 'active',
-                    usage_count: 0,
+                    start_date: new Date().toISOString(),
                     last_reset_at: new Date().toISOString()
-                })
-                .eq('id', existing.id);
-            opError = error;
-        } else {
-            const { error } = await supabase
+                });
+
+            if (insError) throw insError;
+
+            // 3. REFRESH: Fetch the newly created record to update UI state
+            const { data: updatedMembership, error: fetchErr } = await supabase
                 .from('customer_memberships')
-                .insert({ customer_id: formData.customerId, membership_id: membershipId, status: 'active' });
-            opError = error;
-        }
+                .select('*, memberships(*)')
+                .eq('customer_id', formData.customerId)
+                .eq('status', 'active')
+                .maybeSingle();
 
-        if (opError) {
-            console.error("Error assigning membership:", opError);
-            alert("Error al asignar membresía");
-            return;
-        }
+            if (fetchErr) console.warn("Error fetching updated membership:", fetchErr);
+            setCustomerMembership(updatedMembership);
 
-        // Recuperar y actualizar el estado
-        const { data: updatedMembership } = await supabase
-            .from('customer_memberships')
-            .select('*, memberships(*)')
-            .eq('customer_id', formData.customerId)
-            .single();
+            // FINANCIAL RECORD: Create a transaction for the membership sale
+            const membership = memberships.find(m => m.id === membershipId);
+            if (membership) {
+                try {
+                    const { error: txError } = await supabase.from('transactions').insert([{
+                        customer_id: formData.customerId,
+                        price: membership.price,
+                        total_price: membership.price, // Required by DB constraint
+                        payment_method: 'cash', // Default to cash
+                        status: 'paid',
+                        date: new Date().toISOString(),
+                        service_id: null,
+                        extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
+                    }]);
 
-        setCustomerMembership(updatedMembership);
-
-        // FINANCIAL RECORD: Create a transaction for the membership sale
-        const membership = memberships.find(m => m.id === membershipId);
-        if (membership) {
-            try {
-                const { error: txError } = await supabase.from('transactions').insert([{
-                    customer_id: formData.customerId,
-                    price: membership.price,
-                    total_price: membership.price, // Required by DB constraint
-                    payment_method: 'cash', // Default to cash
-                    status: 'paid',
-                    date: new Date().toISOString(),
-                    service_id: null,
-                    extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
-                }]);
-
-                if (txError) throw txError;
-                refreshTransactions(); // Ensure it shows up in history/reports
-                alert("Membresía asignada correctamente y registrada en finanzas.");
-            } catch (err) {
-                console.error("Error al registrar venta de membresía:", err);
-                alert("Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + err.message);
+                    if (txError) throw txError;
+                    refreshTransactions(); // Ensure it shows up in history/reports
+                    alert("Membresía asignada correctamente y registrada en finanzas.");
+                } catch (err) {
+                    console.error("Error al registrar venta de membresía:", err);
+                    alert("Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + err.message);
+                }
+            } else {
+                alert("Membresía asignada correctamente.");
             }
-        } else {
-            alert("Membresía asignada correctamente.");
+        } catch (opError) {
+            console.error("Error assigning membership:", opError);
+            alert("Error al asignar membresía: " + opError.message);
         }
     };
 
