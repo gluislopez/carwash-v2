@@ -8,6 +8,7 @@ const Customers = () => {
     const { data: customers, create, remove, update } = useSupabase('customers', '*', { orderBy: { column: 'name', ascending: true } });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [myEmployeeId, setMyEmployeeId] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [customerVehicles, setCustomerVehicles] = useState([]); // State for vehicles in modal
     const [newVehicle, setNewVehicle] = useState({ plate: '', model: '', brand: '' });
@@ -166,8 +167,15 @@ const Customers = () => {
         const getUserRole = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const { data: employee } = await supabase.from('employees').select('role').eq('user_id', user.id).single();
-                if (employee) setUserRole(employee.role);
+                const { data: employee } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
+                if (employee) {
+                    setUserRole(employee.role);
+                    setMyEmployeeId(employee.id);
+                } else {
+                    // Fallback to identify at least one admin for financial recording
+                    const { data: adminEmp } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                    if (adminEmp) setMyEmployeeId(adminEmp.id);
+                }
             }
         };
 
@@ -489,8 +497,16 @@ const Customers = () => {
                         const plan = availablePlans.find(p => p.id === formData.membership_id);
                         if (plan) {
                             console.log("Creando transacción de venta de membresía para:", editingCustomer.name, plan.name);
+                            // Ensure we have an employee_id (REQUIRED by DB)
+                            let empId = myEmployeeId;
+                            if (!empId) {
+                                const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                                empId = fallbackAdmin?.id;
+                            }
+
                             const { error: txError } = await supabase.from('transactions').insert([{
                                 customer_id: editingCustomer.id,
+                                employee_id: empId, // CRITICAL FIX
                                 price: plan.price,
                                 total_price: plan.price,
                                 payment_method: 'membership_sale',

@@ -102,6 +102,9 @@ const Reports = () => {
             case 'cash': return 'Efectivo';
             case 'card': return 'Tarjeta';
             case 'transfer': return 'Ath Móvil';
+            case 'membership_sale': return 'Venta Plan';
+            case 'membership_usage': return 'Uso Memb.';
+            case 'membership': return 'Membresía';
             default: return 'Otro';
         }
     };
@@ -1425,7 +1428,7 @@ const Reports = () => {
                                         </td>
                                         <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                                             {userRole === 'admin' ? (
-                                                `$${t.price.toFixed(2)}`
+                                                `$${calculateTxTotal(t).toFixed(2)}`
                                             ) : (
                                                 (() => {
                                                     const txTotalCommission = (parseFloat(t.commission_amount) || 0);

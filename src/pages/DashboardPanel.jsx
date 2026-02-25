@@ -537,6 +537,7 @@ const Dashboard = () => {
                 try {
                     const { error: txError } = await supabase.from('transactions').insert([{
                         customer_id: formData.customerId,
+                        employee_id: myEmployeeId, // FIXED
                         price: membership.price,
                         total_price: membership.price,
                         payment_method: 'membership_sale',
