@@ -104,6 +104,14 @@ const CustomerPortal = () => {
 
     const progress = calculateProgress(activeService);
 
+    const getTransactionCategory = (t) => {
+        const method = (t.payment_method || '').toLowerCase();
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
+        if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
+        return method || 'cash';
+    };
+
     // Derived Stats for Multi-Vehicle Support
     const selectedVehicle = useMemo(() => vehicles.find(v => v.id === selectedVehicleId), [vehicles, selectedVehicleId]);
 
@@ -1394,7 +1402,9 @@ const CustomerPortal = () => {
                             style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                                <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{tx.services?.name || 'Servicio'}</span>
+                                <span style={{ fontWeight: 'bold', color: getTransactionCategory(tx) === 'membership_usage' ? '#10b981' : '#1e293b' }}>
+                                    {getTransactionCategory(tx) === 'membership_usage' ? 'Beneficio de Membresía' : (tx.services?.name || 'Servicio')}
+                                </span>
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
                             </div>
                             <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
