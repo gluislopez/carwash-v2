@@ -513,6 +513,8 @@ const Customers = () => {
                                 status: 'paid',
                                 date: new Date().toISOString(),
                                 service_id: null,
+                                commission_amount: 0,
+                                tip: 0,
                                 extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
                             }]);
 

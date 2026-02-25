@@ -556,6 +556,8 @@ const Dashboard = () => {
                         status: 'paid',
                         date: new Date().toISOString(),
                         service_id: null,
+                        commission_amount: 0,
+                        tip: 0,
                         extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: parseFloat(membership.price) || 0 }]
                     }]);
 
