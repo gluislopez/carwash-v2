@@ -153,7 +153,7 @@ const CustomerPortal = () => {
     }, [activeService]);
 
     // Business Status
-    const [isBusinessOpen, setIsBusinessOpen] = useState(true);
+    const [isBusinessOpen, setIsBusinessOpen] = useState(false);
 
     const fetchSettings = async () => {
         const { data } = await supabase
