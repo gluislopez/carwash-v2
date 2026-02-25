@@ -1604,7 +1604,7 @@ const Dashboard = () => {
                         <img src="/logo.jpg" alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover', border: '2px solid white' }} />
                         <div style={{ lineHeight: '1' }}>
                             <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Dashboard</h1>
-                            <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 'bold', letterSpacing: '0.5px' }}>v4.61 • BETA</span>
+                            <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 'bold', letterSpacing: '0.5px' }}>v4.75 • BETA</span>
                         </div>
                     </div>
 

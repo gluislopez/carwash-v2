@@ -236,6 +236,7 @@ const CustomerPortal = () => {
     };
 
     useEffect(() => {
+        console.log("Express CarWash System v4.75 [Portal] Initialized");
         const fetchData = async () => {
             if (!customerId) return;
 
@@ -572,9 +573,16 @@ const CustomerPortal = () => {
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
-                                            {v.points || 0} pts
-                                        </div>
+                                        {!membership && (
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
+                                                {v.points || 0} pts
+                                            </div>
+                                        )}
+                                        {membership && (
+                                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#166534' }}>
+                                                PLAN 💎
+                                            </div>
+                                        )}
                                         <button
                                             onClick={() => {
                                                 setSelectedVehicleId(v.id);
@@ -1585,7 +1593,7 @@ const CustomerPortal = () => {
                 )}
 
                 <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.5, fontSize: '0.8rem', paddingBottom: '2rem' }}>
-                    <p>Express CarWash System v4.70</p>
+                    <p>Express CarWash System v4.75</p>
                 </div>
             </div>
         </div >
