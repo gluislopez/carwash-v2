@@ -183,71 +183,71 @@ const Customers = () => {
     };
 
     // Obtener el rol del usuario actual y conteo de visitas
-    useEffect(() => {
-        const getUserRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: employee } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
-                if (employee) {
-                    setUserRole(employee.role);
-                    setMyEmployeeId(employee.id);
-                } else {
-                    // Fallback to identify at least one admin for financial recording
-                    const { data: adminEmp } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
-                    if (adminEmp) setMyEmployeeId(adminEmp.id);
+    const getUserRole = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: employee } = await supabase.from('employees').select('id, role').eq('user_id', user.id).single();
+            if (employee) {
+                setUserRole(employee.role);
+                setMyEmployeeId(employee.id);
+            } else {
+                // Fallback to identify at least one admin for financial recording
+                const { data: adminEmp } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                if (adminEmp) setMyEmployeeId(adminEmp.id);
+            }
+        }
+    };
+
+    const getVisitCounts = async () => {
+        const { data: transactions } = await supabase
+            .from('transactions')
+            .select('customer_id');
+
+        if (transactions) {
+            const counts = {};
+            transactions.forEach(t => {
+                if (t.customer_id) {
+                    counts[t.customer_id] = (counts[t.customer_id] || 0) + 1;
                 }
-            }
-        };
+            });
+            setVisitCounts(counts);
+        }
+    };
 
-        const getVisitCounts = async () => {
-            const { data: transactions } = await supabase
-                .from('transactions')
-                .select('customer_id');
+    const getMemberships = async () => {
+        const { data: memberData } = await supabase
+            .from('customer_memberships')
+            .select('*, memberships(name, type)')
+            .eq('status', 'active');
 
-            if (transactions) {
-                const counts = {};
-                transactions.forEach(t => {
-                    if (t.customer_id) {
-                        counts[t.customer_id] = (counts[t.customer_id] || 0) + 1;
-                    }
-                });
-                setVisitCounts(counts);
-            }
-        };
+        if (memberData) {
+            const map = {};
+            memberData.forEach(m => {
+                map[m.customer_id] = m;
+            });
+            setActiveMemberships(map);
+        }
 
-        const getMemberships = async () => {
-            const { data: memberData } = await supabase
-                .from('customer_memberships')
-                .select('*, memberships(name, type)')
-                .eq('status', 'active');
+        const { data: plans } = await supabase
+            .from('memberships')
+            .select('*')
+            .eq('active', true);
+        if (plans) setAvailablePlans(plans);
+    };
 
-            if (memberData) {
-                const map = {};
-                memberData.forEach(m => {
-                    map[m.customer_id] = m;
-                });
-                setActiveMemberships(map);
-            }
+    const getAllVehicles = async () => {
+        const { data } = await supabase.from('vehicles').select('*');
+        if (data) {
+            const map = {};
+            data.forEach(v => {
+                if (!map[v.customer_id]) map[v.customer_id] = [];
+                map[v.customer_id].push(v);
+            });
+            setAllVehicles(map);
+        }
+    };
 
-            const { data: plans } = await supabase
-                .from('memberships')
-                .select('*')
-                .eq('active', true);
-            if (plans) setAvailablePlans(plans);
-        };
-
-        const getAllVehicles = async () => {
-            const { data } = await supabase.from('vehicles').select('*');
-            if (data) {
-                const map = {};
-                data.forEach(v => {
-                    if (!map[v.customer_id]) map[v.customer_id] = [];
-                    map[v.customer_id].push(v);
-                });
-                setAllVehicles(map);
-            }
-        };
-
+    useEffect(() => {
         getUserRole();
         getVisitCounts();
         getMemberships();
