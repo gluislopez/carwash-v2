@@ -159,6 +159,35 @@ const Dashboard = () => {
         return 'other';
     };
 
+    const calculateTxTotal = (t) => {
+        if (!t) return 0;
+        // PRIORITY 1: If it's a SALE (Money coming in), we count the full price.
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+        const isSale = t.payment_method === 'membership_sale' || desc.includes('VENTA');
+
+        if (isSale) {
+            const val = parseFloat(t.total_price || t.price || 0);
+            return isNaN(val) ? 0 : val;
+        }
+
+        // PRIORITY 2: If it's a USE of membership (Benefit), income is 0 + extras.
+        if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
+            const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+            return isNaN(extrasSum) ? 0 : extrasSum;
+        }
+
+        // PRIORITY 3: Standard Transaction (Discounts/Normal)
+        if (t.total_price !== null && t.total_price !== undefined) {
+            const val = parseFloat(t.total_price) || 0;
+            return isNaN(val) ? 0 : val;
+        }
+
+        const val = (parseFloat(t.price) || 0) +
+            (parseFloat(t.tip) || 0) +
+            (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+        return isNaN(val) ? 0 : val;
+    };
+
 
     useEffect(() => {
         const fetchMemberships = async () => {
