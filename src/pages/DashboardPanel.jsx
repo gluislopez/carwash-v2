@@ -1433,7 +1433,7 @@ const Dashboard = () => {
             price: isMembershipUsage ? 0 : basePrice,
             commission_amount: (parseFloat(formData.commissionAmount) || 0) + (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0),
             tip: 0,
-            payment_method: isMembershipUsage ? 'membership_usage' : 'cash',
+            payment_method: isMembershipUsage ? 'membership' : 'cash',
             extras: isMembershipUsage ? [...(formData.extras || []), { description: `Membresía: ${customerMembership.memberships.name}`, price: 0 }] : (formData.extras || []),
 
             status: 'waiting', // Initial Status

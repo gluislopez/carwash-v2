@@ -68,7 +68,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
                 // CRITICAL FIX: Only auto-enable if the transaction already IS a membership usage
                 // OR if it's a brand new selection in the dashboard (this is the Edit modal, so we respect transaction state)
-                if (transaction.payment_method === 'membership') {
+                if (transaction.payment_method === 'membership' || transaction.payment_method === 'membership_usage') {
                     setIsMembershipUsage(true);
                 } else {
                     setIsMembershipUsage(false);
@@ -436,7 +436,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             // C. Proceso de Membresía
             // Solo si isMembershipUsage es Válido y estamos cobrando
-            if (isCompleting && isMembershipUsage && customerMembership && transaction.payment_method !== 'membership') {
+            if (isCompleting && isMembershipUsage && customerMembership &&
+                transaction.payment_method !== 'membership' &&
+                transaction.payment_method !== 'membership_usage') {
                 finalPaymentMethod = 'membership';
 
                 // Incrementar uso de membresía en Supabase
