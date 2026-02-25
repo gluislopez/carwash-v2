@@ -623,6 +623,35 @@ const Reports = () => {
                         <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Reportes y Finanzas</h1>
                         <p style={{ color: 'var(--text-muted)' }}>Resumen de operaciones</p>
                     </div>
+
+                    {/* LOUD DEBUG PANEL */}
+                    <div style={{
+                        background: 'rgba(236, 72, 153, 0.1)',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ec4899',
+                        marginLeft: '2rem',
+                        fontSize: '0.8rem',
+                        maxWidth: '400px'
+                    }}>
+                        <div style={{ fontWeight: 'bold', color: '#ec4899', marginBottom: '0.5rem' }}>🔍 AUDITORÍA INSTANTÁNEA (HOY)</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                            <div>Transacciones Hoy:</div>
+                            <div style={{ color: 'white' }}>{allTransactions?.filter(t => getPRDateString(t.date || t.created_at) === getPRDateString(new Date())).length}</div>
+
+                            <div>Ventas de Planes:</div>
+                            <div style={{ color: '#ec4899', fontWeight: 'bold' }}>
+                                ${allTransactions?.filter(t => {
+                                    const cat = getTransactionCategory(t);
+                                    const isToday = getPRDateString(t.date || t.created_at) === getPRDateString(new Date());
+                                    return cat === 'membership_sale' && isToday;
+                                }).reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
+                            </div>
+                        </div>
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', opacity: 0.8 }}>
+                            Último Plan: {allTransactions?.filter(t => getTransactionCategory(t) === 'membership_sale')[0]?.extras?.[0]?.description || 'Ninguno'}
+                        </div>
+                    </div>
                     {(userRole === 'admin' || userRole === 'manager') && (
                         <button
                             onClick={() => setActiveModal('settings')}
