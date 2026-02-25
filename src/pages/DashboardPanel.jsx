@@ -586,6 +586,12 @@ const Dashboard = () => {
         if (!formData.customerId) return;
         if (!window.confirm("¿Seguro que deseas eliminar/cancelar la membresía de este cliente?")) return;
 
+        // NEW: ASK TO DELETE THE TRANSACTION TOO
+        let deleteTx = false;
+        if (window.confirm("¿Deseas también borrar el registro de venta ($69) de los reportes?")) {
+            deleteTx = true;
+        }
+
         const { error } = await supabase.from('customer_memberships').delete().eq('customer_id', formData.customerId);
         if (error) {
             console.error("Error removing membership:", error);
@@ -593,17 +599,28 @@ const Dashboard = () => {
             return;
         }
 
+        if (deleteTx) {
+            // Try to find the most recent membership sale for this customer
+            const { data: txs } = await supabase
+                .from('transactions')
+                .select('id')
+                .eq('customer_id', formData.customerId)
+                .eq('payment_method', 'membership_sale')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (txs && txs.length > 0) {
+                await supabase.from('transactions').delete().eq('id', txs[0].id);
+                console.log("Transacción de venta borrada.");
+            }
+        }
+
         setCustomerMembership(null);
         setIsMembershipUsage(false);
-
-        // Update the main customers list if it's being used for a shared state
-        // Actually DashboardPanel fetches per customer, so clearing local state is enough for the form.
-        // But let's trigger a fresh fetch just in case to be 100% sure the DB state is reflected
-        alert("Membresía cancelada.");
+        alert("Membresía cancelada correctamente" + (deleteTx ? " y registro de venta eliminado." : "."));
 
         // Refresh the form data if customer is still selected
         if (formData.customerId) {
-            // This will re-trigger the membership check
             const currentId = formData.customerId;
             setFormData(prev => ({ ...prev, customerId: '' }));
             setTimeout(() => setFormData(prev => ({ ...prev, customerId: currentId })), 100);

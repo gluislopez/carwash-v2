@@ -4,7 +4,7 @@ import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { supabase } from '../supabase'; // Import Supabase Client (Correct Path)
 import { calculateSharedCommission } from '../utils/commissionRules';
 
-const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, vehicles = [], onUpdate, userRole, reviewLink }) => {
+const EditTransactionModal = ({ isOpen, onClose, transaction, services, employees, vehicles = [], onUpdate, onDelete, userRole, reviewLink }) => {
     if (!isOpen || !transaction) return null;
 
     const [extras, setExtras] = useState(transaction.extras || []);

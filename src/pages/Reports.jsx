@@ -81,7 +81,44 @@ const Reports = () => {
     };
 
     // Fetch all transactions with assignments - ORDER BY date DESC to ensure today is first!
-    const { data: allTransactions, loading, update: updateTransaction } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), services(name), vehicles(brand, model), transaction_assignments(*)', { orderBy: { column: 'date', ascending: false } });
+    const { data: allTransactions, loading, update: updateTransaction, remove: removeTransactionBase } = useSupabase('transactions', '*, customers(name, vehicle_plate, vehicle_model, phone), services(name), vehicles(brand, model), transaction_assignments(*)', { orderBy: { column: 'date', ascending: false } });
+
+    const handleDeleteTransaction = async (id) => {
+        const tx = allTransactions.find(t => t.id === id);
+        if (!tx) return;
+
+        try {
+            // 1. REVERSE USAGE COUNT if deleting a "membership_usage"
+            if (tx.payment_method === 'membership' || tx.payment_method === 'membership_usage') {
+                const { data: currentSub } = await supabase
+                    .from('customer_memberships')
+                    .select('*')
+                    .eq('customer_id', tx.customer_id)
+                    .single();
+
+                if (currentSub) {
+                    await supabase
+                        .from('customer_memberships')
+                        .update({ usage_count: Math.max(0, (currentSub.usage_count || 1) - 1) })
+                        .eq('id', currentSub.id);
+                    console.log('Uso de membresía revertido (-1)');
+                }
+            }
+
+            // 2. ASK TO CANCEL PLAN if deleting a "membership_sale"
+            const cat = getTransactionCategory(tx);
+            if (cat === 'membership_sale') {
+                if (window.confirm('Has seleccionado borrar una VENTA DE MEMBRESÍA. ¿Deseas también CANCELAR el plan del cliente para que deje de ser miembro?')) {
+                    await supabase.from('customer_memberships').delete().eq('customer_id', tx.customer_id);
+                }
+            }
+
+            await removeTransactionBase(id);
+        } catch (error) {
+            console.error('Error in handleDeleteTransaction:', error);
+            alert('Error al eliminar registro');
+        }
+    };
 
     const { data: expenses } = useSupabase('expenses');
     const { data: allNotes } = useSupabase('daily_notes');
@@ -2046,6 +2083,7 @@ const Reports = () => {
                     employees={employeesList}
                     onClose={() => setEditingTransactionId(null)}
                     onUpdate={updateTransaction}
+                    onDelete={handleDeleteTransaction}
                     userRole={userRole}
                     reviewLink={reviewLink}
                 />

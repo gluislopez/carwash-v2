@@ -533,12 +533,31 @@ const Customers = () => {
                     }
                 } else {
                     // If empty, delete any existing membership for this customer
+                    let deleteTx = false;
+                    const activeSub = activeMemberships[editingCustomer.id];
+                    if (activeSub && window.confirm("Has quitado la membresía. ¿Deseas también BORRAR el ingreso de venta ($69) de los reportes?")) {
+                        deleteTx = true;
+                    }
+
                     const { error: delError } = await supabase
                         .from('customer_memberships')
                         .delete()
                         .eq('customer_id', editingCustomer.id);
 
                     if (delError) console.error("Error deleting membership:", delError);
+
+                    if (deleteTx) {
+                        const { data: txs } = await supabase
+                            .from('transactions')
+                            .select('id')
+                            .eq('customer_id', editingCustomer.id)
+                            .eq('payment_method', 'membership_sale')
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+                        if (txs && txs.length > 0) {
+                            await supabase.from('transactions').delete().eq('id', txs[0].id);
+                        }
+                    }
                 }
             } else {
                 const newCustomer = await create(customerData);
@@ -557,15 +576,25 @@ const Customers = () => {
                         // FINANCIAL RECORD
                         const plan = availablePlans.find(p => p.id === formData.membership_id);
                         if (plan) {
+                            // FALLBACK for employee_id
+                            let empId = myEmployeeId;
+                            if (!empId) {
+                                const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                                empId = fallbackAdmin?.id;
+                            }
+
                             await supabase.from('transactions').insert([{
                                 customer_id: newCustomer.id,
-                                price: plan.price,
-                                total_price: plan.price,
-                                payment_method: 'cash',
+                                employee_id: empId,
+                                price: parseFloat(plan.price) || 0,
+                                total_price: parseFloat(plan.price) || 0,
+                                payment_method: 'membership_sale',
                                 status: 'paid',
                                 date: new Date().toISOString(),
                                 service_id: null,
-                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: plan.price }]
+                                commission_amount: 0,
+                                tip: 0,
+                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
                             }]);
                         }
                     }
