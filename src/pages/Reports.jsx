@@ -2169,7 +2169,9 @@ const Reports = () => {
                                     <td style={{ padding: '0.5rem' }}>{t.payment_method || 'null/cash'}</td>
                                     <td style={{ padding: '0.5rem' }}>${(parseFloat(t.price) || 0).toFixed(2)}</td>
                                     <td style={{ padding: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>${calculateTxTotal(t).toFixed(2)}</td>
-                                    <td style={{ padding: '0.5rem' }}>{t.service_id || 'null'}</td>
+                                    <td style={{ padding: '0.5rem', opacity: t.service_id ? 1 : 0.6 }}>
+                                        {getTransactionCategory(t) === 'membership_sale' ? 'Venta de Plan' : (t.service_id || '--')}
+                                    </td>
                                     <td style={{ padding: '0.5rem' }}>{t.status}</td>
                                 </tr>
                             ))}
