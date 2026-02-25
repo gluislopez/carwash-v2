@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode, AlertCircle, TrendingUp, AlertTriangle, Phone } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 import ProductivityBar from '../components/ProductivityBar';
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
