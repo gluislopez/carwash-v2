@@ -201,12 +201,16 @@ const Customers = () => {
     const getVisitCounts = async () => {
         const { data: transactions } = await supabase
             .from('transactions')
-            .select('customer_id');
+            .select('customer_id, status, payment_method, extras');
 
         if (transactions) {
             const counts = {};
             transactions.forEach(t => {
-                if (t.customer_id) {
+                if (t.customer_id && t.status !== 'cancelled') {
+                    // Decide if we count membership_sale as a visit. 
+                    // To keep it in sync with the portal list, we count everything that is visible.
+                    // But typically car washes don't count sales as visits.
+                    // Given the user's request "in sync with the list", we count them.
                     counts[t.customer_id] = (counts[t.customer_id] || 0) + 1;
                 }
             });

@@ -3323,8 +3323,8 @@ const Dashboard = () => {
                                                                                     <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
                                                                                         {(() => {
                                                                                             const c = customers.find(cust => cust.id == formData.customerId);
-                                                                                            // Count only completed/paid transactions for this customer
-                                                                                            const visits = transactions.filter(tx => tx.customer_id == formData.customerId && (tx.status === 'completed' || tx.status === 'paid')).length;
+                                                                                            // Count all non-cancelled transactions to stay in sync with history list
+                                                                                            const visits = transactions.filter(tx => tx.customer_id == formData.customerId && tx.status !== 'cancelled').length;
                                                                                             const manual = c?.manual_visit_count || 0;
                                                                                             return `${visits + manual} Visitas`;
                                                                                         })()}
