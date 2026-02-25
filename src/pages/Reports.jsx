@@ -171,20 +171,19 @@ const Reports = () => {
 
     const dateFilteredTxs = getDateFilteredTransactions();
     const calculateTxTotal = (t) => {
-        // Business logic: 
-        // 1. If it's a sale of a plan, the whole total_price/price counts as income.
-        if (t.payment_method === 'membership_sale' || (t.extras || []).some(ex => ex.description?.toUpperCase().includes('VENTA'))) {
-            return parseFloat(t.total_price || t.price || 0);
-        }
-        // 2. If it's a USE of a membership, income is ONLY what's in 'total_price' (which should be just extras)
-        // because the 'price' field represents the service value but not actual money collected now.
+        // 1. Membership Usage Check
+        // If it's a usage benefit, the base income is ALWAYS 0, regardless of what's in total_price/price.
         if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
-            return parseFloat(t.total_price) || 0;
+            const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+            return extrasSum;
         }
-        // 3. Normal transaction: trust total_price if exists, or fallback to sum
+
+        // 2. Trust total_price if it exists (handles discounts like Maria's $40)
         if (t.total_price !== null && t.total_price !== undefined) {
             return parseFloat(t.total_price) || 0;
         }
+
+        // 3. Fallback to calculating from components
         return (parseFloat(t.price) || 0) +
             (parseFloat(t.tip) || 0) +
             (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);

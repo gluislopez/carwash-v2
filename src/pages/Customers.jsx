@@ -521,6 +521,8 @@ const Customers = () => {
                                 alert("⚠️ Membresía guardada, pero no se pudo registrar el ingreso en los reportes: " + txError.message);
                             } else {
                                 console.log("Transacción de venta registrada con éxito.");
+                                alert("✅ Membresía asignada correctamente y registrada en finanzas.");
+                                window.location.reload(); // Force full refresh to show new financial record
                             }
                         }
                     }
