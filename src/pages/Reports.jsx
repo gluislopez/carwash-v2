@@ -229,7 +229,11 @@ const Reports = () => {
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
-        .filter(t => (!t.service_id || t.service_id === 'null') && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => (t.payment_method === 'membership_sale' || !t.service_id) && (t.status === 'completed' || t.status === 'paid'))
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
+
+    const totalMembershipExtras = dateFilteredTxs
+        .filter(t => (t.payment_method === 'membership_usage' || t.payment_method === 'membership') && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalPending = dateFilteredTxs
@@ -237,7 +241,7 @@ const Reports = () => {
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const membershipUsageCount = dateFilteredTxs
-        .filter(t => t.payment_method === 'membership' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => (t.payment_method === 'membership' || t.payment_method === 'membership_usage') && (t.status === 'completed' || t.status === 'paid'))
         .length;
 
     const getFilteredExpenses = () => {
@@ -890,8 +894,21 @@ const Reports = () => {
                         color: '#ec4899',
                         cursor: 'default'
                     }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>MEMBRESÍAS</span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>VENTA PLANES</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalMembershipsRevenue.toFixed(2)}</span>
+                    </div>
+
+                    <div style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        padding: '0.3rem 0.8rem',
+                        border: '1px solid #8b5cf6',
+                        borderRadius: '6px',
+                        backgroundColor: 'transparent',
+                        color: '#8b5cf6',
+                        cursor: 'default'
+                    }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EXTRAS MEMB.</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalMembershipExtras.toFixed(2)}</span>
                     </div>
                 </div>
             )}

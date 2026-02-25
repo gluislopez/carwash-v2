@@ -533,27 +533,33 @@ const Dashboard = () => {
             // FINANCIAL RECORD: Create a transaction for the membership sale
             const membership = memberships.find(m => m.id === membershipId);
             if (membership) {
+                console.log("Creando transacción de venta para:", membership.name, "Precio:", membership.price);
                 try {
                     const { error: txError } = await supabase.from('transactions').insert([{
                         customer_id: formData.customerId,
                         price: membership.price,
-                        total_price: membership.price, // Required by DB constraint
-                        payment_method: 'cash', // Default to cash
+                        total_price: membership.price,
+                        payment_method: 'membership_sale',
                         status: 'paid',
                         date: new Date().toISOString(),
                         service_id: null,
                         extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
                     }]);
 
-                    if (txError) throw txError;
-                    refreshTransactions(); // Ensure it shows up in history/reports
-                    alert("✅ Membresía asignada correctamente y registrada en finanzas.");
+                    if (txError) {
+                        console.error("Error al registrar venta de membresía:", txError);
+                        alert("⚠️ Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + txError.message);
+                    } else {
+                        console.log("Transacción de membresía registrada con éxito.");
+                        if (typeof refreshTransactions === 'function') refreshTransactions();
+                        alert("✅ Membresía asignada correctamente y registrada en finanzas.");
+                    }
                 } catch (err) {
-                    console.error("Error al registrar venta de membresía:", err);
-                    alert("⚠️ Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + err.message);
+                    console.error("Excepción al registrar flujo de venta:", err);
+                    alert("⚠️ Error técnico al registrar venta: " + err.message);
                 }
             } else {
-                alert("✅ Membresía asignada correctamente.");
+                alert("✅ Membresía asignada correctamente (sin precio definido).");
             }
         } catch (opError) {
             console.error("Error general en handleAssignMembership:", opError);
@@ -1395,7 +1401,7 @@ const Dashboard = () => {
             price: isMembershipUsage ? 0 : basePrice,
             commission_amount: (parseFloat(formData.commissionAmount) || 0) + (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0),
             tip: 0,
-            payment_method: isMembershipUsage ? 'membership' : 'cash',
+            payment_method: isMembershipUsage ? 'membership_usage' : 'cash',
             extras: isMembershipUsage ? [...(formData.extras || []), { description: `Membresía: ${customerMembership.memberships.name}`, price: 0 }] : (formData.extras || []),
 
             status: 'waiting', // Initial Status

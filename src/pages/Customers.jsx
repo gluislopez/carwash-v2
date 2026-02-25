@@ -488,16 +488,24 @@ const Customers = () => {
                         // FINANCIAL RECORD
                         const plan = availablePlans.find(p => p.id === formData.membership_id);
                         if (plan) {
-                            await supabase.from('transactions').insert([{
+                            console.log("Creando transacción de venta de membresía para:", editingCustomer.name, plan.name);
+                            const { error: txError } = await supabase.from('transactions').insert([{
                                 customer_id: editingCustomer.id,
                                 price: plan.price,
                                 total_price: plan.price,
-                                payment_method: 'cash',
+                                payment_method: 'membership_sale',
                                 status: 'paid',
                                 date: new Date().toISOString(),
                                 service_id: null,
                                 extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: plan.price }]
                             }]);
+
+                            if (txError) {
+                                console.error("Error al registrar venta de membresía:", txError);
+                                alert("⚠️ Membresía guardada, pero no se pudo registrar el ingreso en los reportes: " + txError.message);
+                            } else {
+                                console.log("Transacción de venta registrada con éxito.");
+                            }
                         }
                     }
                 } else {
