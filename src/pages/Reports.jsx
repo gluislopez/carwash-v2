@@ -110,70 +110,9 @@ const Reports = () => {
     };
 
     // Filter Logic
-    const getFilteredTransactions = () => {
-        if (!allTransactions) return [];
-
-        const today = new Date();
-        let start = new Date();
-        let end = new Date();
-
-        // Adjust dates based on range
-        if (dateRange === 'today') {
-            // Start and end are today
-        } else if (dateRange === 'week') {
-            const day = today.getDay();
-            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-            start.setDate(diff); // Monday
-            end.setDate(start.getDate() + 6); // Sunday
-        } else if (dateRange === 'month') {
-            start = new Date(today.getFullYear(), today.getMonth(), 1);
-            end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        } else if (dateRange === 'custom') {
-            if (!startDate || !endDate) return [];
-            start = new Date(startDate);
-            end = new Date(endDate);
-        }
-
-        // Normalize strings for comparison
-        const startStr = getPRDateString(start);
-        const endStr = getPRDateString(end);
-
-        return allTransactions.filter(t => {
-            const dateToUse = t.date || t.created_at;
-            const tDateStr = getPRDateString(dateToUse);
-
-            // 1. First check Day Filter (sub-filter)
-            if (selectedDay) {
-                if (tDateStr !== selectedDay) return false;
-            } else {
-                // Standard Range Filter
-                if (dateRange === 'today') {
-                    if (tDateStr !== startStr) return false;
-                } else {
-                    if (tDateStr < startStr || tDateStr > endStr) return false;
-                }
-            }
-
-            // Payment Method Filter
-            if (paymentMethodFilter !== 'all' && t.payment_method !== paymentMethodFilter) {
-                return false;
-            }
-
-            // Role Filter: Admin/Manager sees all, Employees see assigned + Membership sales (for transparency)
-            if (userRole === 'admin' || userRole === 'manager') return true;
-            if (!t.service_id) return true; // Show membership/miscellaneous sales to everyone
-
-            const isAssigned = t.transaction_assignments?.some(a => a.employee_id === myEmployeeId);
-            const isPrimary = t.employee_id === myEmployeeId;
-            return isAssigned || isPrimary;
-        });
-    };
-
-
-
-    // Calculate totals based on DATE FILTER ONLY (to show in buttons)
     const getDateFilteredTransactions = () => {
         if (!allTransactions) return [];
+
         const today = new Date();
         let start = new Date();
         let end = new Date();
@@ -200,7 +139,6 @@ const Reports = () => {
             const dateToUse = t.date || t.created_at;
             const tDateStr = getPRDateString(dateToUse);
 
-            // If a specific day is selected, only return that day
             if (selectedDay) {
                 return tDateStr === selectedDay;
             }
@@ -210,8 +148,40 @@ const Reports = () => {
         });
     };
 
+    const getFullyFilteredTransactions = () => {
+        const dateTxs = getDateFilteredTransactions();
+        return dateTxs.filter(t => {
+            // Payment Method Filter
+            if (paymentMethodFilter !== 'all' && t.payment_method !== paymentMethodFilter) {
+                return false;
+            }
+
+            // Role Filter
+            if (userRole === 'admin' || userRole === 'manager') return true;
+            if (!t.service_id) return true;
+
+            const isAssigned = t.transaction_assignments?.some(a => a.employee_id === myEmployeeId);
+            const isPrimary = t.employee_id === myEmployeeId;
+            return isAssigned || isPrimary;
+        });
+    };
+
+
+
+
     const dateFilteredTxs = getDateFilteredTransactions();
     const calculateTxTotal = (t) => {
+        // Business logic: 
+        // 1. If it's a sale of a plan, the whole total_price/price counts as income.
+        if (t.payment_method === 'membership_sale' || (t.extras || []).some(ex => ex.description?.toUpperCase().includes('VENTA'))) {
+            return parseFloat(t.total_price || t.price || 0);
+        }
+        // 2. If it's a USE of a membership, income is ONLY what's in 'total_price' (which should be just extras)
+        // because the 'price' field represents the service value but not actual money collected now.
+        if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
+            return parseFloat(t.total_price) || 0;
+        }
+        // 3. Normal transaction: trust total_price if exists, or fallback to sum
         if (t.total_price !== null && t.total_price !== undefined) {
             return parseFloat(t.total_price) || 0;
         }
@@ -299,7 +269,7 @@ const Reports = () => {
         });
     };
 
-    const filteredTransactions = getFilteredTransactions().sort((a, b) => {
+    const filteredTransactions = getFullyFilteredTransactions().sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
         if (dateB - dateA !== 0) return dateB - dateA;
