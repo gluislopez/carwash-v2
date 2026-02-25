@@ -171,53 +171,63 @@ const Reports = () => {
 
     const dateFilteredTxs = getDateFilteredTransactions();
     const calculateTxTotal = (t) => {
-        // 1. Membership Usage Check
-        // If it's a usage benefit, the base income is ALWAYS 0, regardless of what's in total_price/price.
+        // PRIORITY 1: If it's a SALE (Money coming in), we count the full price.
+        const desc = (t.extras || []).map(ex => ex.description?.toUpperCase()).join(' ');
+        const isSale = t.payment_method === 'membership_sale' || desc.includes('VENTA');
+
+        if (isSale) {
+            return parseFloat(t.total_price || t.price || 0);
+        }
+
+        // PRIORITY 2: If it's a USE of membership (Benefit), income is 0 + extras.
         if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
             const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
             return extrasSum;
         }
 
-        // 2. Trust total_price if it exists (handles discounts like Maria's $40)
+        // PRIORITY 3: Standard Transaction (Discounts/Normal)
         if (t.total_price !== null && t.total_price !== undefined) {
             return parseFloat(t.total_price) || 0;
         }
 
-        // 3. Fallback to calculating from components
         return (parseFloat(t.price) || 0) +
             (parseFloat(t.tip) || 0) +
             (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
     };
 
+    // Income Categorization Helper (Unified Logic)
+    const getTransactionCategory = (t) => {
+        const desc = (t.extras || []).map(ex => ex.description?.toUpperCase()).join(' ');
+        if (t.payment_method === 'membership_sale' || desc.includes('VENTA')) return 'membership_sale';
+        if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') return 'membership_usage';
+        if (t.payment_method === 'transfer') return 'transfer';
+        if (t.payment_method === 'card') return 'card';
+        if (t.payment_method === 'cash' || !t.payment_method) return 'cash';
+        return 'other';
+    };
+
     const totalCash = dateFilteredTxs
-        .filter(t => (t.payment_method === 'cash' || !t.payment_method) && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'cash' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalTransfer = dateFilteredTxs
-        .filter(t => t.payment_method === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalCard = dateFilteredTxs
-        .filter(t => t.payment_method === 'card' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'card' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalOthers = dateFilteredTxs
-        .filter(t => !['cash', 'transfer', 'card', 'membership_sale', 'membership_usage', 'membership'].includes(t.payment_method) && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'other' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
-        .filter(t => {
-            const isSaleMethod = t.payment_method === 'membership_sale';
-            const hasSaleInExtras = (t.extras || []).some(ex => {
-                const desc = ex.description?.toUpperCase() || '';
-                return desc.includes('VENTA') && (desc.includes('MEMBRE') || desc.includes('PLAN'));
-            });
-            return (isSaleMethod || hasSaleInExtras) && (t.status === 'completed' || t.status === 'paid');
-        })
+        .filter(t => getTransactionCategory(t) === 'membership_sale' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipExtras = dateFilteredTxs
-        .filter(t => (t.payment_method === 'membership_usage' || t.payment_method === 'membership') && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'membership_usage' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalPending = dateFilteredTxs
@@ -225,7 +235,7 @@ const Reports = () => {
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const membershipUsageCount = dateFilteredTxs
-        .filter(t => (t.payment_method === 'membership' || t.payment_method === 'membership_usage') && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => (getTransactionCategory(t) === 'membership_usage') && (t.status === 'completed' || t.status === 'paid'))
         .length;
 
     const getFilteredExpenses = () => {
@@ -360,14 +370,14 @@ const Reports = () => {
         filteredTransactions.forEach(t => {
             const dateKey = getPRDateString(t.date);
             if (!groups[dateKey]) {
-                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, membershipIncome: 0 };
+                groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, membershipSaleIncome: 0, otherIncome: 0 };
             }
 
             const isPaid = t.status === 'completed' || t.status === 'paid';
             const isPending = t.status === 'ready' || t.status === 'in_progress' || t.status === 'waiting';
 
-            const txIncome = isPaid ? (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0) : 0;
-            const txPending = isPending ? (parseFloat(t.price) || 0) : 0;
+            const txIncome = isPaid ? calculateTxTotal(t) : 0; // Use the unified calculateTxTotal
+            const txPending = isPending ? (parseFloat(t.price) || 0) : 0; // Pending still uses base price
             const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
 
             groups[dateKey].count += 1;
@@ -376,13 +386,13 @@ const Reports = () => {
             groups[dateKey].commissions += txCommission;
 
             if (isPaid) {
-                if (t.payment_method === 'cash') groups[dateKey].cashIncome += txIncome;
-                else if (t.payment_method === 'transfer') groups[dateKey].transferIncome += txIncome;
-                else if (t.payment_method === 'card') groups[dateKey].cardIncome += txIncome;
-
-                if (!t.service_id) {
-                    groups[dateKey].membershipIncome += (parseFloat(t.price) || 0);
-                }
+                const category = getTransactionCategory(t);
+                if (category === 'cash') groups[dateKey].cashIncome += txIncome;
+                else if (category === 'transfer') groups[dateKey].transferIncome += txIncome;
+                else if (category === 'card') groups[dateKey].cardIncome += txIncome;
+                else if (category === 'membership_sale') groups[dateKey].membershipSaleIncome += txIncome;
+                else if (category === 'other') groups[dateKey].otherIncome += txIncome;
+                // membership_usage has 0 income, so no need to add
             }
         });
 
@@ -391,7 +401,7 @@ const Reports = () => {
             filteredExpenses.forEach(e => {
                 const dateKey = getPRDateString(e.date);
                 if (!groups[dateKey]) {
-                    groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, pending: 0 };
+                    groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, membershipSaleIncome: 0, otherIncome: 0, pending: 0 };
                 }
 
                 if (e.category === 'product') {
@@ -419,11 +429,13 @@ const Reports = () => {
         cashIncome: acc.cashIncome + (row.cashIncome || 0),
         transferIncome: acc.transferIncome + (row.transferIncome || 0),
         cardIncome: acc.cardIncome + (row.cardIncome || 0),
+        membershipSaleIncome: acc.membershipSaleIncome + (row.membershipSaleIncome || 0),
+        otherIncome: acc.otherIncome + (row.otherIncome || 0),
         pending: acc.pending + (row.pending || 0),
         commissions: acc.commissions + (row.commissions || 0),
         productExpenses: acc.productExpenses + (row.productExpenses || 0),
         net: acc.net + ((row.income || 0) - (row.commissions || 0) - (row.productExpenses || 0))
-    }), { count: 0, income: 0, cashIncome: 0, transferIncome: 0, pending: 0, commissions: 0, productExpenses: 0, net: 0 });
+    }), { count: 0, income: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, membershipSaleIncome: 0, otherIncome: 0, pending: 0, commissions: 0, productExpenses: 0, net: 0 });
 
     // Handlers
     const handlePaymentMethodUpdate = async (transactionId, newMethod) => {
@@ -869,44 +881,59 @@ const Reports = () => {
                         <span style={{ fontSize: '0.9rem' }}>${totalPending.toFixed(2)}</span>
                     </div>
 
-                    <div style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        padding: '0.3rem 0.8rem',
-                        border: '1px solid #ec4899',
-                        borderRadius: '6px',
-                        backgroundColor: 'transparent',
-                        color: '#ec4899',
-                        cursor: 'default'
-                    }}>
+                    <button
+                        onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'membership_sale' ? 'all' : 'membership_sale')}
+                        title={paymentMethodFilter === 'membership_sale' ? "Mostrar Todos" : "Filtrar solo Venta Planes"}
+                        style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '0.3rem 0.8rem',
+                            border: '1px solid #ec4899',
+                            borderRadius: '6px',
+                            backgroundColor: paymentMethodFilter === 'membership_sale' ? '#ec4899' : 'transparent',
+                            color: paymentMethodFilter === 'membership_sale' ? 'white' : '#ec4899',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>VENTA PLANES</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalMembershipsRevenue.toFixed(2)}</span>
-                    </div>
+                    </button>
 
-                    <div style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        padding: '0.3rem 0.8rem',
-                        border: '1px solid #8b5cf6',
-                        borderRadius: '6px',
-                        backgroundColor: 'transparent',
-                        color: '#8b5cf6',
-                        cursor: 'default'
-                    }}>
+                    <button
+                        onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'membership_usage' ? 'all' : 'membership_usage')}
+                        title={paymentMethodFilter === 'membership_usage' ? "Mostrar Todos" : "Filtrar solo Extras Memb."}
+                        style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '0.3rem 0.8rem',
+                            border: '1px solid #8b5cf6',
+                            borderRadius: '6px',
+                            backgroundColor: paymentMethodFilter === 'membership_usage' ? '#8b5cf6' : 'transparent',
+                            color: paymentMethodFilter === 'membership_usage' ? 'white' : '#8b5cf6',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EXTRAS MEMB.</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalMembershipExtras.toFixed(2)}</span>
-                    </div>
+                    </button>
 
-                    <div style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        padding: '0.3rem 0.8rem',
-                        border: '1px solid #64748b',
-                        borderRadius: '6px',
-                        backgroundColor: 'transparent',
-                        color: '#64748b',
-                        cursor: 'default'
-                    }}>
+                    <button
+                        onClick={() => setPaymentMethodFilter(paymentMethodFilter === 'other' ? 'all' : 'other')}
+                        title={paymentMethodFilter === 'other' ? "Mostrar Todos" : "Filtrar solo Otros"}
+                        style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            padding: '0.3rem 0.8rem',
+                            border: '1px solid #64748b',
+                            borderRadius: '6px',
+                            backgroundColor: paymentMethodFilter === 'other' ? '#64748b' : 'transparent',
+                            color: paymentMethodFilter === 'other' ? 'white' : '#64748b',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>OTROS</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalOthers.toFixed(2)}</span>
-                    </div>
+                    </button>
                 </div>
             )}
 
@@ -1204,6 +1231,8 @@ const Reports = () => {
                                         <th style={{ padding: '0.75rem', color: 'var(--success)' }}>Efectivo</th>
                                         <th style={{ padding: '0.75rem', color: '#3B82F6' }}>Tarjeta</th>
                                         <th style={{ padding: '0.75rem', color: 'var(--warning)' }}>ATH Móvil</th>
+                                        <th style={{ padding: '0.75rem', color: '#ec4899' }}>Venta Plan</th>
+                                        <th style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Otros</th>
                                         <th style={{ padding: '0.75rem', color: 'var(--success)', fontWeight: 'bold' }}>Total Ingresos (+)</th>
                                         <th style={{ padding: '0.75rem', color: '#6366F1' }}>Pendiente</th>
                                         <th style={{ padding: '0.75rem', color: 'var(--warning)' }}>Comisiones (-)</th>
@@ -1219,6 +1248,8 @@ const Reports = () => {
                                             <td style={{ padding: '0.75rem', color: 'var(--success)' }}>${(row.cashIncome || 0).toFixed(2)}</td>
                                             <td style={{ padding: '0.75rem', color: '#3B82F6' }}>${(row.cardIncome || 0).toFixed(2)}</td>
                                             <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${(row.transferIncome || 0).toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: '#ec4899' }}>${(row.membershipSaleIncome || 0).toFixed(2)}</td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>${(row.otherIncome || 0).toFixed(2)}</td>
                                             <td style={{ padding: '0.75rem', color: 'var(--success)', fontWeight: 'bold' }}>${row.income.toFixed(2)}</td>
                                             <td style={{ padding: '0.75rem', color: '#6366F1' }}>${row.pending.toFixed(2)}</td>
                                             <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${row.commissions.toFixed(2)}</td>
@@ -1233,6 +1264,8 @@ const Reports = () => {
                                         <td style={{ padding: '0.75rem', color: 'var(--success)' }}>${totals.cashIncome.toFixed(2)}</td>
                                         <td style={{ padding: '0.75rem', color: '#3B82F6' }}>${(totals.cardIncome || 0).toFixed(2)}</td>
                                         <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${totals.transferIncome.toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: '#ec4899' }}>${(totals.membershipSaleIncome || 0).toFixed(2)}</td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>${(totals.otherIncome || 0).toFixed(2)}</td>
                                         <td style={{ padding: '0.75rem', color: 'var(--success)' }}>${totals.income.toFixed(2)}</td>
                                         <td style={{ padding: '0.75rem', color: '#6366F1' }}>${totals.pending.toFixed(2)}</td>
                                         <td style={{ padding: '0.75rem', color: 'var(--warning)' }}>${totals.commissions.toFixed(2)}</td>
@@ -1255,6 +1288,8 @@ const Reports = () => {
                                             <div style={{ color: 'var(--success)' }}>Efectivo: ${(row.cashIncome || 0).toFixed(2)}</div>
                                             <div style={{ color: '#3B82F6' }}>Tarjeta: ${(row.cardIncome || 0).toFixed(2)}</div>
                                             <div style={{ color: 'var(--warning)' }}>ATH Móvil: ${(row.transferIncome || 0).toFixed(2)}</div>
+                                            <div style={{ color: '#ec4899' }}>Venta Plan: ${(row.membershipSaleIncome || 0).toFixed(2)}</div>
+                                            <div style={{ color: 'var(--text-muted)' }}>Otros: ${(row.otherIncome || 0).toFixed(2)}</div>
                                             <div style={{ color: 'var(--success)', fontWeight: 'bold' }}>Ingresos: ${row.income.toFixed(2)}</div>
                                             <div style={{ color: '#6366F1' }}>Pendiente: ${row.pending.toFixed(2)}</div>
                                             <div style={{ color: 'var(--warning)' }}>Comisiones: ${row.commissions.toFixed(2)}</div>
@@ -1383,9 +1418,9 @@ const Reports = () => {
                                                         fontSize: '0.75rem',
                                                         padding: '0.1rem 0.4rem',
                                                         borderRadius: '4px',
-                                                        backgroundColor: t.payment_method === 'cash' ? 'rgba(16, 185, 129, 0.2)' : t.payment_method === 'card' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                                                        color: t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B',
-                                                        border: `1px solid ${t.payment_method === 'cash' ? '#10B981' : t.payment_method === 'card' ? '#3B82F6' : '#F59E0B'}`,
+                                                        backgroundColor: getTransactionCategory(t) === 'cash' ? 'rgba(16, 185, 129, 0.2)' : getTransactionCategory(t) === 'card' ? 'rgba(59, 130, 246, 0.2)' : getTransactionCategory(t) === 'transfer' ? 'rgba(245, 158, 11, 0.2)' : getTransactionCategory(t) === 'membership_sale' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(100, 116, 139, 0.2)',
+                                                        color: getTransactionCategory(t) === 'cash' ? '#10B981' : getTransactionCategory(t) === 'card' ? '#3B82F6' : getTransactionCategory(t) === 'transfer' ? '#F59E0B' : getTransactionCategory(t) === 'membership_sale' ? '#ec4899' : '#64748b',
+                                                        border: `1px solid ${getTransactionCategory(t) === 'cash' ? '#10B981' : getTransactionCategory(t) === 'card' ? '#3B82F6' : getTransactionCategory(t) === 'transfer' ? '#F59E0B' : getTransactionCategory(t) === 'membership_sale' ? '#ec4899' : '#64748b'}`,
                                                         cursor: userRole === 'admin' ? 'pointer' : 'default',
                                                         background: 'none', // Reset button default
                                                         // Re-apply background manually since button resets it or combine
@@ -1395,7 +1430,7 @@ const Reports = () => {
                                                     <span style={{
                                                         // Move styles here to ensure they apply inside the button or just style the button
                                                     }}>
-                                                        {getPaymentMethodLabel(t.payment_method)}
+                                                        {getPaymentMethodLabel(getTransactionCategory(t))}
                                                     </span>
                                                 </button>
                                             )}
@@ -1469,7 +1504,7 @@ const Reports = () => {
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '1.1rem' }}>
                                             {userRole === 'admin' ? (
-                                                `$${(parseFloat(t.price) || 0).toFixed(2)}`
+                                                `$${calculateTxTotal(t).toFixed(2)}`
                                             ) : (
                                                 (() => {
                                                     const txTotalCommission = (parseFloat(t.commission_amount) || 0);
@@ -1484,7 +1519,7 @@ const Reports = () => {
                                                 })()
                                             )}
                                         </div>
-                                        <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{getPaymentMethodLabel(t.payment_method)}</div>
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{getPaymentMethodLabel(getTransactionCategory(t))}</div>
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
@@ -1862,32 +1897,25 @@ const Reports = () => {
                                 <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Por Método de Pago</h4>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        {['cash', 'card', 'transfer', 'membership_sale', 'other'].map(method => {
-                                            let total = 0;
-                                            if (method === 'other') {
-                                                total = dateFilteredTxs
-                                                    .filter(t => !['cash', 'card', 'transfer', 'membership_sale', 'membership_usage', 'membership'].includes(t.payment_method) && (t.status === 'completed' || t.status === 'paid'))
-                                                    .reduce((sum, t) => sum + calculateTxTotal(t), 0);
-                                            } else {
-                                                total = dateFilteredTxs
-                                                    .filter(t => (t.payment_method === method || (method === 'cash' && !t.payment_method)) && (t.status === 'completed' || t.status === 'paid'))
-                                                    .reduce((sum, t) => sum + calculateTxTotal(t), 0);
-                                            }
+                                        {['cash', 'card', 'transfer', 'membership_sale', 'other'].map(methodKey => {
+                                            const total = dateFilteredTxs
+                                                .filter(t => getTransactionCategory(t) === methodKey && (t.status === 'completed' || t.status === 'paid'))
+                                                .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
-                                            if (method === 'other' && total === 0) return null;
+                                            if (methodKey === 'other' && total === 0) return null;
 
                                             const percent = totalIncome > 0 ? (total / totalIncome) * 100 : 0;
 
                                             // Determine Label & Color
                                             let label = 'Otros';
                                             let color = 'var(--text-muted)';
-                                            if (method === 'cash') { label = 'Efectivo'; color = '#10B981'; }
-                                            if (method === 'card') { label = 'Tarjeta'; color = '#3B82F6'; }
-                                            if (method === 'transfer') { label = 'ATH Móvil'; color = '#F59E0B'; }
-                                            if (method === 'membership_sale') { label = 'Membresías'; color = '#ec4899'; }
+                                            if (methodKey === 'cash') { label = 'Efectivo'; color = '#10B981'; }
+                                            if (methodKey === 'card') { label = 'Tarjeta'; color = '#3B82F6'; }
+                                            if (methodKey === 'transfer') { label = 'ATH Móvil'; color = '#F59E0B'; }
+                                            if (methodKey === 'membership_sale') { label = 'Membresías'; color = '#ec4899'; }
 
                                             return (
-                                                <tr key={method} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                <tr key={methodKey} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                                     <td style={{ padding: '0.5rem' }}>{label}</td>
                                                     <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color }}>
                                                         ${total.toFixed(2)}
