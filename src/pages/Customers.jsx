@@ -36,6 +36,26 @@ const Customers = () => {
     const [customerHistory, setCustomerHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
+    const handleDeleteFromHistory = async (txId) => {
+        if (!window.confirm('¿Seguro que deseas ELIMINAR/CANCELAR este servicio?')) return;
+        try {
+            const { error } = await supabase
+                .from('transactions')
+                .update({
+                    status: 'cancelled',
+                    price: 0,
+                    commission_amount: 0,
+                    extras: []
+                })
+                .eq('id', txId);
+            if (error) throw error;
+            setCustomerHistory(prev => prev.filter(tx => tx.id !== txId));
+            getVisitCounts();
+        } catch (error) {
+            alert('Error al borrar: ' + error.message);
+        }
+    };
+
     const openHistory = async (customer) => {
         setSelectedHistoryCustomer(customer);
         setLoadingHistory(true);
@@ -1433,7 +1453,13 @@ const Customers = () => {
                                         <div key={tx.id} style={{ padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                 <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
-                                                    {tx.services?.name || 'Servicio Desconocido'}
+                                                    {(() => {
+                                                        const method = (tx.payment_method || '').toLowerCase();
+                                                        const desc = (tx.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+                                                        if (method === 'membership' || method === 'membership_usage') return '💎 Beneficio de Membresía';
+                                                        if (method === 'membership_sale' || desc.includes('VENTA') || desc.includes('PLAN')) return '💖 Renovación de Membresía';
+                                                        return tx.services?.name || 'Servicio';
+                                                    })()}
                                                 </span>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                                     {new Date(tx.date).toLocaleDateString()}
@@ -1449,10 +1475,18 @@ const Customers = () => {
                                                 </span>
                                                 <span style={{ fontWeight: 'bold' }}>${tx.price}</span>
                                             </div>
-                                            <div style={{ marginTop: '0.5rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem', borderTop: '1px dashed var(--border-color)', paddingTop: '0.5rem' }}>
                                                 <span className={`badge badge-${tx.status}`} style={{ fontSize: '0.7rem' }}>
                                                     {tx.status.toUpperCase()}
                                                 </span>
+                                                {(userRole === 'admin' || userRole === 'manager') && (
+                                                    <button
+                                                        onClick={() => handleDeleteFromHistory(tx.id)}
+                                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem' }}
+                                                    >
+                                                        <Trash2 size={14} /> Eliminar
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
