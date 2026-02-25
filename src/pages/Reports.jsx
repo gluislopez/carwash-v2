@@ -146,6 +146,7 @@ const Reports = () => {
             case 'membership_sale': return 'Venta Plan';
             case 'membership_usage': return 'Uso Memb.';
             case 'membership': return 'Membresía';
+            case 'unpaid': return 'Deuda';
             default: return 'Otro';
         }
     };
@@ -368,6 +369,9 @@ const Reports = () => {
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
+        // Count commissions for Completed, Paid, and Unpaid (Debtors)
+        if (t.status !== 'completed' && t.status !== 'paid' && t.status !== 'unpaid') return sum;
+
         const totalBaseComm = (parseFloat(t.commission_amount) || 0);
         const totalTip = (parseFloat(t.tip) || 0);
         const employeeCount = (t.transaction_assignments && t.transaction_assignments.length > 0)
@@ -443,7 +447,10 @@ const Reports = () => {
 
             const txIncome = isPaid ? calculateTxTotal(t) : 0; // Use the unified calculateTxTotal
             const txPending = isPending ? (parseFloat(t.price) || 0) : 0; // Pending still uses base price
-            const txCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
+
+            // Commissions count for Completed, Paid, and Unpaid (Debtors)
+            const isEarned = isPaid || t.status === 'unpaid';
+            const txCommission = isEarned ? ((parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0)) : 0;
 
             groups[dateKey].count += 1;
             groups[dateKey].income += txIncome;
@@ -1281,7 +1288,7 @@ const Reports = () => {
                                     <div>
                                         {(() => {
                                             const completedTxs = filteredTransactions.filter(t =>
-                                                (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') &&
+                                                (t.status === 'completed' || t.status === 'paid' || t.status === 'ready' || t.status === 'unpaid') &&
                                                 t.finished_at && t.created_at
                                             );
 
@@ -1488,7 +1495,7 @@ const Reports = () => {
                                             )}
                                         </td>
                                         <td style={{ padding: '1rem' }}>
-                                            {(t.status === 'completed' || t.status === 'paid' || t.status === 'ready') ? (
+                                            {(t.status === 'completed' || t.status === 'paid' || t.status === 'ready' || t.status === 'unpaid') ? (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
                                                         {(() => {
@@ -1498,6 +1505,7 @@ const Reports = () => {
                                                             return formatDuration(totalMins);
                                                         })()}
                                                     </span>
+                                                    {t.status === 'unpaid' && <span style={{ fontSize: '0.7rem', backgroundColor: '#ef4444', color: 'white', padding: '1px 4px', borderRadius: '4px' }}>D</span>}
                                                 </div>
                                             ) : (
                                                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>En Curso</span>
@@ -2045,7 +2053,7 @@ const Reports = () => {
                                         {(() => {
                                             const serviceStats = {};
                                             dateFilteredTxs
-                                                .filter(t => (t.status === 'completed' || t.status === 'paid') && t.service_id)
+                                                .filter(t => (t.status === 'completed' || t.status === 'paid' || t.status === 'unpaid') && t.service_id)
                                                 .forEach(t => {
                                                     const sId = t.service_id;
                                                     if (!serviceStats[sId]) serviceStats[sId] = { count: 0, amount: 0 };
@@ -2128,10 +2136,10 @@ const Reports = () => {
                                                 padding: '2px 6px',
                                                 borderRadius: '4px',
                                                 fontSize: '0.7rem',
-                                                background: (t.status === 'completed' || t.status === 'paid') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(220, 38, 38, 0.2)',
-                                                color: (t.status === 'completed' || t.status === 'paid') ? '#10B981' : '#f87171'
+                                                background: (t.status === 'completed' || t.status === 'paid') ? 'rgba(16, 185, 129, 0.2)' : t.status === 'unpaid' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(220, 38, 38, 0.2)',
+                                                color: (t.status === 'completed' || t.status === 'paid') ? '#10B981' : t.status === 'unpaid' ? '#ef4444' : '#f87171'
                                             }}>
-                                                {t.status}
+                                                {t.status === 'unpaid' ? 'DEUDA' : t.status}
                                             </span>
                                         </td>
                                         <td style={{ padding: '0.5rem', opacity: 0.6 }}>${(parseFloat(t.price) || 0).toFixed(2)}</td>

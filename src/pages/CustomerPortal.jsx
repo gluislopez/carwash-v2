@@ -443,11 +443,43 @@ const CustomerPortal = () => {
 
     // ... useEffect ...
 
+    const unpaidTxs = useMemo(() => history.filter(t => t.status === 'unpaid'), [history]);
+    const prTime = new Date().toLocaleString("en-US", { timeZone: "America/Puerto_Rico" });
+    const prDate = new Date(prTime);
+    const showsDebtAlert = unpaidTxs.length > 0 && (prDate.getHours() > 16 || (prDate.getHours() === 16 && prDate.getMinutes() >= 30));
+
     if (loading) return <div className="p-8 text-center text-white bg-slate-900 min-h-screen">Cargando perfil...</div>;
     if (!customer) return <div className="p-8 text-center text-white bg-slate-900 min-h-screen">Cliente no encontrado.</div>;
 
     return (
         <div style={{ fontFamily: "'Outfit', sans-serif", backgroundColor: '#f3f4f6', minHeight: '100vh', paddingBottom: '2rem' }}>
+            {/* DEBT ALERT BANNER */}
+            {showsDebtAlert && (
+                <div style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    padding: '1rem',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1000,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <DollarSign size={20} />
+                        PAGO PENDIENTE REQUERIDO
+                    </div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.9, fontWeight: 'normal' }}>
+                        Tienes {unpaidTxs.length} servicio{unpaidTxs.length > 1 ? 's' : ''} pendiente{unpaidTxs.length > 1 ? 's' : ''} de pago.
+                    </div>
+                </div>
+            )}
             {/* HERDER */}
             <div style={{ backgroundColor: '#1e293b', color: 'white', padding: '2rem 1rem 3.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <img src={branding.logo} alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '1rem', marginBottom: '1rem', objectFit: 'contain', backgroundColor: 'transparent' }} />

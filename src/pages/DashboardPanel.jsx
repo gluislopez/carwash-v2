@@ -353,6 +353,46 @@ const Dashboard = () => {
         window.location.href = url;
     };
 
+    const handleMarkAsUnpaid = async (tx) => {
+        if (!window.confirm(`¿Confirmas que el cliente retiró el vehículo sin pagar? Se moverá a la lista de deudores.`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('transactions')
+                .update({
+                    status: 'unpaid',
+                    finished_at: tx.finished_at || new Date().toISOString()
+                })
+                .eq('id', tx.id);
+
+            if (error) throw error;
+
+            await refreshTransactions();
+            alert("Vehículo movido a Deudores (Falta Pago).");
+        } catch (error) {
+            console.error("Error marking as unpaid:", error);
+            alert("Error: " + error.message);
+        }
+    };
+
+    const handleSendDebtReminder = (tx) => {
+        if (!tx.customers?.phone) return alert("El cliente no tiene teléfono.");
+
+        const phone = tx.customers.phone.replace(/\D/g, '');
+        const customerName = (tx.customers?.name || '').split(' ')[0];
+
+        const extrasTotal = tx.extras?.reduce((sum, e) => sum + e.price, 0) || 0;
+        const totalToPay = (parseFloat(tx.price) + extrasTotal).toFixed(2);
+        const serviceName = getServiceName(tx.service_id);
+        const dateStr = new Date(tx.created_at).toLocaleDateString();
+
+        const portalLink = `${window.location.origin}/portal/${tx.customer_id}`;
+
+        const message = `Hola ${customerName}, te escribimos de Express CarWash. 👋\n\nTenemos pendiente el pago de tu servicio realizado el ${dateStr}.\n\n🧾 *Detalle:* ${serviceName}\n💰 *Monto:* $${totalToPay}\n\n💳 *Puedes pagar por ATH Móvil:* 787-857-8983\n\n📲 *O ver los detalles aquí:* ${portalLink}\n\n¡Muchas gracias! 🙏`;
+
+        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+    };
+
     // ASSIGNMENT MODAL STATE
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [pendingExtra, setPendingExtra] = useState(null);
@@ -914,7 +954,7 @@ const Dashboard = () => {
     // Filter transactions
     const filteredTransactions = transactions.filter(t => {
         const txDateLocal = getPRDateString(t.date);
-        const isActive = t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready';
+        const isActive = t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready' || t.status === 'unpaid';
 
         if (dateFilter === 'today') {
             const today = getPRDateString(new Date());
@@ -1004,10 +1044,9 @@ const Dashboard = () => {
     const completionCount = filteredTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
     const averageTicket = completionCount > 0 ? (totalIncome / completionCount) : 0;
 
-    // Calcular comisiones basado en el rol (Admin ve total, Empleado ve suyo)
     const totalCommissions = statsTransactions.reduce((sum, t) => {
-        // SOLO contar comisiones si el servicio está COMPLETADO o PAGADO
-        if (t.status !== 'completed' && t.status !== 'paid') return sum;
+        // SOLO contar comisiones si el servicio está COMPLETADO, PAGADO o EN DEUDA (UNPAID)
+        if (t.status !== 'completed' && t.status !== 'paid' && t.status !== 'unpaid') return sum;
 
         // Calcular el monto total de comisión + propina de la transacción
         const txTotalCommission = (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0);
@@ -1645,7 +1684,9 @@ const Dashboard = () => {
                                             const totalIncome = incomeCash + incomeTransfer;
 
                                             const totalTips = completedTxs.reduce((sum, t) => sum + (parseFloat(t.tip) || 0), 0);
-                                            const totalCommissions = completedTxs.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0), 0);
+                                            const totalCommissions = statsTransactions
+                                                .filter(t => t.status === 'completed' || t.status === 'paid' || t.status === 'unpaid')
+                                                .reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0), 0);
 
                                             const expensesProduct = expenses
                                                 .filter(e => {
@@ -2023,7 +2064,7 @@ const Dashboard = () => {
                                 backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
                                 boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
                                 border: activeDetailModal === 'ready_list' ? '2px solid #10B981' : '1px solid var(--border-color)',
-                                transition: 'transform 0.2s'
+                                transition: 'transform 0.2s', flex: 1
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
@@ -2033,6 +2074,27 @@ const Dashboard = () => {
                                 <DollarSign size={24} color="#10B981" />
                                 <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
                                     {statsTransactions.filter(t => t.status === 'ready').length}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CARD: DEUDORES (PENDIENTES DE PAGO) */}
+                        <div
+                            onClick={() => setActiveDetailModal('unpaid_list')}
+                            style={{
+                                backgroundColor: 'var(--bg-card)', padding: '1.25rem', borderRadius: '0.5rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)', cursor: 'pointer',
+                                border: activeDetailModal === 'unpaid_list' ? '2px solid #ef4444' : '1px solid var(--border-color)',
+                                transition: 'transform 0.2s', flex: 1
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <h3 className="label" style={{ marginBottom: '0.5rem', fontSize: '0.8rem', color: '#ef4444' }}>Deudores</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Clock size={24} color="#ef4444" />
+                                <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#ef4444', lineHeight: 1 }}>
+                                    {statsTransactions.filter(t => t.status === 'unpaid').length}
                                 </div>
                             </div>
                         </div>
@@ -2856,6 +2918,14 @@ const Dashboard = () => {
 
                                                                                 <button
                                                                                     className="btn"
+                                                                                    onClick={() => handleMarkAsUnpaid(t)}
+                                                                                    style={{ backgroundColor: '#ef4444', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                                                >
+                                                                                    <Clock size={14} /> <span>A Deudores</span>
+                                                                                </button>
+
+                                                                                <button
+                                                                                    className="btn"
                                                                                     onClick={() => handleRevertToInProgress(t)}
                                                                                     title="Devolver a En Proceso"
                                                                                     style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
@@ -2874,6 +2944,65 @@ const Dashboard = () => {
                                                                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                                                                 >
                                                                                     <QrCode size={14} /> Ver QR
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeDetailModal === 'unpaid_list' && (
+                                            <div>
+                                                {statsTransactions.filter(t => t.status === 'unpaid').length === 0 ? <p>No hay deudas pendientes.</p> : (
+                                                    <ul className="mobile-card-list" style={{ listStyle: 'none', padding: 0 }}>
+                                                        {statsTransactions
+                                                            .filter(t => t.status === 'unpaid')
+                                                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                                            .map(t => {
+                                                                const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+                                                                const brand = (vehicle?.brand && vehicle.brand !== 'null' && vehicle.brand !== 'Generico') ? vehicle.brand : (t.customers?.vehicle_brand || '');
+                                                                const model = vehicle?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Modelo N/A';
+                                                                const vehicleModel = `${brand} ${model}`.trim();
+                                                                const extrasTotal = t.extras?.reduce((sum, e) => sum + e.price, 0) || 0;
+                                                                const totalToPay = (parseFloat(t.price) + extrasTotal).toFixed(2);
+
+                                                                return (
+                                                                    <li key={t.id} className="mobile-card-item" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(239, 68, 68, 0.05)', marginBottom: '0.5rem', borderRadius: '8px', borderLeft: '4px solid #ef4444' }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                                            <div>
+                                                                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{vehicleModel}</div>
+                                                                                <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                                                    ({vehicle?.plate || t.vehicles?.plate || 'Sin Placa'})
+                                                                                </div>
+                                                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
+                                                                                <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.5rem' }}>DEUDA: ${totalToPay}</div>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                                                                <button
+                                                                                    className="btn"
+                                                                                    onClick={() => handlePayment(t)}
+                                                                                    style={{ backgroundColor: 'var(--success)', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                                >
+                                                                                    <DollarSign size={18} /> <span style={{ fontWeight: '600' }}>Cobrar</span>
+                                                                                </button>
+
+                                                                                <button
+                                                                                    className="btn"
+                                                                                    onClick={() => handleSendDebtReminder(t)}
+                                                                                    style={{ backgroundColor: '#25D366', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                                                                >
+                                                                                    <Phone size={16} /> <span>Recordar</span>
+                                                                                </button>
+
+                                                                                <button
+                                                                                    onClick={() => setEditingTransactionId(t.id)}
+                                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                                                >
+                                                                                    Editar
                                                                                 </button>
                                                                             </div>
                                                                         </div>
