@@ -194,7 +194,8 @@ const Reports = () => {
         const endStr = getPRDateString(end);
 
         return allTransactions.filter(t => {
-            const tDateStr = getPRDateString(t.date);
+            const dateToUse = t.date || t.created_at;
+            const tDateStr = getPRDateString(dateToUse);
 
             // If a specific day is selected, only return that day
             if (selectedDay) {
@@ -207,25 +208,29 @@ const Reports = () => {
     };
 
     const dateFilteredTxs = getDateFilteredTransactions();
+    const calculateTxTotal = (t) => {
+        return parseFloat(t.total_price || (
+            (parseFloat(t.price) || 0) +
+            (parseFloat(t.tip) || 0) +
+            (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)
+        )) || 0;
+    };
+
     const totalCash = dateFilteredTxs
-        .filter(t => t.payment_method === 'cash' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
+        .filter(t => (t.payment_method === 'cash' || !t.payment_method) && (t.status === 'completed' || t.status === 'paid'))
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalTransfer = dateFilteredTxs
         .filter(t => t.payment_method === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalCard = dateFilteredTxs
         .filter(t => t.payment_method === 'card' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
         .filter(t => (!t.service_id || t.service_id === 'null') && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => {
-            // Include everything that looks like a membership sale or miscellany
-            const val = parseFloat(t.total_price || t.price || 0);
-            return sum + val;
-        }, 0);
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalPending = dateFilteredTxs
         .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
@@ -295,9 +300,9 @@ const Reports = () => {
         return sum + (1 / count);
     }, 0);
 
-    const totalIncome = filteredTransactions
+    const totalIncome = dateFilteredTxs
         .filter(t => t.status === 'completed' || t.status === 'paid')
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
         const totalBaseComm = (parseFloat(t.commission_amount) || 0);
