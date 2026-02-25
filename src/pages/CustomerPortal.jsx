@@ -689,30 +689,42 @@ const CustomerPortal = () => {
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{vehiclePoints}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
-                        </div>
-                        <div style={{ textAlign: 'center', flex: 1.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem' }}>
-                            {availableCouponsCount > 0 ? (
-                                <button
-                                    onClick={() => setShowCouponModal(true)}
-                                    style={{
-                                        backgroundColor: '#4f46e5', color: 'white', padding: '0.4rem 0.6rem',
-                                        borderRadius: '0.5rem', border: 'none', fontWeight: 'bold',
-                                        fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)'
-                                    }}>
-                                    🎁 USAR 50% OFF
-                                </button>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '1.3rem', filter: 'grayscale(0.5)', opacity: 0.8 }}>🎁</div>
-                                    <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.2rem' }}>
-                                        {10 - (vehiclePoints % 10)} pts para 50%
-                                    </div>
+                        {!membership && (
+                            <>
+                                <div style={{ textAlign: 'center', flex: 1 }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{vehiclePoints}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
                                 </div>
-                            )}
-                        </div>
+                                <div style={{ textAlign: 'center', flex: 1.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem' }}>
+                                    {availableCouponsCount > 0 ? (
+                                        <button
+                                            onClick={() => setShowCouponModal(true)}
+                                            style={{
+                                                backgroundColor: '#4f46e5', color: 'white', padding: '0.4rem 0.6rem',
+                                                borderRadius: '0.5rem', border: 'none', fontWeight: 'bold',
+                                                fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)'
+                                            }}>
+                                            🎁 USAR 50% OFF
+                                        </button>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <div style={{ fontSize: '1.3rem', filter: 'grayscale(0.5)', opacity: 0.8 }}>🎁</div>
+                                            <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.2rem' }}>
+                                                {10 - (vehiclePoints % 10)} pts para 50%
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                        {membership && (
+                            <div style={{ flex: 2.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div style={{ fontSize: '1.1rem', color: '#10b981' }}>✨</div>
+                                <div style={{ fontSize: '0.8rem', color: '#166534', fontWeight: '500' }}>
+                                    Programa de lealtad en pausa (Membresía Activa)
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* MEMBERSHIP STATUS BANNER */}

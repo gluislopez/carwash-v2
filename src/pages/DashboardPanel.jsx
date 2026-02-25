@@ -289,8 +289,9 @@ const Dashboard = () => {
                 finished_at: new Date().toISOString()
             });
 
-            // [LOYALTY] Award Point
-            if (transaction.customer_id) {
+            // [LOYALTY] Award Point - ONLY if not membership usage
+            const isMembershipUsageTx = getTransactionCategory(transaction) === 'membership_usage';
+            if (transaction.customer_id && !isMembershipUsageTx) {
                 // Award to customer (compatibility)
                 const { data: customer } = await supabase.from('customers').select('points').eq('id', transaction.customer_id).single();
                 if (customer) {
