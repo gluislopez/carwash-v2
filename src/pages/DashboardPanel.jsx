@@ -600,48 +600,19 @@ const Dashboard = () => {
             if (fetchErr) console.warn("Error fetching updated membership:", fetchErr);
             setCustomerMembership(updatedMembership);
 
-            // FINANCIAL RECORD: Create a transaction for the membership sale
+            /* 
+               FINANCIAL RECORD REMOVED: 
+               The transaction record is now handled automatically by a database trigger (tr_record_membership_sale)
+               to prevent duplication when assigning memberships.
+            */
+            /*
             const membership = memberships.find(m => m.id == membershipId);
             if (membership) {
-                console.log("Creando transacción de venta para:", membership.name, "Precio:", membership.price);
-
-                // FALLBACK for employee_id (REQUIRED by DB)
-                let empId = myEmployeeId;
-                if (!empId) {
-                    const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
-                    empId = fallbackAdmin?.id;
-                }
-
-                try {
-                    const { error: txError } = await supabase.from('transactions').insert([{
-                        customer_id: formData.customerId,
-                        employee_id: empId,
-                        price: parseFloat(membership.price) || 0,
-                        total_price: parseFloat(membership.price) || 0,
-                        payment_method: 'membership_sale',
-                        status: 'paid',
-                        date: new Date().toISOString(),
-                        service_id: null,
-                        commission_amount: 0,
-                        tip: 0,
-                        extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: parseFloat(membership.price) || 0 }]
-                    }]);
-
-                    if (txError) {
-                        console.error("Error al registrar venta de membresía:", txError);
-                        alert("⚠️ Membresía asignada, pero hubo un error al registrar el ingreso en finanzas: " + txError.message);
-                    } else {
-                        console.log("Transacción de membresía registrada con éxito.");
-                        if (typeof refreshTransactions === 'function') refreshTransactions();
-                        alert("✅ Membresía asignada correctamente y registrada en finanzas.");
-                    }
-                } catch (err) {
-                    console.error("Excepción al registrar flujo de venta:", err);
-                    alert("⚠️ Error técnico al registrar venta: " + err.message);
-                }
-            } else {
-                alert("✅ Membresía asignada correctamente (sin precio definido).");
+                // ... (previous manual insert logic)
             }
+            */
+            alert("✅ Membresía asignada correctamente. El registro financiero se genera automáticamente.");
+
         } catch (opError) {
             console.error("Error general en handleAssignMembership:", opError);
             alert("❌ Error al asignar membresía: " + (opError.message || JSON.stringify(opError)));

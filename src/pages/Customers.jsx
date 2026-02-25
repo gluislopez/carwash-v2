@@ -519,39 +519,11 @@ const Customers = () => {
                             alert("Error al guardar membresía: " + upErr.message);
                         }
                     } else {
-                        // FINANCIAL RECORD
-                        const plan = availablePlans.find(p => p.id == formData.membership_id); // Use == for string-number compatibility
+                        // FINANCIAL RECORD REMOVED: Handled by database trigger to prevent duplication.
+                        const plan = availablePlans.find(p => p.id == formData.membership_id);
                         if (plan) {
-                            console.log("Creando transacción de venta de membresía para:", editingCustomer.name, plan.name);
-                            // Ensure we have an employee_id (REQUIRED by DB)
-                            let empId = myEmployeeId;
-                            if (!empId) {
-                                const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
-                                empId = fallbackAdmin?.id;
-                            }
-
-                            const { error: txError } = await supabase.from('transactions').insert([{
-                                customer_id: editingCustomer.id,
-                                employee_id: empId,
-                                price: parseFloat(plan.price) || 0,
-                                total_price: parseFloat(plan.price) || 0,
-                                payment_method: 'membership_sale',
-                                status: 'paid',
-                                date: new Date().toISOString(),
-                                service_id: null,
-                                commission_amount: 0,
-                                tip: 0,
-                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
-                            }]);
-
-                            if (txError) {
-                                console.error("Error al registrar venta de membresía:", txError);
-                                alert("⚠️ Membresía guardada, pero no se pudo registrar el ingreso en los reportes: " + txError.message);
-                            } else {
-                                console.log("Transacción de venta registrada con éxito.");
-                                alert("✅ Membresía asignada correctamente y registrada por $" + plan.price);
-                                window.location.reload();
-                            }
+                            alert("✅ Membresía asignada correctamente. El registro financiero se genera automáticamente.");
+                            window.location.reload();
                         } else {
                             console.warn("No se encontró el plan con ID:", formData.membership_id, "en", availablePlans);
                             alert("✅ Datos guardados, pero no se generó transacción financiera (Plan no encontrado).");

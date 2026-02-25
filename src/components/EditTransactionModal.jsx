@@ -136,36 +136,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             setCustomerMembership(updatedMembership);
             setIsMembershipUsage(true);
 
-            // FINANCIAL RECORD: Create a transaction for the membership sale
+            // FINANCIAL RECORD REMOVED: Handled by database trigger to prevent duplication.
             const membership = memberships.find(m => m.id === membershipId);
             if (membership) {
-                // FALLBACK for employee_id (REQUIRED by DB)
-                let empId = transaction?.employee_id;
-                if (!empId) {
-                    const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
-                    empId = fallbackAdmin?.id;
-                }
-
-                const { error: txError } = await supabase.from('transactions').insert([{
-                    customer_id: cId,
-                    employee_id: empId,
-                    price: parseFloat(membership.price) || 0,
-                    total_price: parseFloat(membership.price) || 0,
-                    payment_method: 'membership_sale',
-                    status: 'paid',
-                    date: new Date().toISOString(),
-                    service_id: null,
-                    commission_amount: 0,
-                    tip: 0,
-                    extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: parseFloat(membership.price) || 0 }]
-                }]);
-
-                if (txError) {
-                    console.error("Error al registrar venta de membresía:", txError);
-                    alert("Membresía asignada, pero hubo un error al registrar el ingreso: " + txError.message);
-                } else {
-                    alert("Membresía asignada correctamente y registrada en finanzas.");
-                }
+                alert("Membresía asignada correctamente. El registro financiero se genera automáticamente.");
             } else {
                 alert("Membresía asignada correctamente.");
             }

@@ -130,6 +130,10 @@ const Reports = () => {
     // Date Helpers
     const getPRDateString = (dateInput) => {
         if (!dateInput) return '';
+        // If it's already a date-only string (YYYY-MM-DD), return it as is to avoid UTC shift
+        if (typeof dateInput === 'string' && dateInput.length === 10 && dateInput.includes('-')) {
+            return dateInput;
+        }
         const date = new Date(dateInput);
         return date.toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
     };
