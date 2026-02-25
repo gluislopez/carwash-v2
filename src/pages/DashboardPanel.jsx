@@ -141,6 +141,24 @@ const Dashboard = () => {
         };
         getUser();
     }, []);
+    const getTransactionCategory = (t) => {
+        if (!t) return 'other';
+        const method = (t.payment_method || '').toLowerCase();
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+
+        // Priority 1: Sale of a Plan
+        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
+
+        // Priority 2: Use of Plan Benefits
+        if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
+
+        // Standard methods
+        if (method === 'transfer') return 'transfer';
+        if (method === 'card') return 'card';
+        if (method === 'cash' || !method) return 'cash';
+        return 'other';
+    };
+
 
     useEffect(() => {
         const fetchMemberships = async () => {
