@@ -228,8 +228,15 @@ const Reports = () => {
         .filter(t => t.payment_method === 'card' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
+    const totalOthers = dateFilteredTxs
+        .filter(t => !['cash', 'transfer', 'card', 'membership_sale', 'membership_usage', 'membership'].includes(t.payment_method) && (t.status === 'completed' || t.status === 'paid'))
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
+
     const totalMembershipsRevenue = dateFilteredTxs
-        .filter(t => (t.payment_method === 'membership_sale' || !t.service_id) && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => (
+            t.payment_method === 'membership_sale' ||
+            (!t.service_id && (t.extras || []).some(ex => ex.description?.includes('MEMBRESÍA')))
+        ) && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipExtras = dateFilteredTxs
@@ -909,6 +916,19 @@ const Reports = () => {
                     }}>
                         <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>EXTRAS MEMB.</span>
                         <span style={{ fontSize: '0.9rem' }}>${totalMembershipExtras.toFixed(2)}</span>
+                    </div>
+
+                    <div style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        padding: '0.3rem 0.8rem',
+                        border: '1px solid #64748b',
+                        borderRadius: '6px',
+                        backgroundColor: 'transparent',
+                        color: '#64748b',
+                        cursor: 'default'
+                    }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>OTROS</span>
+                        <span style={{ fontSize: '0.9rem' }}>${totalOthers.toFixed(2)}</span>
                     </div>
                 </div>
             )}
@@ -1946,6 +1966,36 @@ const Reports = () => {
                     reviewLink={reviewLink}
                 />
             )}
+            {/* AUDIT TABLE (DEBUG ONLY) */}
+            <div style={{ marginTop: '4rem', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '0.75rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Panel de Auditoría (Últimas 10 Transacciones Detectadas)</h4>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ padding: '0.5rem' }}>Fecha/Creado</th>
+                                <th style={{ padding: '0.5rem' }}>Cliente</th>
+                                <th style={{ padding: '0.5rem' }}>Método</th>
+                                <th style={{ padding: '0.5rem' }}>Total</th>
+                                <th style={{ padding: '0.5rem' }}>ServicioID</th>
+                                <th style={{ padding: '0.5rem' }}>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {dateFilteredTxs.slice(0, 10).map(t => (
+                                <tr key={t.id} style={{ borderBottom: '1px dotted var(--border)' }}>
+                                    <td style={{ padding: '0.5rem' }}>{getPRDateString(t.date || t.created_at)}</td>
+                                    <td style={{ padding: '0.5rem' }}>{t.customers?.name || 'N/A'}</td>
+                                    <td style={{ padding: '0.5rem' }}>{t.payment_method || 'null/cash'}</td>
+                                    <td style={{ padding: '0.5rem' }}>${calculateTxTotal(t).toFixed(2)}</td>
+                                    <td style={{ padding: '0.5rem' }}>{t.service_id || 'null'}</td>
+                                    <td style={{ padding: '0.5rem' }}>{t.status}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 };
