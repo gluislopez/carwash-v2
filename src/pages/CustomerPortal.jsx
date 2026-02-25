@@ -155,50 +155,67 @@ const CustomerPortal = () => {
     // Business Status
     const [isBusinessOpen, setIsBusinessOpen] = useState(true);
 
-    useEffect(() => {
-        // Fetch Business Status & Portal Message
-        const fetchSettings = async () => {
-            const { data } = await supabase
-                .from('business_settings')
-                .select('setting_key, setting_value');
+    const fetchSettings = async () => {
+        const { data } = await supabase
+            .from('business_settings')
+            .select('setting_key, setting_value');
 
-            if (data) {
-                // 1. Business Status
-                const isOpen = data.find(s => s.setting_key === 'is_open');
-                if (isOpen) setIsBusinessOpen(isOpen.setting_value === 'true');
+        if (data) {
+            // 1. Business Status (Automatic Schedule + DB Override)
+            const isOpenSetting = data.find(s => s.setting_key === 'is_open');
+            const isManualOpen = isOpenSetting ? isOpenSetting.setting_value === 'true' : true;
 
-                // 2. Portal Announcement (with expiration logic)
-                const msg = data.find(s => s.setting_key === 'portal_message')?.setting_value;
-                const msgDate = data.find(s => s.setting_key === 'portal_message_date')?.setting_value;
-                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
+            // Automatic logic: Tue-Sat, 8:00 AM to 4:30 PM (America/Puerto_Rico)
+            const prTime = new Date().toLocaleString("en-US", { timeZone: "America/Puerto_Rico" });
+            const prDate = new Date(prTime);
+            const day = prDate.getDay(); // 0 Sun, 1 Mon, 2 Tue, 3 Wed, 4 Thu, 5 Fri, 6 Sat
+            const hours = prDate.getHours();
+            const mins = prDate.getMinutes();
+            const totalMins = (hours * 60) + mins;
+            const isScheduleOpen = (day >= 2 && day <= 6) && (totalMins >= 480 && totalMins < 990);
 
-                if (msg && msgDate === today) {
-                    setPortalMessage(msg);
-                } else {
-                    setPortalMessage('');
-                }
+            setIsBusinessOpen(isManualOpen && isScheduleOpen);
 
-                // 3. Branding
-                const bName = data.find(s => s.setting_key === 'business_name')?.setting_value;
-                const bLogo = data.find(s => s.setting_key === 'business_logo_url')?.setting_value;
+            // 2. Portal Announcement (with expiration logic)
+            const msg = data.find(s => s.setting_key === 'portal_message')?.setting_value;
+            const msgDate = data.find(s => s.setting_key === 'portal_message_date')?.setting_value;
+            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
 
-                setBranding({
-                    name: bName || 'Express CarWash',
-                    logo: bLogo || '/logo.jpg'
-                });
+            if (msg && msgDate === today) {
+                setPortalMessage(msg);
+            } else {
+                setPortalMessage('');
             }
-        };
+
+            // 3. Branding
+            const bName = data.find(s => s.setting_key === 'business_name')?.setting_value;
+            const bLogo = data.find(s => s.setting_key === 'business_logo_url')?.setting_value;
+
+            setBranding({
+                name: bName || 'Express CarWash',
+                logo: bLogo || '/logo.jpg'
+            });
+        }
+    };
+
+    useEffect(() => {
         fetchSettings();
+
+        // Check time every minute for automatic status change
+        const timer = setInterval(fetchSettings, 60000);
 
         // Realtime Subscription for ALL settings
         const channel = supabase
             .channel('public:business_settings_portal')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, () => {
-                fetchSettings(); // Simplify: just re-fetch everything on any change
+                fetchSettings();
             })
             .subscribe();
 
-        return () => supabase.removeChannel(channel);
+        return () => {
+            clearInterval(timer);
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     useEffect(() => {
