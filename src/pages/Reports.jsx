@@ -136,7 +136,8 @@ const Reports = () => {
         const endStr = getPRDateString(end);
 
         return allTransactions.filter(t => {
-            const tDateStr = getPRDateString(t.date);
+            const dateToUse = t.date || t.created_at;
+            const tDateStr = getPRDateString(dateToUse);
 
             // 1. First check Day Filter (sub-filter)
             if (selectedDay) {
@@ -219,11 +220,11 @@ const Reports = () => {
         .reduce((sum, t) => sum + (parseFloat(t.total_price || (parseFloat(t.price) + (parseFloat(t.tip) || 0) + (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)))) || 0, 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
-        .filter(t => !t.service_id && (t.status === 'completed' || t.status === 'paid')) // No service_id = Membership sale
+        .filter(t => (!t.service_id || t.service_id === 'null') && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => {
-            // For membership sales, we trust total_price if exists, or price if not. 
-            // We avoid summing extras manually here because sometimes they are double-recorded for description.
-            return sum + (parseFloat(t.total_price || t.price) || 0);
+            // Include everything that looks like a membership sale or miscellany
+            const val = parseFloat(t.total_price || t.price || 0);
+            return sum + val;
         }, 0);
 
     const totalPending = dateFilteredTxs
