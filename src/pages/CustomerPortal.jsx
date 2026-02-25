@@ -236,7 +236,7 @@ const CustomerPortal = () => {
     };
 
     useEffect(() => {
-        console.log("Express CarWash System v4.75 [Portal] Initialized");
+        console.log("Express CarWash System v4.80 [Portal] Initialized");
         const fetchData = async () => {
             if (!customerId) return;
 
@@ -1431,8 +1431,14 @@ const CustomerPortal = () => {
                             style={{ backgroundColor: 'white', borderRadius: '0.8rem', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                                <span style={{ fontWeight: 'bold', color: getTransactionCategory(tx) === 'membership_usage' ? '#10b981' : '#1e293b' }}>
-                                    {getTransactionCategory(tx) === 'membership_usage' ? 'Beneficio de Membresía' : (tx.services?.name || 'Servicio')}
+                                <span style={{
+                                    fontWeight: 'bold',
+                                    color: getTransactionCategory(tx) === 'membership_usage' ? '#10b981' :
+                                        getTransactionCategory(tx) === 'membership_sale' ? '#ec4899' : '#1e293b'
+                                }}>
+                                    {getTransactionCategory(tx) === 'membership_usage' ? 'Beneficio de Membresía' :
+                                        getTransactionCategory(tx) === 'membership_sale' ? 'Renovación de Membresía' :
+                                            (tx.services?.name || 'Servicio')}
                                 </span>
                                 <span style={{ color: '#64748b', fontSize: '0.9rem' }}>{new Date(tx.created_at).toLocaleDateString()}</span>
                             </div>
@@ -1593,7 +1599,7 @@ const CustomerPortal = () => {
                 )}
 
                 <div style={{ textAlign: 'center', marginTop: '3rem', opacity: 0.5, fontSize: '0.8rem', paddingBottom: '2rem' }}>
-                    <p>Express CarWash System v4.75</p>
+                    <p>Express CarWash System v4.80</p>
                 </div>
             </div>
         </div >

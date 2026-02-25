@@ -89,6 +89,24 @@ const Dashboard = () => {
     const [viewMode, setViewMode] = useState('ops'); // 'ops' | 'reports'
     const [memberships, setMemberships] = useState([]); // Nuevo: Todos los planes de membresía
 
+    const [isEditingVisits, setIsEditingVisits] = useState(false);
+    const [manualVisits, setManualVisits] = useState(0);
+
+    const handleUpdateManualVisits = async (customerId) => {
+        try {
+            const { error } = await supabase
+                .from('customers')
+                .update({ manual_visit_count: parseInt(manualVisits) || 0 })
+                .eq('id', customerId);
+            if (error) throw error;
+            await refreshCustomers();
+            setIsEditingVisits(false);
+        } catch (error) {
+            console.error('Error updating visits:', error);
+            alert('Error al actualizar visitas');
+        }
+    };
+
     useEffect(() => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -1604,7 +1622,7 @@ const Dashboard = () => {
                         <img src="/logo.jpg" alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover', border: '2px solid white' }} />
                         <div style={{ lineHeight: '1' }}>
                             <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Dashboard</h1>
-                            <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 'bold', letterSpacing: '0.5px' }}>v4.75 • BETA</span>
+                            <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 'bold', letterSpacing: '0.5px' }}>v4.80 • BETA</span>
                         </div>
                     </div>
 
@@ -3186,6 +3204,7 @@ const Dashboard = () => {
                                                                                             vehicleId: custVehicle ? custVehicle.id : ''
                                                                                         });
                                                                                         handleCustomerSelect(c.id);
+                                                                                        setIsEditingVisits(false);
                                                                                         setShowCustomerSearch(false);
                                                                                         setCustomerSearch('');
                                                                                     }}
@@ -3285,6 +3304,94 @@ const Dashboard = () => {
                                                                 </div>
 
                                                                 {/* VEHICLE SELECTOR ROW */}
+                                                                {formData.customerId && (
+                                                                    <>
+                                                                        <div style={{
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center',
+                                                                            padding: '0.75rem 1rem',
+                                                                            backgroundColor: 'var(--bg-secondary)',
+                                                                            borderRadius: '0.8rem',
+                                                                            marginBottom: '1rem',
+                                                                            border: '1px solid var(--border-color)'
+                                                                        }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                                                <span style={{ fontSize: '1.2rem' }}>📊</span>
+                                                                                <div>
+                                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Estadísticas Totales</div>
+                                                                                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                                                                        {(() => {
+                                                                                            const c = customers.find(cust => cust.id == formData.customerId);
+                                                                                            // Count only completed/paid transactions for this customer
+                                                                                            const visits = transactions.filter(tx => tx.customer_id == formData.customerId && (tx.status === 'completed' || tx.status === 'paid')).length;
+                                                                                            const manual = c?.manual_visit_count || 0;
+                                                                                            return `${visits + manual} Visitas`;
+                                                                                        })()}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            {(userRole === 'admin' || userRole === 'manager') && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        const c = customers.find(cust => cust.id == formData.customerId);
+                                                                                        setManualVisits(c?.manual_visit_count || 0);
+                                                                                        setIsEditingVisits(!isEditingVisits);
+                                                                                    }}
+                                                                                    style={{
+                                                                                        padding: '0.4rem 0.8rem',
+                                                                                        fontSize: '0.75rem',
+                                                                                        backgroundColor: isEditingVisits ? 'var(--error-color)' : 'var(--bg-card)',
+                                                                                        color: isEditingVisits ? 'white' : 'var(--text-primary)',
+                                                                                        border: '1px solid var(--border-color)',
+                                                                                        borderRadius: '0.5rem',
+                                                                                        cursor: 'pointer',
+                                                                                        fontWeight: 'bold'
+                                                                                    }}
+                                                                                >
+                                                                                    {isEditingVisits ? 'Cancelar' : 'Editar Visitas'}
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {isEditingVisits && (
+                                                                            <div style={{
+                                                                                padding: '1rem',
+                                                                                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                                                                                border: '1px solid var(--primary)',
+                                                                                borderRadius: '0.8rem',
+                                                                                marginBottom: '1.5rem',
+                                                                                display: 'flex',
+                                                                                flexDirection: 'column',
+                                                                                gap: '0.75rem'
+                                                                            }}>
+                                                                                <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Ajustar Visitas Manuales:</label>
+                                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        className="input"
+                                                                                        value={manualVisits}
+                                                                                        onChange={(e) => setManualVisits(e.target.value)}
+                                                                                        style={{ flex: 1, backgroundColor: 'var(--bg-card)' }}
+                                                                                        placeholder="Ej: 5"
+                                                                                    />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        className="btn btn-primary"
+                                                                                        onClick={() => handleUpdateManualVisits(formData.customerId)}
+                                                                                        style={{ padding: '0.5rem 1rem' }}
+                                                                                    >
+                                                                                        Guardar
+                                                                                    </button>
+                                                                                </div>
+                                                                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
+                                                                                    * Este valor se suma a las visitas reales registradas en el sistema.
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                )}
                                                                 {formData.customerId && (
                                                                     <div style={{ marginBottom: '1.5rem' }}>
                                                                         <label className="label" style={{ fontSize: '0.85rem', marginBottom: '0.75rem', display: 'block' }}>
