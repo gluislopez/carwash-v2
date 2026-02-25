@@ -1862,18 +1862,29 @@ const Reports = () => {
                                 <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Por Método de Pago</h4>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <tbody>
-                                        {['cash', 'card', 'transfer'].map(method => {
-                                            const total = filteredTransactions
-                                                .filter(t => t.payment_method === method)
-                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
+                                        {['cash', 'card', 'transfer', 'membership_sale', 'other'].map(method => {
+                                            let total = 0;
+                                            if (method === 'other') {
+                                                total = dateFilteredTxs
+                                                    .filter(t => !['cash', 'card', 'transfer', 'membership_sale', 'membership_usage', 'membership'].includes(t.payment_method) && (t.status === 'completed' || t.status === 'paid'))
+                                                    .reduce((sum, t) => sum + calculateTxTotal(t), 0);
+                                            } else {
+                                                total = dateFilteredTxs
+                                                    .filter(t => (t.payment_method === method || (method === 'cash' && !t.payment_method)) && (t.status === 'completed' || t.status === 'paid'))
+                                                    .reduce((sum, t) => sum + calculateTxTotal(t), 0);
+                                            }
+
+                                            if (method === 'other' && total === 0) return null;
+
                                             const percent = totalIncome > 0 ? (total / totalIncome) * 100 : 0;
 
                                             // Determine Label & Color
-                                            let label = 'Otro';
-                                            let color = 'var(--text-primary)';
-                                            if (method === 'cash') { label = 'Efectivo'; color = '#10B981'; } // Success Green
-                                            if (method === 'card') { label = 'Tarjeta'; color = '#3B82F6'; } // Blue
-                                            if (method === 'transfer') { label = 'ATH Móvil'; color = '#F59E0B'; } // Warning Orange
+                                            let label = 'Otros';
+                                            let color = 'var(--text-muted)';
+                                            if (method === 'cash') { label = 'Efectivo'; color = '#10B981'; }
+                                            if (method === 'card') { label = 'Tarjeta'; color = '#3B82F6'; }
+                                            if (method === 'transfer') { label = 'ATH Móvil'; color = '#F59E0B'; }
+                                            if (method === 'membership_sale') { label = 'Membresías'; color = '#ec4899'; }
 
                                             return (
                                                 <tr key={method} style={{ borderBottom: '1px solid var(--border-color)' }}>
@@ -1898,12 +1909,14 @@ const Reports = () => {
                                     <tbody>
                                         {(() => {
                                             const serviceStats = {};
-                                            filteredTransactions.forEach(t => {
-                                                const sId = t.service_id;
-                                                if (!serviceStats[sId]) serviceStats[sId] = { count: 0, amount: 0 };
-                                                serviceStats[sId].count += 1;
-                                                serviceStats[sId].amount += ((parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0));
-                                            });
+                                            dateFilteredTxs
+                                                .filter(t => (t.status === 'completed' || t.status === 'paid') && t.service_id)
+                                                .forEach(t => {
+                                                    const sId = t.service_id;
+                                                    if (!serviceStats[sId]) serviceStats[sId] = { count: 0, amount: 0 };
+                                                    serviceStats[sId].count += 1;
+                                                    serviceStats[sId].amount += calculateTxTotal(t);
+                                                });
 
                                             return Object.entries(serviceStats)
                                                 .sort((a, b) => b[1].amount - a[1].amount)
