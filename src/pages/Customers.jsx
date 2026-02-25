@@ -494,7 +494,7 @@ const Customers = () => {
                         }
                     } else {
                         // FINANCIAL RECORD
-                        const plan = availablePlans.find(p => p.id === formData.membership_id);
+                        const plan = availablePlans.find(p => p.id == formData.membership_id); // Use == for string-number compatibility
                         if (plan) {
                             console.log("Creando transacción de venta de membresía para:", editingCustomer.name, plan.name);
                             // Ensure we have an employee_id (REQUIRED by DB)
@@ -521,9 +521,12 @@ const Customers = () => {
                                 alert("⚠️ Membresía guardada, pero no se pudo registrar el ingreso en los reportes: " + txError.message);
                             } else {
                                 console.log("Transacción de venta registrada con éxito.");
-                                alert("✅ Membresía asignada correctamente y registrada en finanzas.");
-                                window.location.reload(); // Force full refresh to show new financial record
+                                alert("✅ Membresía asignada correctamente y registrada por $" + plan.price);
+                                window.location.reload();
                             }
+                        } else {
+                            console.warn("No se encontró el plan con ID:", formData.membership_id, "en", availablePlans);
+                            alert("✅ Datos guardados, pero no se generó transacción financiera (Plan no encontrado).");
                         }
                     }
                 } else {

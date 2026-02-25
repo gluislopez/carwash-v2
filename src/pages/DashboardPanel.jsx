@@ -535,7 +535,7 @@ const Dashboard = () => {
             setCustomerMembership(updatedMembership);
 
             // FINANCIAL RECORD: Create a transaction for the membership sale
-            const membership = memberships.find(m => m.id === membershipId);
+            const membership = memberships.find(m => m.id == membershipId); // FIXED ID comparison (string vs number)
             if (membership) {
                 console.log("Creando transacción de venta para:", membership.name, "Precio:", membership.price);
                 try {

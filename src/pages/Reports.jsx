@@ -206,10 +206,14 @@ const Reports = () => {
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
-        .filter(t => (
-            t.payment_method === 'membership_sale' ||
-            (t.extras || []).some(ex => ex.description?.toUpperCase().includes('VENTA MEMBRESÍA'))
-        ) && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => {
+            const isSaleMethod = t.payment_method === 'membership_sale';
+            const hasSaleInExtras = (t.extras || []).some(ex => {
+                const desc = ex.description?.toUpperCase() || '';
+                return desc.includes('VENTA') && (desc.includes('MEMBRE') || desc.includes('PLAN'));
+            });
+            return (isSaleMethod || hasSaleInExtras) && (t.status === 'completed' || t.status === 'paid');
+        })
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipExtras = dateFilteredTxs
