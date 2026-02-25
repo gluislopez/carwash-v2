@@ -172,28 +172,37 @@ const Reports = () => {
     const dateFilteredTxs = getDateFilteredTransactions();
     const calculateTxTotal = (t) => {
         // PRIORITY 1: If it's a SALE (Money coming in), we count the full price.
-        const desc = (t.extras || []).map(ex => ex.description?.toUpperCase()).join(' ');
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
         const isSale = t.payment_method === 'membership_sale' || desc.includes('VENTA');
 
         if (isSale) {
-            return parseFloat(t.total_price || t.price || 0);
+            const val = parseFloat(t.total_price || t.price || 0);
+            return isNaN(val) ? 0 : val;
         }
 
         // PRIORITY 2: If it's a USE of membership (Benefit), income is 0 + extras.
         if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
             const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
-            return extrasSum;
+            return isNaN(extrasSum) ? 0 : extrasSum;
         }
 
         // PRIORITY 3: Standard Transaction (Discounts/Normal)
         if (t.total_price !== null && t.total_price !== undefined) {
-            return parseFloat(t.total_price) || 0;
+            const val = parseFloat(t.total_price) || 0;
+            return isNaN(val) ? 0 : val;
         }
 
-        return (parseFloat(t.price) || 0) +
+        const val = (parseFloat(t.price) || 0) +
             (parseFloat(t.tip) || 0) +
             (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+        return isNaN(val) ? 0 : val;
     };
+
+    // DEBUG INFO
+    const debugMembTxs = (allTransactions || []).filter(t => {
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+        return t.payment_method?.includes('membership') || desc.includes('VENTA') || desc.includes('MEMBRE');
+    });
 
     // Income Categorization Helper (Unified Logic)
     const getTransactionCategory = (t) => {
@@ -1984,6 +1993,53 @@ const Reports = () => {
                     reviewLink={reviewLink}
                 />
             )}
+            {/* DIAGNOSTIC PANEL (Temporary) */}
+            <div style={{ marginTop: '2rem', padding: '1rem', border: '2px dashed #ec4899', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.05)' }}>
+                <h4 style={{ color: '#ec4899', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    🔍 Diagnóstico de Membresías ({debugMembTxs.length} encontradas en historial)
+                </h4>
+                <p style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '1rem' }}>
+                    Esta sección muestra cualquier transacción que el sistema detecte como relacionada a membresías. Si falta una de $69, mira la fecha y el status.
+                </p>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ padding: '0.5rem' }}>Fecha (PR)</th>
+                                <th style={{ padding: '0.5rem' }}>Cliente</th>
+                                <th style={{ padding: '0.5rem' }}>Método</th>
+                                <th style={{ padding: '0.5rem' }}>Status</th>
+                                <th style={{ padding: '0.5rem' }}>Precio/Total</th>
+                                <th style={{ padding: '0.5rem' }}>Categoría Detectada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {debugMembTxs.slice(0, 15).map(t => (
+                                <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <td style={{ padding: '0.5rem' }}>{getPRDateString(t.date || t.created_at)}</td>
+                                    <td style={{ padding: '0.5rem' }}>{t.customers?.name || 'N/A'}</td>
+                                    <td style={{ padding: '0.5rem' }}>{t.payment_method}</td>
+                                    <td style={{ padding: '0.5rem' }}>
+                                        <span style={{
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            background: (t.status === 'completed' || t.status === 'paid') ? '#059669' : '#DC2626'
+                                        }}>
+                                            {t.status}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '0.5rem' }}>${(t.total_price || t.price || 0)}</td>
+                                    <td style={{ padding: '0.5rem', fontWeight: 'bold' }}>{getTransactionCategory(t)}</td>
+                                </tr>
+                            ))}
+                            {debugMembTxs.length === 0 && (
+                                <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>No se encontraron transacciones de membresía en los últimos {allTransactions?.length || 0} registros.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             {/* AUDIT TABLE (DEBUG ONLY) */}
             <div style={{ marginTop: '4rem', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', fontSize: '0.75rem' }}>
                 <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Panel de Auditoría (Últimas 10 Transacciones Detectadas)</h4>
