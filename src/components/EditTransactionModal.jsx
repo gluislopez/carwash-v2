@@ -139,15 +139,23 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             // FINANCIAL RECORD: Create a transaction for the membership sale
             const membership = memberships.find(m => m.id === membershipId);
             if (membership) {
+                // FALLBACK for employee_id (REQUIRED by DB)
+                let empId = transaction?.employee_id;
+                if (!empId) {
+                    const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                    empId = fallbackAdmin?.id;
+                }
+
                 const { error: txError } = await supabase.from('transactions').insert([{
                     customer_id: cId,
-                    price: membership.price,
-                    total_price: membership.price, // Required by DB constraint
-                    payment_method: 'cash', // Default to cash, user can edit in reports
+                    employee_id: empId,
+                    price: parseFloat(membership.price) || 0,
+                    total_price: parseFloat(membership.price) || 0,
+                    payment_method: 'membership_sale',
                     status: 'paid',
                     date: new Date().toISOString(),
                     service_id: null,
-                    extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
+                    extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: parseFloat(membership.price) || 0 }]
                 }]);
 
                 if (txError) {

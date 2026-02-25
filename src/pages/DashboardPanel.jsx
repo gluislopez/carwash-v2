@@ -550,13 +550,13 @@ const Dashboard = () => {
                     const { error: txError } = await supabase.from('transactions').insert([{
                         customer_id: formData.customerId,
                         employee_id: empId,
-                        price: membership.price,
-                        total_price: membership.price,
+                        price: parseFloat(membership.price) || 0,
+                        total_price: parseFloat(membership.price) || 0,
                         payment_method: 'membership_sale',
                         status: 'paid',
                         date: new Date().toISOString(),
                         service_id: null,
-                        extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: membership.price }]
+                        extras: [{ description: `VENTA MEMBRESÍA: ${membership.name}`, price: parseFloat(membership.price) || 0 }]
                     }]);
 
                     if (txError) {

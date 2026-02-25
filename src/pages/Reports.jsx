@@ -206,12 +206,19 @@ const Reports = () => {
 
     // Income Categorization Helper (Unified Logic)
     const getTransactionCategory = (t) => {
-        const desc = (t.extras || []).map(ex => ex.description?.toUpperCase()).join(' ');
-        if (t.payment_method === 'membership_sale' || desc.includes('VENTA')) return 'membership_sale';
-        if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') return 'membership_usage';
-        if (t.payment_method === 'transfer') return 'transfer';
-        if (t.payment_method === 'card') return 'card';
-        if (t.payment_method === 'cash' || !t.payment_method) return 'cash';
+        const method = (t.payment_method || '').toLowerCase();
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+
+        // Priority 1: Sale of a Plan
+        if (method === 'membership_sale' || desc.includes('VENTA') || desc.includes('PLAN')) return 'membership_sale';
+
+        // Priority 2: Use of Plan Benefits
+        if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
+
+        // Standard methods
+        if (method === 'transfer') return 'transfer';
+        if (method === 'card') return 'card';
+        if (method === 'cash' || !method) return 'cash';
         return 'other';
     };
 
@@ -235,9 +242,13 @@ const Reports = () => {
         .filter(t => getTransactionCategory(t) === 'membership_sale' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
-    const totalMembershipExtras = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'membership_usage' && (t.status === 'completed' || t.status === 'paid'))
-        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
+    // CRITICAL: Panic check for sales that might be outside the date range or status
+    const lostMembershipSales = (allTransactions || []).filter(t => {
+        const cat = getTransactionCategory(t);
+        const isPaid = t.status === 'completed' || t.status === 'paid';
+        const inRange = dateFilteredTxs.some(dt => dt.id === t.id);
+        return cat === 'membership_sale' && (!isPaid || !inRange);
+    });
 
     const totalPending = dateFilteredTxs
         .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')

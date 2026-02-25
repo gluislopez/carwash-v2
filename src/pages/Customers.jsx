@@ -506,14 +506,14 @@ const Customers = () => {
 
                             const { error: txError } = await supabase.from('transactions').insert([{
                                 customer_id: editingCustomer.id,
-                                employee_id: empId, // CRITICAL FIX
-                                price: plan.price,
-                                total_price: plan.price,
+                                employee_id: empId,
+                                price: parseFloat(plan.price) || 0,
+                                total_price: parseFloat(plan.price) || 0,
                                 payment_method: 'membership_sale',
                                 status: 'paid',
                                 date: new Date().toISOString(),
                                 service_id: null,
-                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: plan.price }]
+                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
                             }]);
 
                             if (txError) {
