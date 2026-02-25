@@ -212,11 +212,12 @@ const Reports = () => {
 
     const dateFilteredTxs = getDateFilteredTransactions();
     const calculateTxTotal = (t) => {
-        return parseFloat(t.total_price || (
-            (parseFloat(t.price) || 0) +
+        if (t.total_price !== null && t.total_price !== undefined) {
+            return parseFloat(t.total_price) || 0;
+        }
+        return (parseFloat(t.price) || 0) +
             (parseFloat(t.tip) || 0) +
-            (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0)
-        )) || 0;
+            (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
     };
 
     const totalCash = dateFilteredTxs
@@ -238,7 +239,7 @@ const Reports = () => {
     const totalMembershipsRevenue = dateFilteredTxs
         .filter(t => (
             t.payment_method === 'membership_sale' ||
-            (!t.service_id && (t.extras || []).some(ex => ex.description?.includes('MEMBRESÍA')))
+            (t.extras || []).some(ex => ex.description?.toUpperCase().includes('VENTA MEMBRESÍA'))
         ) && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
@@ -1979,7 +1980,8 @@ const Reports = () => {
                                 <th style={{ padding: '0.5rem' }}>Fecha/Creado</th>
                                 <th style={{ padding: '0.5rem' }}>Cliente</th>
                                 <th style={{ padding: '0.5rem' }}>Método</th>
-                                <th style={{ padding: '0.5rem' }}>Total</th>
+                                <th style={{ padding: '0.5rem' }}>Precio</th>
+                                <th style={{ padding: '0.5rem' }}>Total Calc</th>
                                 <th style={{ padding: '0.5rem' }}>ServicioID</th>
                                 <th style={{ padding: '0.5rem' }}>Status</th>
                             </tr>
@@ -1990,7 +1992,8 @@ const Reports = () => {
                                     <td style={{ padding: '0.5rem' }}>{getPRDateString(t.date || t.created_at)}</td>
                                     <td style={{ padding: '0.5rem' }}>{t.customers?.name || 'N/A'}</td>
                                     <td style={{ padding: '0.5rem' }}>{t.payment_method || 'null/cash'}</td>
-                                    <td style={{ padding: '0.5rem' }}>${calculateTxTotal(t).toFixed(2)}</td>
+                                    <td style={{ padding: '0.5rem' }}>${(parseFloat(t.price) || 0).toFixed(2)}</td>
+                                    <td style={{ padding: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>${calculateTxTotal(t).toFixed(2)}</td>
                                     <td style={{ padding: '0.5rem' }}>{t.service_id || 'null'}</td>
                                     <td style={{ padding: '0.5rem' }}>{t.status}</td>
                                 </tr>

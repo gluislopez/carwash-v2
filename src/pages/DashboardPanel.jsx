@@ -132,6 +132,10 @@ const Dashboard = () => {
                 if (employee) {
                     setUserRole(employee.role);
                     setMyEmployeeId(employee.id); // Guardar el ID del perfil
+                } else {
+                    // FALLBACK: If user isn't linked, find at least one admin for financial records
+                    const { data: adminEmp } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                    if (adminEmp) setMyEmployeeId(adminEmp.id);
                 }
             }
         };
