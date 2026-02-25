@@ -207,11 +207,13 @@ const Customers = () => {
             const counts = {};
             transactions.forEach(t => {
                 if (t.customer_id && t.status !== 'cancelled') {
-                    // Decide if we count membership_sale as a visit. 
-                    // To keep it in sync with the portal list, we count everything that is visible.
-                    // But typically car washes don't count sales as visits.
-                    // Given the user's request "in sync with the list", we count them.
-                    counts[t.customer_id] = (counts[t.customer_id] || 0) + 1;
+                    const method = (t.payment_method || '').toLowerCase();
+                    const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+                    const isMembershipSale = method === 'membership_sale' || desc.includes('VENTA') || desc.includes('PLAN');
+
+                    if (!isMembershipSale) {
+                        counts[t.customer_id] = (counts[t.customer_id] || 0) + 1;
+                    }
                 }
             });
             setVisitCounts(counts);
