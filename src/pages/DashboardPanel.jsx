@@ -4379,6 +4379,29 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
+                            {(userRole === 'admin' || userRole === 'manager') && (
+                                <button
+                                    onClick={() => {
+                                        handleDeleteTransactionV2(selectedTransaction.id);
+                                        setSelectedTransaction(null);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        marginTop: '1.5rem',
+                                        padding: '0.75rem',
+                                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                        color: '#ef4444',
+                                        border: '1px solid #ef4444',
+                                        borderRadius: '0.5rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    🗑️ ELIMINAR ESTE REGISTRO
+                                </button>
+                            )}
+
                             <button onClick={() => setSelectedTransaction(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
                                 Cerrar
                             </button>

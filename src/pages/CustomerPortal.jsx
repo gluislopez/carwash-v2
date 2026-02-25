@@ -137,8 +137,9 @@ const CustomerPortal = () => {
     }, [vehiclePoints, vehicleRedeemed]);
 
     const filteredHistory = useMemo(() => {
-        if (!selectedVehicleId) return history;
-        return history.filter(tx => tx.vehicle_id === selectedVehicleId);
+        const visibleHistory = history.filter(tx => tx.status !== 'cancelled');
+        if (!selectedVehicleId) return visibleHistory;
+        return visibleHistory.filter(tx => tx.vehicle_id === selectedVehicleId);
     }, [history, selectedVehicleId]);
 
     // Timer to update progress bar every minute
