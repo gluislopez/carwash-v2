@@ -352,9 +352,9 @@ const Reports = () => {
     const filteredExpenses = getFilteredExpenses();
 
     // Stats Calculation
-    const totalCount = filteredTransactions.length; // Raw count for some uses if needed
+    const totalCount = filteredTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').length;
 
-    const fractionalCount = filteredTransactions.reduce((sum, t) => {
+    const fractionalCount = filteredTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').reduce((sum, t) => {
         const count = t.transaction_assignments?.length || 1;
         return sum + (1 / count);
     }, 0);
@@ -1430,9 +1430,9 @@ const Reports = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredTransactions.map((t, index) => (
+                                {filteredTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').map((t, index) => (
                                     <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{filteredTransactions.length - index}</td>
+                                        <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{filteredTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').length - index}</td>
                                         <td style={{ padding: '1rem' }}>
                                             {new Date(t.date).toLocaleDateString('es-PR')} <br />
                                             <small style={{ color: 'var(--text-muted)' }}>
@@ -1597,7 +1597,7 @@ const Reports = () => {
 
                 <div className="mobile-only">
                     <div className="mobile-card-list">
-                        {filteredTransactions.map((t, index) => (
+                        {filteredTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').map((t, index) => (
                             <div key={t.id} className="mobile-card-item">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                                     <div>

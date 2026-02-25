@@ -2023,8 +2023,8 @@ const Dashboard = () => {
                                 <Car size={24} style={{ color: 'var(--text-muted)' }} />
                                 <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
                                     {userRole === 'admin' || userRole === 'manager'
-                                        ? statsTransactions.length
-                                        : statsTransactions.filter(t => t.status !== 'waiting').length}
+                                        ? statsTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').length
+                                        : statsTransactions.filter(t => t.status !== 'waiting' && getTransactionCategory(t) !== 'membership_sale').length}
                                 </p>
                             </div>
                         </div>
@@ -2049,8 +2049,8 @@ const Dashboard = () => {
                                 <Car size={24} className="text-primary" />
                                 <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
                                     {userRole === 'admin'
-                                        ? statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length
-                                        : formatToFraction(fractionalCount)
+                                        ? statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').length
+                                        : formatToFraction(statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').reduce((sum, t) => sum + (1 / (t.transaction_assignments?.length || 1)), 0))
                                     }
                                 </p>
                             </div>
@@ -3845,9 +3845,9 @@ const Dashboard = () => {
                         (userRole === 'admin' || userRole === 'manager') && (
                             <>
                                 <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>✅ Historial de Ventas</h2>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                                     {statsTransactions
-                                        .filter(t => t.status === 'completed' || t.status === 'paid')
+                                        .filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale')
                                         .sort((a, b) => {
                                             const dateA = new Date(a.date);
                                             const dateB = new Date(b.date);
@@ -4048,13 +4048,48 @@ const Dashboard = () => {
                                         ))
                                     }
                                     {
-                                        statsTransactions.length === 0 && (
+                                        statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').length === 0 && (
                                             <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '0.5rem' }}>
-                                                No hay ventas registradas hoy
+                                                No hay lavados registrados hoy
                                             </div>
                                         )
                                     }
                                 </div >
+
+                                {/* NEW: MEMBERSHIP SALES SECTION */}
+                                <h2 style={{ fontSize: '1.5rem', marginTop: '2rem', marginBottom: '1rem', color: '#ec4899' }}>💎 Ventas de Membresía</h2>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                                    {statsTransactions
+                                        .filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) === 'membership_sale')
+                                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                        .map(t => (
+                                            <div
+                                                key={t.id}
+                                                className="card"
+                                                style={{ borderLeft: '4px solid #ec4899', cursor: 'pointer', transition: 'transform 0.2s' }}
+                                                onClick={() => setSelectedTransaction(t)}
+                                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <div>
+                                                        <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>{t.customers?.name || 'Cliente'}</h3>
+                                                        <div style={{ fontSize: '0.9rem', color: '#ec4899', fontWeight: '600', marginTop: '0.25rem' }}>VENTA DE PLAN 💎</div>
+                                                    </div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>${calculateTxTotal(t).toFixed(2)}</div>
+                                                </div>
+                                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                    {new Date(t.date || t.created_at).toLocaleDateString('es-PR')} • {new Date(t.date || t.created_at).toLocaleTimeString('es-PR', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                    {statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) === 'membership_sale').length === 0 && (
+                                        <div style={{ gridColumn: '1 / -1', padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'rgba(236, 72, 153, 0.05)', borderRadius: '0.5rem', border: '1px dashed #ec4899' }}>
+                                            No hay ventas de membresía hoy.
+                                        </div>
+                                    )}
+                                </div>
                             </>
                         )
                     }
