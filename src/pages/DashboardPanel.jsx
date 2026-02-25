@@ -535,13 +535,21 @@ const Dashboard = () => {
             setCustomerMembership(updatedMembership);
 
             // FINANCIAL RECORD: Create a transaction for the membership sale
-            const membership = memberships.find(m => m.id == membershipId); // FIXED ID comparison (string vs number)
+            const membership = memberships.find(m => m.id == membershipId);
             if (membership) {
                 console.log("Creando transacción de venta para:", membership.name, "Precio:", membership.price);
+
+                // FALLBACK for employee_id (REQUIRED by DB)
+                let empId = myEmployeeId;
+                if (!empId) {
+                    const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                    empId = fallbackAdmin?.id;
+                }
+
                 try {
                     const { error: txError } = await supabase.from('transactions').insert([{
                         customer_id: formData.customerId,
-                        employee_id: myEmployeeId, // FIXED
+                        employee_id: empId,
                         price: membership.price,
                         total_price: membership.price,
                         payment_method: 'membership_sale',

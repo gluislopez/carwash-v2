@@ -2005,33 +2005,43 @@ const Reports = () => {
                     <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ padding: '0.5rem' }}>Fecha (PR)</th>
+                                <th style={{ padding: '0.5rem' }}>Fecha</th>
                                 <th style={{ padding: '0.5rem' }}>Cliente</th>
-                                <th style={{ padding: '0.5rem' }}>Método</th>
+                                <th style={{ padding: '0.5rem' }}>Tipo Detectado</th>
                                 <th style={{ padding: '0.5rem' }}>Status</th>
-                                <th style={{ padding: '0.5rem' }}>Precio/Total</th>
-                                <th style={{ padding: '0.5rem' }}>Categoría Detectada</th>
+                                <th style={{ padding: '0.5rem' }}>Precio Base</th>
+                                <th style={{ padding: '0.5rem' }}>Ingreso Real</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {debugMembTxs.slice(0, 15).map(t => (
-                                <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '0.5rem' }}>{getPRDateString(t.date || t.created_at)}</td>
-                                    <td style={{ padding: '0.5rem' }}>{t.customers?.name || 'N/A'}</td>
-                                    <td style={{ padding: '0.5rem' }}>{t.payment_method}</td>
-                                    <td style={{ padding: '0.5rem' }}>
-                                        <span style={{
-                                            padding: '2px 6px',
-                                            borderRadius: '4px',
-                                            background: (t.status === 'completed' || t.status === 'paid') ? '#059669' : '#DC2626'
-                                        }}>
-                                            {t.status}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '0.5rem' }}>${(t.total_price || t.price || 0)}</td>
-                                    <td style={{ padding: '0.5rem', fontWeight: 'bold' }}>{getTransactionCategory(t)}</td>
-                                </tr>
-                            ))}
+                            {debugMembTxs.slice(0, 15).map(t => {
+                                const totalReal = calculateTxTotal(t);
+                                const isUsage = getTransactionCategory(t) === 'membership_usage';
+                                return (
+                                    <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <td style={{ padding: '0.5rem' }}>{getPRDateString(t.date || t.created_at)}</td>
+                                        <td style={{ padding: '0.5rem' }}>{t.customers?.name || 'N/A'}</td>
+                                        <td style={{ padding: '0.5rem', color: isUsage ? '#8b5cf6' : '#ec4899', fontWeight: 'bold' }}>
+                                            {isUsage ? 'Beneficio (Uso)' : 'VENTA (+) '}
+                                        </td>
+                                        <td style={{ padding: '0.5rem' }}>
+                                            <span style={{
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                fontSize: '0.7rem',
+                                                background: (t.status === 'completed' || t.status === 'paid') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(220, 38, 38, 0.2)',
+                                                color: (t.status === 'completed' || t.status === 'paid') ? '#10B981' : '#f87171'
+                                            }}>
+                                                {t.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '0.5rem', opacity: 0.6 }}>${(parseFloat(t.price) || 0).toFixed(2)}</td>
+                                        <td style={{ padding: '0.5rem', fontWeight: 'bold', color: totalReal > 0 ? '#10B981' : 'white' }}>
+                                            ${totalReal.toFixed(2)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {debugMembTxs.length === 0 && (
                                 <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>No se encontraron transacciones de membresía en los últimos {allTransactions?.length || 0} registros.</td></tr>
                             )}
