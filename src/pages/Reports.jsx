@@ -246,11 +246,11 @@ const Reports = () => {
         const method = (t.payment_method || '').toLowerCase();
         const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
 
-        // Priority 1: Sale of a Plan
-        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
-
-        // Priority 2: Use of Plan Benefits
+        // Priority 1: Use of Plan Benefits (Explicit method check)
         if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
+
+        // Priority 2: Sale of a Plan (Keywords or explicit sale method)
+        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
 
         // Standard methods
         if (method === 'transfer') return 'transfer';
