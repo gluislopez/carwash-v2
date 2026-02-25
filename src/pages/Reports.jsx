@@ -242,6 +242,10 @@ const Reports = () => {
         .filter(t => getTransactionCategory(t) === 'membership_sale' && (t.status === 'completed' || t.status === 'paid'))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
+    const totalMembershipExtras = dateFilteredTxs
+        .filter(t => getTransactionCategory(t) === 'membership_usage' && (t.status === 'completed' || t.status === 'paid'))
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
+
     // CRITICAL: Panic check for sales that might be outside the date range or status
     const lostMembershipSales = (allTransactions || []).filter(t => {
         const cat = getTransactionCategory(t);
