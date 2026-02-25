@@ -210,7 +210,7 @@ const Reports = () => {
         const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
 
         // Priority 1: Sale of a Plan
-        if (method === 'membership_sale' || desc.includes('VENTA') || desc.includes('PLAN')) return 'membership_sale';
+        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
 
         // Priority 2: Use of Plan Benefits
         if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
@@ -632,24 +632,37 @@ const Reports = () => {
                         border: '1px solid #ec4899',
                         marginLeft: '2rem',
                         fontSize: '0.8rem',
-                        maxWidth: '400px'
+                        maxWidth: '500px'
                     }}>
-                        <div style={{ fontWeight: 'bold', color: '#ec4899', marginBottom: '0.5rem' }}>🔍 AUDITORÍA INSTANTÁNEA (HOY)</div>
+                        <div style={{ fontWeight: 'bold', color: '#ec4899', marginBottom: '0.5rem' }}>🔍 AUDITORÍA DE VENTAS</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                            <div>Transacciones Hoy:</div>
-                            <div style={{ color: 'white' }}>{allTransactions?.filter(t => getPRDateString(t.date || t.created_at) === getPRDateString(new Date())).length}</div>
-
-                            <div>Ventas de Planes:</div>
-                            <div style={{ color: '#ec4899', fontWeight: 'bold' }}>
+                            <div>Ventas Hoy (PR):</div>
+                            <div style={{ color: 'white' }}>
                                 ${allTransactions?.filter(t => {
-                                    const cat = getTransactionCategory(t);
+                                    const isSale = getTransactionCategory(t) === 'membership_sale';
                                     const isToday = getPRDateString(t.date || t.created_at) === getPRDateString(new Date());
-                                    return cat === 'membership_sale' && isToday;
+                                    return isSale && isToday;
                                 }).reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
                             </div>
+
+                            <div>Ventas Ayer (PR):</div>
+                            <div style={{ color: 'white' }}>
+                                ${allTransactions?.filter(t => {
+                                    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                                    const isSale = getTransactionCategory(t) === 'membership_sale';
+                                    const isYesterday = getPRDateString(t.date || t.created_at) === getPRDateString(yesterday);
+                                    return isSale && isYesterday;
+                                }).reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
+                            </div>
+
+                            <div>Ventas Históricas:</div>
+                            <div style={{ color: '#ec4899', fontWeight: 'bold' }}>
+                                ${allTransactions?.filter(t => getTransactionCategory(t) === 'membership_sale')
+                                    .reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
+                            </div>
                         </div>
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', opacity: 0.8 }}>
-                            Último Plan: {allTransactions?.filter(t => getTransactionCategory(t) === 'membership_sale')[0]?.extras?.[0]?.description || 'Ninguno'}
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(236, 72, 153, 0.2)', paddingTop: '0.5rem' }}>
+                            Última TX: {allTransactions?.[0] ? `${allTransactions[0].payment_method} | ${allTransactions[0].status} | ${getPRDateString(allTransactions[0].date || allTransactions[0].created_at)}` : 'Vacio'}
                         </div>
                     </div>
                     {(userRole === 'admin' || userRole === 'manager') && (
