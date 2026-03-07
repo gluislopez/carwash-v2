@@ -431,16 +431,23 @@ const CustomerPortal = () => {
 
     // Update current display membership when vehicle changes
     useEffect(() => {
-        if (allMemberships.length > 0) {
-            // Priority 1: Exact vehicle match
-            // Priority 2: Global/Legacy plan (vehicle_id is null) ONLY if we are in Global View or no exact match
-            const exactMatch = allMemberships.find(m => m.vehicle_id === selectedVehicleId);
-            const legacyMatch = allMemberships.find(m => m.vehicle_id === null);
-
-            setMembership(exactMatch || legacyMatch || null);
-        } else {
+        if (!allMemberships || allMemberships.length === 0) {
             setMembership(null);
+            return;
         }
+
+        let match = null;
+        if (selectedVehicleId) {
+            // Find strictly for this vehicle
+            match = allMemberships.find(m => m.vehicle_id === selectedVehicleId);
+            // Fallback to legacy/global only if no specific one exists
+            if (!match) match = allMemberships.find(m => m.vehicle_id === null);
+        } else {
+            // Global view: first global plan or the first found
+            match = allMemberships.find(m => m.vehicle_id === null) || allMemberships[0];
+        }
+
+        setMembership(match || null);
     }, [selectedVehicleId, allMemberships]);
 
     const channelMemberships = useEffect(() => {
@@ -939,7 +946,13 @@ const CustomerPortal = () => {
                                 {membership.last_reset_at && (
                                     <span style={{ fontSize: '0.75rem', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                                         <Calendar size={12} />
-                                        Renovación: {new Date(new Date(membership.last_reset_at).setMonth(new Date(membership.last_reset_at).getMonth() + 1)).toLocaleDateString()}
+                                        Renovación: {(() => {
+                                            try {
+                                                const d = new Date(membership.last_reset_at);
+                                                d.setMonth(d.getMonth() + 1);
+                                                return d.toLocaleDateString();
+                                            } catch (e) { return 'N/A'; }
+                                        })()}
                                     </span>
                                 )}
                             </div>

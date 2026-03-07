@@ -542,7 +542,8 @@ const Dashboard = () => {
 
         // Re-calculate membership usage if a vehicle is already selected
         if (formData.vehicleId && memberSubs) {
-            const vehicleSub = memberSubs.find(m => m.vehicle_id === formData.vehicleId || m.vehicle_id === null);
+            // PRIORITY: Strict match, then fallback to global (null)
+            const vehicleSub = memberSubs.find(m => m.vehicle_id === formData.vehicleId) || memberSubs.find(m => m.vehicle_id === null);
             if (vehicleSub) {
                 setCustomerMembership(vehicleSub);
                 // AUTO-CHECK: If a service is already selected, check if it's a benefit
