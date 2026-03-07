@@ -941,6 +941,7 @@ const Customers = () => {
                                             <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
                                             <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                                 {(v.brand || v.model) ? `${v.brand || ''} ${v.model || ''}` : 'Sin Modelo'}
+                                                {activeMemberships[`${customer.id}-${v.id}`] && <span style={{ marginLeft: '5px' }} title="Membresía Activa">💎</span>}
                                             </span>
                                             <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
                                                 {v.plate || 'Sin Placa'}
@@ -952,6 +953,7 @@ const Customers = () => {
                                         <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
                                         <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                             {customer.vehicle_model || 'Sin Modelo'}
+                                            {activeMemberships[`${customer.id}-null`] && <span style={{ marginLeft: '5px' }} title="Membresía Activa">💎</span>}
                                         </span>
                                         {customer.vehicle_plate && (
                                             <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
