@@ -628,16 +628,19 @@ const Dashboard = () => {
                 throw opError;
             }
 
-            // 3. REFRESH: Fetch the newly created record to update UI state
-            const { data: updatedMembership, error: fetchErr } = await supabase
+            // 3. REFRESH: Fetch ALL active memberships for this customer
+            const { data: allMembersData, error: fetchErr } = await supabase
                 .from('customer_memberships')
                 .select('*, memberships(*)')
                 .eq('customer_id', formData.customerId)
-                .eq('status', 'active')
-                .maybeSingle();
+                .eq('status', 'active');
 
-            if (fetchErr) console.warn("Error fetching updated membership:", fetchErr);
-            setCustomerMembership(updatedMembership);
+            if (fetchErr) console.warn("Error fetching memberships:", fetchErr);
+
+            // Set current membership based on vehicle
+            const match = allMembersData?.find(m => m.vehicle_id === vehicleIdValue || (m.vehicle_id === null && vehicleIdValue === null));
+            setCustomerMembership(match || null);
+            setIsMembershipUsage(true); // Auto-enable benefit for the newly assigned membership
 
             /* 
                FINANCIAL RECORD REMOVED: 

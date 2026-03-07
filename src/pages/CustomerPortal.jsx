@@ -148,6 +148,13 @@ const CustomerPortal = () => {
         return visibleHistory.filter(tx => tx.vehicle_id === selectedVehicleId);
     }, [history, selectedVehicleId]);
 
+    // DERIVED STATS FOR PROGRESS BARS
+    const visitsCount = useMemo(() => {
+        const baseVisits = filteredHistory.filter(tx => getTransactionCategory(tx) !== 'membership_sale').length;
+        if (!selectedVehicleId) return baseVisits + (customer.manual_visit_count || 0);
+        return baseVisits; // For specific vehicle, we don't often use manual_visit_count unless linked
+    }, [filteredHistory, selectedVehicleId, customer.manual_visit_count]);
+
     // Timer to update progress bar every minute
     useEffect(() => {
         if (activeService && activeService.status === 'in_progress') {
@@ -425,12 +432,37 @@ const CustomerPortal = () => {
     // Update current display membership when vehicle changes
     useEffect(() => {
         if (allMemberships.length > 0) {
-            const match = allMemberships.find(m => m.vehicle_id === selectedVehicleId || (m.vehicle_id === null && selectedVehicleId === null));
-            setMembership(match || null);
+            // Priority 1: Exact vehicle match
+            // Priority 2: Global/Legacy plan (vehicle_id is null) ONLY if we are in Global View or no exact match
+            const exactMatch = allMemberships.find(m => m.vehicle_id === selectedVehicleId);
+            const legacyMatch = allMemberships.find(m => m.vehicle_id === null);
+
+            setMembership(exactMatch || legacyMatch || null);
         } else {
             setMembership(null);
         }
     }, [selectedVehicleId, allMemberships]);
+
+    const channelMemberships = useEffect(() => {
+        if (!customerId) return;
+        const channel = supabase
+            .channel(`public:memberships:customer:${customerId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_memberships', filter: `customer_id=eq.${customerId}` },
+                () => {
+                    const refreshMemberships = async () => {
+                        const { data } = await supabase
+                            .from('customer_memberships')
+                            .select('*, memberships(*)')
+                            .eq('customer_id', customerId)
+                            .eq('status', 'active');
+                        if (data) setAllMemberships(data);
+                    };
+                    refreshMemberships();
+                }
+            )
+            .subscribe();
+        return () => supabase.removeChannel(channel);
+    }, [customerId]);
 
     const submitFeedback = async () => {
         if (rating === 0) return alert("Por favor selecciona las estrellas.");
@@ -805,7 +837,7 @@ const CustomerPortal = () => {
                     <div style={{ marginTop: '1.2rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
                         <div style={{ textAlign: 'center', flex: 1 }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>
-                                {filteredHistory.filter(tx => getTransactionCategory(tx) !== 'membership_sale').length + (customer.manual_visit_count || 0)}
+                                {visitsCount}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitas</div>
                         </div>
@@ -840,12 +872,27 @@ const CustomerPortal = () => {
                         {membership && (
                             <div style={{ flex: 2.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <div style={{ fontSize: '1.1rem', color: '#10b981' }}>✨</div>
-                                <div style={{ fontSize: '0.8rem', color: '#166534', fontWeight: '500' }}>
-                                    Programa de lealtad en pausa (Membresía Activa)
+                                <div style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 'bold' }}>
+                                    {selectedVehicle ? `Beneficios Activos (${getVehicleDisplayName(selectedVehicle, customer)})` : "Beneficios Activos"}
                                 </div>
                             </div>
                         )}
                     </div>
+                    {/* INFO LABEL */}
+                    {selectedVehicle && (
+                        <div style={{
+                            marginTop: '1rem',
+                            fontSize: '0.75rem',
+                            color: '#3b82f6',
+                            backgroundColor: '#eff6ff',
+                            padding: '0.4rem 0.8rem',
+                            borderRadius: '0.5rem',
+                            display: 'inline-block',
+                            fontWeight: '600'
+                        }}>
+                            📍 Viendo información exclusiva de este vehículo
+                        </div>
+                    )}
 
                     {/* MEMBERSHIP STATUS BANNER */}
                     {membership && (
@@ -864,6 +911,11 @@ const CustomerPortal = () => {
                                     <span style={{ fontSize: '1.25rem' }}>💎</span>
                                     <span style={{ fontWeight: 'bold', color: '#166534', fontSize: '1.1rem' }}>
                                         {membership.memberships?.name}
+                                        {membership.vehicle_id && vehicles.find(v => v.id === membership.vehicle_id) && (
+                                            <span style={{ fontSize: '0.7rem', opacity: 0.7, display: 'block' }}>
+                                                Vinculado a: {getVehicleDisplayName(vehicles.find(v => v.id === membership.vehicle_id), customer)}
+                                            </span>
+                                        )}
                                     </span>
                                 </div>
                                 <span style={{
