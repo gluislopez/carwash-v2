@@ -68,9 +68,9 @@ const CustomerPortal = () => {
         const plate = clean(v?.plate);
 
         if (!brand && !model && cust) {
-            if (plate === clean(cust.vehicle_plate) || vehicles.length === 1) {
-                brand = clean(cust.vehicle_brand);
-                model = clean(cust.vehicle_model);
+            if (plate === clean(cust?.vehicle_plate) || vehicles.length === 1) {
+                brand = clean(cust?.vehicle_brand);
+                model = clean(cust?.vehicle_model);
             }
         }
 
@@ -151,9 +151,9 @@ const CustomerPortal = () => {
     // DERIVED STATS FOR PROGRESS BARS
     const visitsCount = useMemo(() => {
         const baseVisits = filteredHistory.filter(tx => getTransactionCategory(tx) !== 'membership_sale').length;
-        if (!selectedVehicleId) return baseVisits + (customer.manual_visit_count || 0);
+        if (!selectedVehicleId) return baseVisits + (customer?.manual_visit_count || 0);
         return baseVisits; // For specific vehicle, we don't often use manual_visit_count unless linked
-    }, [filteredHistory, selectedVehicleId, customer.manual_visit_count]);
+    }, [filteredHistory, selectedVehicleId, customer?.manual_visit_count]);
 
     // Timer to update progress bar every minute
     useEffect(() => {
