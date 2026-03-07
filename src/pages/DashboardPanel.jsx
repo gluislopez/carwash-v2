@@ -92,6 +92,24 @@ const Dashboard = () => {
     const [isEditingVisits, setIsEditingVisits] = useState(false);
     const [manualVisits, setManualVisits] = useState(0);
 
+    const clean = (val) => val && val !== 'null' && val !== 'undefined' ? val.trim() : '';
+
+    const getVehicleDisplayName = (v, cust) => {
+        let brand = clean(v?.brand);
+        let model = clean(v?.model);
+        const plate = clean(v?.plate);
+
+        if (!brand && !model && cust) {
+            if (plate === clean(cust?.vehicle_plate) || (customerVehicles && customerVehicles.length === 1)) {
+                brand = clean(cust?.vehicle_brand);
+                model = clean(cust?.vehicle_model);
+            }
+        }
+
+        if (!brand && !model) return plate || 'Vehículo';
+        return `${brand} ${model}`.trim();
+    };
+
     const handleUpdateManualVisits = async (customerId) => {
         try {
             const { error } = await supabase
