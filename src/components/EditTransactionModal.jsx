@@ -111,7 +111,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
         try {
             // Check if exists first to avoid onConflict unique constraint issues
-            vId = formData.vehicleId || transaction.vehicle_id;
+            const vId = formData.vehicleId || transaction.vehicle_id;
             const { data: existing } = await supabase
                 .from('customer_memberships')
                 .select('id')
@@ -153,7 +153,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
             setAllCustomerMemberships(updatedMemberships || []);
 
-            const vId = formData.vehicleId || transaction.vehicle_id;
             const match = updatedMemberships?.find(m => m.vehicle_id === vId || m.vehicle_id === null);
             setCustomerMembership(match || null);
             setIsMembershipUsage(true);
@@ -177,7 +176,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         if (!cId) return;
         if (!window.confirm("¿Seguro que deseas eliminar/cancelar la membresía de este cliente?")) return;
 
-        vId = formData.vehicleId || transaction.vehicle_id;
+        const vId = formData.vehicleId || transaction.vehicle_id;
         if (!vId) {
             alert("Selecciona un vehículo para cancelar su membresía.");
             return;
