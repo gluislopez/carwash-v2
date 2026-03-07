@@ -28,7 +28,7 @@ const Customers = () => {
     // Search and Stats State
     const [searchTerm, setSearchTerm] = useState('');
     const [visitCounts, setVisitCounts] = useState({});
-    const [activeMemberships, setActiveMemberships] = useState({});
+    const [activeMemberships, setActiveMemberships] = useState({}); // Map: "customerId-vehicleId" -> membership data
     const [availablePlans, setAvailablePlans] = useState([]);
 
     // HISTORY MODAL STATE
@@ -229,7 +229,9 @@ const Customers = () => {
         if (memberData) {
             const map = {};
             memberData.forEach(m => {
-                map[m.customer_id] = m;
+                // Key is customerId-vehicleId, handle null vehicleId as "null"
+                const key = `${m.customer_id}-${m.vehicle_id || 'null'}`;
+                map[key] = m;
             });
             setActiveMemberships(map);
         }
@@ -272,7 +274,9 @@ const Customers = () => {
     });
 
     const openModal = async (customer) => {
-        const activeSub = customer ? activeMemberships[customer.id] : null;
+        // Find memberships for this customer
+        const customerSubs = Object.values(activeMemberships).filter(m => m.customer_id === customer?.id);
+        const activeSub = customerSubs.length > 0 ? customerSubs[0] : null;
 
         if (customer) {
             setEditingCustomer(customer);
@@ -288,13 +292,14 @@ const Customers = () => {
                 vehicle_model: '',
                 points: customer.points || 0,
                 membership_id: activeSub ? activeSub.membership_id : '',
+                membership_vehicle_id: activeSub ? (activeSub.vehicle_id || 'all') : 'all',
                 stripe_subscription_id: activeSub ? activeSub.stripe_subscription_id : ''
             });
         } else {
             setEditingCustomer(null);
             setCustomerVehicles([]);
             setCustomerVehicles([]);
-            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '', stripe_subscription_id: '' });
+            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '', membership_vehicle_id: 'all', stripe_subscription_id: '' });
         }
         setEditingVehicleId(null); // Reset vehicle edit state
         setIsModalOpen(true);
@@ -476,7 +481,7 @@ const Customers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { membership_id, stripe_subscription_id, ...pureCustomerData } = formData;
+            const { membership_id, membership_vehicle_id, stripe_subscription_id, ...pureCustomerData } = formData;
             const customerData = {
                 ...pureCustomerData,
                 email: formData.email.trim() === '' ? null : formData.email.trim()
@@ -486,9 +491,12 @@ const Customers = () => {
                 await update(editingCustomer.id, customerData);
                 // Handle Membership Assignment
                 if (formData.membership_id) {
+                    const vehicleIdValue = formData.membership_vehicle_id === 'all' ? null : formData.membership_vehicle_id;
+
                     // UPSERT - Dynamic object to avoid sending columns that might not exist in older schemas
                     const membershipData = {
                         customer_id: editingCustomer.id,
+                        vehicle_id: vehicleIdValue,
                         membership_id: formData.membership_id,
                         status: 'active',
                         start_date: new Date().toISOString(),
@@ -505,7 +513,7 @@ const Customers = () => {
                         .upsert({
                             ...membershipData,
                             usage_count: 0
-                        }, { onConflict: 'customer_id' });
+                        }, { onConflict: 'customer_id,vehicle_id' }); // Updated conflict constraint
 
                     if (upErr) {
                         console.error("Membership Upsert Error:", upErr);
@@ -513,7 +521,7 @@ const Customers = () => {
                             delete membershipData.stripe_subscription_id;
                             const { error: retryErr } = await supabase
                                 .from('customer_memberships')
-                                .upsert({ ...membershipData, usage_count: 0 }, { onConflict: 'customer_id' });
+                                .upsert({ ...membershipData, usage_count: 0 }, { onConflict: 'customer_id,vehicle_id' });
                             if (retryErr) alert("Error al guardar membresía: " + retryErr.message);
                         } else {
                             alert("Error al guardar membresía: " + upErr.message);
@@ -522,46 +530,54 @@ const Customers = () => {
                         // FINANCIAL RECORD REMOVED: Handled by database trigger to prevent duplication.
                         const plan = availablePlans.find(p => p.id == formData.membership_id);
                         if (plan) {
-                            alert("✅ Membresía asignada correctamente. El registro financiero se genera automáticamente.");
+                            alert("✅ Membresía asignada correctamente.");
                             window.location.reload();
                         } else {
-                            console.warn("No se encontró el plan con ID:", formData.membership_id, "en", availablePlans);
-                            alert("✅ Datos guardados, pero no se generó transacción financiera (Plan no encontrado).");
+                            alert("✅ Datos guardados.");
                         }
                     }
-                } else {
-                    // If empty, delete any existing membership for this customer
-                    let deleteTx = false;
-                    const activeSub = activeMemberships[editingCustomer.id];
-                    if (activeSub && window.confirm("Has quitado la membresía. ¿Deseas también BORRAR el ingreso de venta ($69) de los reportes?")) {
-                        deleteTx = true;
-                    }
+                } else if (editingCustomer) {
+                    // If empty, delete any existing membership for this customer+vehicle
+                    const vehicleIdValue = formData.membership_vehicle_id === 'all' ? null : formData.membership_vehicle_id;
+                    const key = `${editingCustomer.id}-${vehicleIdValue || 'null'}`;
+                    const activeSub = activeMemberships[key];
 
-                    const { error: delError } = await supabase
-                        .from('customer_memberships')
-                        .delete()
-                        .eq('customer_id', editingCustomer.id);
+                    if (activeSub) {
+                        let deleteTx = false;
+                        if (window.confirm("Has quitado la membresía. ¿Deseas también BORRAR el ingreso de venta ($69) de los reportes?")) {
+                            deleteTx = true;
+                        }
 
-                    if (delError) console.error("Error deleting membership:", delError);
-
-                    if (deleteTx) {
-                        const { data: txs } = await supabase
-                            .from('transactions')
-                            .select('id')
+                        const { error: delError } = await supabase
+                            .from('customer_memberships')
+                            .delete()
                             .eq('customer_id', editingCustomer.id)
-                            .eq('payment_method', 'membership_sale')
-                            .order('created_at', { ascending: false })
-                            .limit(1);
-                        if (txs && txs.length > 0) {
-                            await supabase.from('transactions').delete().eq('id', txs[0].id);
+                            .eq('vehicle_id', vehicleIdValue);
+
+                        if (delError) console.error("Error deleting membership:", delError);
+
+                        if (deleteTx) {
+                            const { data: txs } = await supabase
+                                .from('transactions')
+                                .select('id')
+                                .eq('customer_id', editingCustomer.id)
+                                .eq('vehicle_id', vehicleIdValue)
+                                .eq('payment_method', 'membership_sale')
+                                .order('created_at', { ascending: false })
+                                .limit(1);
+                            if (txs && txs.length > 0) {
+                                await supabase.from('transactions').delete().eq('id', txs[0].id);
+                            }
                         }
                     }
                 }
             } else {
                 const newCustomer = await create(customerData);
                 if (newCustomer && formData.membership_id) {
+                    const vehicleIdValue = formData.membership_vehicle_id === 'all' ? null : formData.membership_vehicle_id;
                     const { data: newSub, error: insError } = await supabase.from('customer_memberships').insert([{
                         customer_id: newCustomer.id,
+                        vehicle_id: vehicleIdValue,
                         membership_id: formData.membership_id,
                         stripe_subscription_id: formData.stripe_subscription_id || null,
                         status: 'active',
@@ -583,6 +599,7 @@ const Customers = () => {
 
                             await supabase.from('transactions').insert([{
                                 customer_id: newCustomer.id,
+                                vehicle_id: vehicleIdValue,
                                 employee_id: empId,
                                 price: parseFloat(plan.price) || 0,
                                 total_price: parseFloat(plan.price) || 0,
@@ -606,7 +623,10 @@ const Customers = () => {
                 .eq('status', 'active');
             if (memberData) {
                 const map = {};
-                memberData.forEach(m => map[m.customer_id] = m);
+                memberData.forEach(m => {
+                    const key = `${m.customer_id}-${m.vehicle_id || 'null'}`;
+                    map[key] = m;
+                });
                 setActiveMemberships(map);
             }
         } catch (error) {
@@ -896,8 +916,8 @@ const Customers = () => {
                                             <Edit size={14} color="var(--text-muted)" />
                                         </button>
                                     )}
-                                    {activeMemberships[customer.id] && (
-                                        <span style={{
+                                    {Object.values(activeMemberships).filter(m => m.customer_id === customer.id).map(m => (
+                                        <span key={`${m.customer_id}-${m.vehicle_id}`} style={{
                                             backgroundColor: 'rgba(34, 197, 94, 0.1)',
                                             color: '#22C55E',
                                             padding: '0.1rem 0.5rem',
@@ -906,9 +926,9 @@ const Customers = () => {
                                             fontSize: '0.8rem',
                                             border: '1px solid rgba(34, 197, 94, 0.3)'
                                         }}>
-                                            💎 {activeMemberships[customer.id].memberships.name}
+                                            💎 {m.memberships.name} {m.vehicle_id && `(${allVehicles[customer.id]?.find(v => v.id === m.vehicle_id)?.plate || 'Auto'})`}
                                         </span>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -1298,17 +1318,47 @@ const Customers = () => {
                                     </div>
                                     <div style={{ marginBottom: '1rem' }}>
                                         <label className="label">Plan de Membresía</label>
-                                        <select
-                                            className="input"
-                                            value={formData.membership_id}
-                                            onChange={(e) => setFormData({ ...formData, membership_id: e.target.value })}
-                                            style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}
-                                        >
-                                            <option value="">-- Sin Membresía --</option>
-                                            {availablePlans.map(plan => (
-                                                <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
-                                            ))}
-                                        </select>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                            <select
+                                                className="input"
+                                                value={formData.membership_id}
+                                                onChange={(e) => setFormData({ ...formData, membership_id: e.target.value })}
+                                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                            >
+                                                <option value="">-- Sin Membresía --</option>
+                                                {availablePlans.map(plan => (
+                                                    <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                className="input"
+                                                value={formData.membership_vehicle_id}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFormData(prev => {
+                                                        const newFormData = { ...prev, membership_vehicle_id: val };
+                                                        // When vehicle changes, try to find if a plan already exists for THIS vehicle
+                                                        const key = `${editingCustomer?.id}-${val === 'all' ? 'null' : val}`;
+                                                        const existingSub = activeMemberships[key];
+                                                        if (existingSub) {
+                                                            newFormData.membership_id = existingSub.membership_id;
+                                                            newFormData.stripe_subscription_id = existingSub.stripe_subscription_id || '';
+                                                        } else {
+                                                            newFormData.membership_id = '';
+                                                            newFormData.stripe_subscription_id = '';
+                                                        }
+                                                        return newFormData;
+                                                    });
+                                                }}
+                                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                                disabled={!editingCustomer}
+                                            >
+                                                <option value="all">Todo el Cliente</option>
+                                                {customerVehicles.map(v => (
+                                                    <option key={v.id} value={v.id}>{v.plate} ({v.model})</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
                                     <div style={{ marginBottom: '1rem' }}>
                                         <label className="label">Stripe Subscription ID <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Opcional)</span></label>
@@ -1510,9 +1560,11 @@ const Customers = () => {
                                     </p>
                                 </div>
 
-                                {activeMemberships[editingCustomer?.id] && (
+                                {statsFormData.selected_sub_id && (
                                     <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '0.5rem', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                                        <label className="label" style={{ color: '#166534' }}>💎 Uso de Memebresía ({activeMemberships[editingCustomer?.id].memberships.name})</label>
+                                        <label className="label" style={{ color: '#166534' }}>
+                                            💎 Uso de Memebresía ({Object.values(activeMemberships).find(m => m.id === statsFormData.selected_sub_id)?.memberships.name})
+                                        </label>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <input
                                                 type="number"
@@ -1522,7 +1574,7 @@ const Customers = () => {
                                                 style={{ width: '80px' }}
                                             />
                                             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                                / {activeMemberships[editingCustomer?.id].memberships.limit_count || '∞'} lavados
+                                                / {Object.values(activeMemberships).find(m => m.id === statsFormData.selected_sub_id)?.memberships.limit_count || '∞'} lavados
                                             </span>
                                         </div>
                                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>

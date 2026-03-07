@@ -53,6 +53,11 @@ const CustomerPortal = () => {
     const [showIOSInstructions, setShowIOSInstructions] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // --- NEW: ADDITIONAL SERVICES STATE ---
+    const [allServices, setAllServices] = useState([]);
+    const [isUpdatingExtras, setIsUpdatingExtras] = useState(false);
+    const [showExtras, setShowExtras] = useState(false);
+
     // --- SHARED HELPERS ---
     const clean = (val) => (val && val !== 'null' && val !== 'undefined') ? val.toString().trim() : '';
 
@@ -389,6 +394,14 @@ const CustomerPortal = () => {
                     const sLink = settings.find(s => s.key === 'stripe_link');
                     if (sLink) setStripeLink(sLink.value);
                 }
+
+                // 7. Fetch All Services for "Extras" section
+                const { data: srvData } = await supabase
+                    .from('services')
+                    .select('*')
+                    .order('name', { ascending: true });
+                if (srvData) setAllServices(srvData);
+
             } catch (err) {
                 console.error("General Portal Error:", err);
             } finally {
@@ -429,6 +442,45 @@ const CustomerPortal = () => {
         } else {
             setShowPromo(true);
             setHasRated(true);
+        }
+    };
+
+    const handleAddExtra = async (service) => {
+        if (!activeService || isUpdatingExtras) return;
+
+        // Confirm before adding
+        if (!window.confirm(`¿Deseas añadir "${service.name}" por $${service.price} a tu servicio actual?`)) return;
+
+        setIsUpdatingExtras(true);
+        try {
+            const currentExtras = activeService.extras || [];
+            const newExtra = {
+                description: service.name,
+                price: parseFloat(service.price),
+                commission: parseFloat(service.commission || 0),
+                addedBy: 'customer'
+            };
+
+            const updatedExtras = [...currentExtras, newExtra];
+            const updatedPrice = parseFloat(activeService.price || 0) + parseFloat(service.price);
+
+            const { error } = await supabase
+                .from('transactions')
+                .update({
+                    extras: updatedExtras,
+                    price: updatedPrice
+                })
+                .eq('id', activeService.id);
+
+            if (error) throw error;
+
+            // Local state will be updated via REALTIME subscription already active in useEffect
+            alert("¡Servicio adicional añadido correctamente!");
+        } catch (err) {
+            console.error("Error adding extra:", err);
+            alert("Error al añadir servicio: " + err.message);
+        } finally {
+            setIsUpdatingExtras(false);
         }
     };
 
@@ -941,6 +993,109 @@ const CustomerPortal = () => {
                                     animation: progress < 100 ? 'progress-shimmer 2s linear infinite' : 'none'
                                 }}></div>
                             </div>
+
+                            {/* --- ADD EXTRA BUTTON INSIDE CARD --- */}
+                            {(activeService.status === 'waiting' || activeService.status === 'in_progress') && (
+                                <div style={{ marginTop: '1.25rem', borderTop: '1px dashed #e2e8f0', paddingTop: '1rem' }}>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowExtras(!showExtras);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            borderRadius: '0.75rem',
+                                            border: '1px solid #4f46e5',
+                                            backgroundColor: showExtras ? 'rgba(79, 70, 229, 0.05)' : 'white',
+                                            color: '#4f46e5',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.9rem',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <span>✨</span>
+                                        {showExtras ? 'Ocultar Servicios Extras' : '¿Deseas añadir algo más?'}
+                                    </button>
+
+                                    {/* --- MINI CAROUSEL INSIDE CARD --- */}
+                                    {showExtras && (
+                                        <div style={{
+                                            marginTop: '1rem',
+                                            display: 'flex',
+                                            gap: '0.75rem',
+                                            overflowX: 'auto',
+                                            padding: '0.25rem 0.25rem 0.75rem',
+                                            scrollbarWidth: 'none',
+                                            msOverflowStyle: 'none'
+                                        }} className="no-scrollbar">
+                                            {allServices
+                                                .filter(s => s.active !== false) // ONLY filter extras here
+                                                .filter(s => s.id !== activeService.service_id)
+                                                .filter(s => !(activeService.extras || []).some(e => e.description === s.name))
+                                                .map(service => (
+                                                    <div
+                                                        key={service.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleAddExtra(service);
+                                                        }}
+                                                        style={{
+                                                            flexShrink: 0,
+                                                            width: '125px',
+                                                            backgroundColor: '#f8fafc',
+                                                            borderRadius: '0.75rem',
+                                                            padding: '0.75rem',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            textAlign: 'center',
+                                                            justifyContent: 'space-between',
+                                                            minHeight: '135px',
+                                                            cursor: isUpdatingExtras ? 'default' : 'pointer',
+                                                            opacity: isUpdatingExtras ? 0.7 : 1,
+                                                            border: '1px solid #e2e8f0'
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 'bold',
+                                                            color: '#1e293b',
+                                                            marginBottom: '0.4rem',
+                                                            lineHeight: '1.2',
+                                                            width: '100%',
+                                                            wordBreak: 'break-word'
+                                                        }}>
+                                                            {service.name}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#10b981' }}>
+                                                            ${parseFloat(service.price).toFixed(0)}
+                                                        </div>
+                                                        <div style={{
+                                                            marginTop: '0.4rem',
+                                                            backgroundColor: '#4f46e5',
+                                                            color: 'white',
+                                                            borderRadius: '50%',
+                                                            width: '20px',
+                                                            height: '20px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.8rem'
+                                                        }}>+</div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <style>
                                 {`
                                     @keyframes progress-shimmer {
@@ -952,6 +1107,8 @@ const CustomerPortal = () => {
                         </div>
                     </div>
                 )}
+
+                {/* --- REMOVED OLD ADDITIONAL SERVICES SELECTION --- */}
 
 
                 {/* --- NEW GRID LAYOUT (SQUARES OF 3) --- */}

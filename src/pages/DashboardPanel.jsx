@@ -231,14 +231,6 @@ const Dashboard = () => {
     const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
-    // Auto-refresh transactions every 2 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            refreshTransactions();
-        }, 2000);
-        return () => clearInterval(interval);
-    }, [refreshTransactions]);
-
     const { data: expensesData } = useSupabase('expenses');
     const expenses = expensesData || [];
 
@@ -482,6 +474,7 @@ const Dashboard = () => {
     const [canRedeemPoints, setCanRedeemPoints] = useState(false); // Loyalty State
     const [isRedemption, setIsRedemption] = useState(false); // Loyalty State
     const [customerMembership, setCustomerMembership] = useState(null);
+    const [allCustomerMemberships, setAllCustomerMemberships] = useState([]); // Array of all active memberships for selected customer
     const [isMembershipUsage, setIsMembershipUsage] = useState(false);
 
     // SYNC PRICE: Recalculate anytime membership usage, service, or extras change
@@ -538,41 +531,45 @@ const Dashboard = () => {
         // Trigger auto-renewal check first if a month has passed
         await supabase.rpc('check_and_renew_membership', { p_customer_id: customerId });
 
-        const { data: memberSub } = await supabase
+        // Fetch ALL active memberships for this customer
+        const { data: memberSubs } = await supabase
             .from('customer_memberships')
             .select('*, memberships(*)')
             .eq('customer_id', customerId)
-            .eq('status', 'active')
-            .single();
+            .eq('status', 'active');
 
-        if (memberSub) {
-            setCustomerMembership(memberSub);
-            // AUTO-CHECK: If a service is already selected, check if it's a benefit
-            if (formData.serviceId) {
-                const service = services.find(s => s.id === formData.serviceId);
-                if (service) {
-                    const included = memberSub.memberships.included_services || [];
-                    const isIncluded = (included.length === 0) ? true : (included.includes(service.name) || included.includes(service.id));
-                    if (isIncluded) {
-                        const lastUsed = memberSub.last_used ? new Date(memberSub.last_used) : null;
-                        const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
+        setAllCustomerMemberships(memberSubs || []); // We'll need this new state
 
-                        // RELAXED CHECK: Unlimited plans still once-per-day. 
-                        // Limited plans can use multiple washes as long as they have balance.
-                        if (memberSub.memberships?.type === 'unlimited') {
-                            if (!isUsedToday) {
-                                setIsMembershipUsage(true);
-                                setFormData(prev => ({ ...prev, price: (prev.extras || []).reduce((sum, ex) => sum + (ex.price || 0), 0) }));
-                            }
-                        } else {
-                            // Limited: Check balance
-                            if ((memberSub.usage_count || 0) < (memberSub.memberships?.limit_count || 0)) {
-                                setIsMembershipUsage(true);
-                                setFormData(prev => ({ ...prev, price: (prev.extras || []).reduce((sum, ex) => sum + (ex.price || 0), 0) }));
+        // Re-calculate membership usage if a vehicle is already selected
+        if (formData.vehicleId && memberSubs) {
+            const vehicleSub = memberSubs.find(m => m.vehicle_id === formData.vehicleId || m.vehicle_id === null);
+            if (vehicleSub) {
+                setCustomerMembership(vehicleSub);
+                // AUTO-CHECK: If a service is already selected, check if it's a benefit
+                if (formData.serviceId) {
+                    const service = services.find(s => s.id === formData.serviceId);
+                    if (service) {
+                        const included = vehicleSub.memberships.included_services || [];
+                        const isIncluded = (included.length === 0) ? true : (included.includes(service.name) || included.includes(service.id));
+                        if (isIncluded) {
+                            const lastUsed = vehicleSub.last_used ? new Date(vehicleSub.last_used) : null;
+                            const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
+
+                            if (vehicleSub.memberships?.type === 'unlimited') {
+                                if (!isUsedToday) {
+                                    setIsMembershipUsage(true);
+                                }
+                            } else {
+                                if ((vehicleSub.usage_count || 0) < (vehicleSub.memberships?.limit_count || 0)) {
+                                    setIsMembershipUsage(true);
+                                }
                             }
                         }
                     }
                 }
+            } else {
+                setCustomerMembership(null);
+                setIsMembershipUsage(false);
             }
         } else {
             setCustomerMembership(null);
@@ -613,16 +610,18 @@ const Dashboard = () => {
         try {
             // Use UPSERT to either update the existing membership or insert a new one
             // This is safer than delete+insert because it is atomic and avoids unique constraint errors.
+            const vehicleIdValue = formData.vehicleId === 'all' || !formData.vehicleId ? null : formData.vehicleId;
             const { error: opError } = await supabase
                 .from('customer_memberships')
                 .upsert({
                     customer_id: formData.customerId,
+                    vehicle_id: vehicleIdValue,
                     membership_id: membershipId,
                     status: 'active',
                     start_date: new Date().toISOString(),
                     last_reset_at: new Date().toISOString(),
                     usage_count: 0 // Reset usage on new assignment
-                }, { onConflict: 'customer_id' });
+                }, { onConflict: 'customer_id,vehicle_id' });
 
             if (opError) {
                 console.error("UPSERT Error:", opError);
@@ -669,7 +668,11 @@ const Dashboard = () => {
             deleteTx = true;
         }
 
-        const { error } = await supabase.from('customer_memberships').delete().eq('customer_id', formData.customerId);
+        const vehicleIdValue = formData.vehicleId === 'all' || !formData.vehicleId ? null : formData.vehicleId;
+        const { error } = await supabase.from('customer_memberships')
+            .delete()
+            .eq('customer_id', formData.customerId)
+            .eq('vehicle_id', vehicleIdValue);
         if (error) {
             console.error("Error removing membership:", error);
             alert("Error al cancelar la membresía");
@@ -951,14 +954,15 @@ const Dashboard = () => {
     // DATE FILTER LOGIC
     // getPRDateString computes YYYY-MM-DD for Puerto Rico
 
+    const todayStr = getPRDateString(new Date());
+
     // Filter transactions
     const filteredTransactions = transactions.filter(t => {
         const txDateLocal = getPRDateString(t.date);
         const isActive = t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready' || t.status === 'unpaid';
 
         if (dateFilter === 'today') {
-            const today = getPRDateString(new Date());
-            return txDateLocal === today || isActive;
+            return txDateLocal === todayStr || isActive;
         } else {
             // Manual Range
             return txDateLocal >= dateRange.start && txDateLocal <= dateRange.end;
@@ -989,17 +993,26 @@ const Dashboard = () => {
     // Si es Admin, usa TODO. Si es Empleado, usa SOLO LO SUYO.
     const statsTransactions = userRole === 'admin' ? filteredTransactions : myTransactions;
 
-    // --- NOTIFICATIONS LOGIC (Moved here to access statsTransactions) ---
+    // --- NOTIFICATIONS & REALTIME LOGIC ---
     useEffect(() => {
-        if (!userRole || userRole !== 'admin') return;
+        if (!userRole) return;
 
-        // 1. REALTIME LISTENER FOR NEW SERVICES
+        // 1. REALTIME LISTENER FOR ALL CHANGES
         const channel = supabase
-            .channel('public:transactions')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
-                console.log('New transaction received:', payload);
-                playNewServiceSound();
-                refreshTransactions(); // Auto-refresh list
+            .channel('db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (payload) => {
+                console.log('Realtime change in transactions:', payload.eventType);
+
+                // Sound only for NEW services and if admin/manager
+                if (payload.eventType === 'INSERT' && (userRole === 'admin' || userRole === 'manager')) {
+                    playNewServiceSound();
+                }
+
+                refreshTransactions(); // Auto-refresh local state
+            })
+            // Also listen to assignments so employee dashboards update
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transaction_assignments' }, () => {
+                refreshTransactions();
             })
             .subscribe();
 
@@ -2104,8 +2117,17 @@ const Dashboard = () => {
                             </h3>
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-primary)', lineHeight: 1 }}>
                                 {userRole === 'admin' || userRole === 'manager'
-                                    ? statsTransactions.filter(t => getTransactionCategory(t) !== 'membership_sale').length
-                                    : statsTransactions.filter(t => t.status !== 'waiting' && getTransactionCategory(t) !== 'membership_sale').length}
+                                    ? statsTransactions.filter(t =>
+                                        getTransactionCategory(t) !== 'membership_sale' &&
+                                        t.status !== 'unpaid' &&
+                                        (dateFilter !== 'today' || getPRDateString(t.date) === todayStr)
+                                    ).length
+                                    : statsTransactions.filter(t =>
+                                        t.status !== 'waiting' &&
+                                        getTransactionCategory(t) !== 'membership_sale' &&
+                                        t.status !== 'unpaid' &&
+                                        (dateFilter !== 'today' || getPRDateString(t.date) === todayStr)
+                                    ).length}
                             </div>
                         </div>
 
@@ -2622,10 +2644,18 @@ const Dashboard = () => {
 
                                         {activeDetailModal === 'cars' && (
                                             <div>
-                                                {statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').length === 0 ? <p>No hay autos lavados hoy.</p> : (
+                                                {statsTransactions.filter(t =>
+                                                    getTransactionCategory(t) !== 'membership_sale' &&
+                                                    t.status !== 'unpaid' &&
+                                                    (dateFilter !== 'today' || getPRDateString(t.date) === todayStr)
+                                                ).length === 0 ? <p>No hay autos registrados hoy.</p> : (
                                                     <ul style={{ listStyle: 'none', padding: 0 }}>
                                                         {[...statsTransactions]
-                                                            .filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale')
+                                                            .filter(t =>
+                                                                getTransactionCategory(t) !== 'membership_sale' &&
+                                                                t.status !== 'unpaid' &&
+                                                                (dateFilter !== 'today' || getPRDateString(t.date) === todayStr)
+                                                            )
                                                             .sort((a, b) => {
                                                                 const dateA = new Date(a.date);
                                                                 const dateB = new Date(b.date);
@@ -2790,7 +2820,7 @@ const Dashboard = () => {
                                                                                 </div>
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
                                                                                     <div style={{ color: 'var(--warning)', fontWeight: 'bold' }}>
-                                                                                        {getServiceName(t.service_id)} - ${((parseFloat(t.price) || 0) + (t.extras?.reduce((sum, e) => sum + e.price, 0) || 0)).toFixed(2)}
+                                                                                        {getServiceName(t.service_id)} - Total: ${parseFloat(t.price || 0).toFixed(2)}
                                                                                     </div>
                                                                                     <div style={{
                                                                                         fontSize: '0.8rem',
@@ -2873,7 +2903,9 @@ const Dashboard = () => {
                                                                                     ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || 'Sin Placa'})
                                                                                 </div>
                                                                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
-                                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>{getServiceName(t.service_id)}</div>
+                                                                                <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>
+                                                                                    {getServiceName(t.service_id)} - Total: ${parseFloat(t.price || 0).toFixed(2)}
+                                                                                </div>
 
                                                                                 {t.finished_at && (
                                                                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
@@ -3589,7 +3621,36 @@ const Dashboard = () => {
                                                                                                 setIsAddingCustomer(true);
                                                                                             }
                                                                                         } else {
-                                                                                            setFormData({ ...formData, vehicleId: e.target.value });
+                                                                                            const vId = e.target.value;
+                                                                                            setFormData(prev => ({ ...prev, vehicleId: vId }));
+
+                                                                                            // RE-CALCULATE MEMBERSHIP FOR THIS VEHICLE
+                                                                                            const vehicleSub = allCustomerMemberships.find(m => m.vehicle_id === vId || m.vehicle_id === null);
+                                                                                            if (vehicleSub) {
+                                                                                                setCustomerMembership(vehicleSub);
+                                                                                                // Re-check if current service is included
+                                                                                                if (formData.serviceId) {
+                                                                                                    const service = services.find(s => s.id === formData.serviceId);
+                                                                                                    if (service) {
+                                                                                                        const included = vehicleSub.memberships.included_services || [];
+                                                                                                        const isIncluded = (included.length === 0) ? true : (included.includes(service.name) || included.includes(service.id));
+                                                                                                        if (isIncluded) {
+                                                                                                            const lastUsed = vehicleSub.last_used ? new Date(vehicleSub.last_used) : null;
+                                                                                                            const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
+                                                                                                            if (vehicleSub.memberships?.type === 'unlimited') {
+                                                                                                                setIsMembershipUsage(!isUsedToday);
+                                                                                                            } else {
+                                                                                                                setIsMembershipUsage((vehicleSub.usage_count || 0) < (vehicleSub.memberships?.limit_count || 0));
+                                                                                                            }
+                                                                                                        } else {
+                                                                                                            setIsMembershipUsage(false);
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            } else {
+                                                                                                setCustomerMembership(null);
+                                                                                                setIsMembershipUsage(false);
+                                                                                            }
                                                                                         }
                                                                                     }}
                                                                                     style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
@@ -4531,9 +4592,31 @@ const Dashboard = () => {
                             maxWidth: '400px'
                         }} onClick={e => e.stopPropagation()}>
                             <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Verificar antes de entregar</h2>
-                            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                                Confirma que todo esté listo para {verifyingTransaction.customers?.vehicle_plate}:
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                Confirma que todo esté listo para {verifyingTransaction.customers?.vehicle_plate || verifyingTransaction.vehicles?.plate}:
                             </p>
+
+                            <div style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1.5rem',
+                                border: '1px solid var(--border-color)'
+                            }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Servicios a Realizar</div>
+                                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--primary)' }}>
+                                    ✓ {getServiceName(verifyingTransaction.service_id)}
+                                </div>
+                                {verifyingTransaction.extras && verifyingTransaction.extras.length > 0 && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                        {verifyingTransaction.extras.map((extra, idx) => (
+                                            <div key={idx} style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ color: 'var(--success)' }}>✓</span> {extra.description}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
                             <div style={{
                                 backgroundColor: 'rgba(234, 179, 8, 0.1)',
