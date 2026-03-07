@@ -1315,7 +1315,14 @@ const CustomerPortal = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                             <div>
                                 <div style={{ fontSize: '0.8rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Membresía Activa</div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{membership.memberships.name}</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                    {membership.memberships.name}
+                                    {membership.vehicle_id && (
+                                        <span style={{ fontSize: '0.8rem', opacity: 0.8, display: 'block' }}>
+                                            🚗 {getVehicleDisplayName(vehicles.find(v => v.id === membership.vehicle_id), customer)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
                                 ACTIVO
@@ -1358,7 +1365,13 @@ const CustomerPortal = () => {
                             <div>
                                 <div style={{ opacity: 0.7 }}>Próximo Pago</div>
                                 <div style={{ fontWeight: 'bold' }}>
-                                    {membership.next_billing_date ? new Date(membership.next_billing_date).toLocaleDateString() : 'N/A'}
+                                    {(() => {
+                                        try {
+                                            const d = new Date(membership.last_reset_at || membership.start_date);
+                                            d.setMonth(d.getMonth() + 1);
+                                            return d.toLocaleDateString();
+                                        } catch (e) { return 'N/A'; }
+                                    })()}
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
