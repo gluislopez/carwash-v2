@@ -3918,6 +3918,13 @@ const Dashboard = () => {
                                                                     <option key={m.id} value={m.id}>{m.name} - ${m.price}</option>
                                                                 ))}
                                                             </select>
+                                                        </div>
+                                                        {formData.vehicleId && (
+                                                            <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#1e40af', backgroundColor: '#eff6ff', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
+                                                                🔗 Vincular a: {customerVehicles.find(v => v.id === formData.vehicleId) ? getVehicleDisplayName(customerVehicles.find(v => v.id === formData.vehicleId), customers.find(c => c.id === formData.customerId)) : 'Vehículo'} ({customerVehicles.find(v => v.id === formData.vehicleId)?.plate || 'Sin Placa'})
+                                                            </div>
+                                                        )}
+                                                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                                                             <button
                                                                 type="button"
                                                                 className="btn btn-primary"

@@ -438,13 +438,12 @@ const CustomerPortal = () => {
 
         let match = null;
         if (selectedVehicleId) {
-            // Find strictly for this vehicle
+            // STRICT MODE: Find ONLY the membership for THIS specific vehicle
             match = allMemberships.find(m => m.vehicle_id === selectedVehicleId);
-            // Fallback to legacy/global only if no specific one exists
-            if (!match) match = allMemberships.find(m => m.vehicle_id === null);
+            // No fallback to null vehicle_id here to avoid confusion between different cars
         } else {
-            // Global view: first global plan or the first found
-            match = allMemberships.find(m => m.vehicle_id === null) || allMemberships[0];
+            // Global view: show global plan if exists
+            match = allMemberships.find(m => m.vehicle_id === null);
         }
 
         setMembership(match || null);
