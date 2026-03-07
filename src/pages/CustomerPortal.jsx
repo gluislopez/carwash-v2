@@ -25,7 +25,8 @@ const CustomerPortal = () => {
     const [activeService, setActiveService] = useState(null);
     const [vehicles, setVehicles] = useState([]);
     const [selectedVehicleId, setSelectedVehicleId] = useState(null);
-    const [membership, setMembership] = useState(null);
+    const [allMemberships, setAllMemberships] = useState([]); // All active plans for this customer
+    const [membership, setMembership] = useState(null); // Current selected vehicle's plan
     const [subPayments, setSubPayments] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -342,26 +343,25 @@ const CustomerPortal = () => {
                 // Check and Renew Membership (if month passed)
                 await supabase.rpc('check_and_renew_membership', { p_customer_id: customerId });
 
-                // 4. Fetch Membership Details (Safe check for limit_count vs wash_limit)
-                const { data: memberSub } = await supabase
+                // 4. Fetch Membership Details (ALL active)
+                const { data: memberData } = await supabase
                     .from('customer_memberships')
                     .select('*, memberships(*)')
                     .eq('customer_id', customerId)
-                    .eq('status', 'active')
-                    .single();
+                    .eq('status', 'active');
 
-                if (memberSub) {
-                    setMembership(memberSub);
-
-                    // 5. Fetch Subscription Payments
-                    const { data: payments } = await supabase
-                        .from('subscription_payments')
-                        .select('*')
-                        .eq('customer_id', customerId)
-                        .order('payment_date', { ascending: false });
-                    if (payments) setSubPayments(payments);
+                if (memberData) {
+                    setAllMemberships(memberData);
+                    // Initial membership will be set by the useMemo or useEffect below
                 }
 
+                // 5. Fetch Subscription Payments
+                const { data: payments } = await supabase
+                    .from('subscription_payments')
+                    .select('*')
+                    .eq('customer_id', customerId)
+                    .order('payment_date', { ascending: false });
+                if (payments) setSubPayments(payments);
                 // 4.1 Fetch Available Plans (for Modal) - SORTED: Unlimited First, then Price
                 const { data: plans } = await supabase
                     .from('memberships')
@@ -421,6 +421,16 @@ const CustomerPortal = () => {
         return () => supabase.removeChannel(channel);
 
     }, [customerId]);
+
+    // Update current display membership when vehicle changes
+    useEffect(() => {
+        if (allMemberships.length > 0) {
+            const match = allMemberships.find(m => m.vehicle_id === selectedVehicleId || (m.vehicle_id === null && selectedVehicleId === null));
+            setMembership(match || null);
+        } else {
+            setMembership(null);
+        }
+    }, [selectedVehicleId, allMemberships]);
 
     const submitFeedback = async () => {
         if (rating === 0) return alert("Por favor selecciona las estrellas.");
