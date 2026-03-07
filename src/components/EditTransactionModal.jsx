@@ -32,7 +32,8 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
     // NEW MEMBERSHIP STATES
     const [memberships, setMemberships] = useState([]);
-    const [customerMembership, setCustomerMembership] = useState(null);
+    const [allCustomerMemberships, setAllCustomerMemberships] = useState([]); // All active plans for this customer
+    const [customerMembership, setCustomerMembership] = useState(null); // Current vehicle's plan
     const [isMembershipUsage, setIsMembershipUsage] = useState(false);
 
     // Load memberships and current customer membership
@@ -46,11 +47,10 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     }, []);
 
     React.useEffect(() => {
-        // Find the customer ID, it might be heavily nested or missing if the object is weird
         const cId = transaction?.customer_id || (transaction?.customers && transaction.customers.id);
         if (!cId) return;
 
-        const fetchCustomerMembership = async () => {
+        const fetchCustomerMemberships = async () => {
             // First, trigger automatic renewal if needed
             await supabase.rpc('check_and_renew_membership', { p_customer_id: cId });
 
@@ -58,26 +58,37 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
                 .from('customer_memberships')
                 .select('*, memberships(*)')
                 .eq('customer_id', cId)
-                .eq('status', 'active')
-                .single();
+                .eq('status', 'active');
 
-            console.log("DEBUG: Fetched customer membership for cId", cId, data, error);
+            console.log("DEBUG: Fetched all customer memberships for cId", cId, data, error);
 
             if (data) {
-                setCustomerMembership(data);
+                setAllCustomerMemberships(data);
 
-                // CRITICAL FIX: Only auto-enable if the transaction already IS a membership usage
-                // OR if it's a brand new selection in the dashboard (this is the Edit modal, so we respect transaction state)
+                // Set current membership based on initial vehicle
+                const vId = formData.vehicleId || transaction.vehicle_id;
+                const match = data.find(m => m.vehicle_id === vId || m.vehicle_id === null);
+                setCustomerMembership(match || null);
+
                 if (transaction.payment_method === 'membership' || transaction.payment_method === 'membership_usage') {
                     setIsMembershipUsage(true);
                 } else {
                     setIsMembershipUsage(false);
                 }
             }
-            if (error && error.code !== 'PGRST116') console.error("Error fetching customer membership", error); // Ignore no rows error
+            if (error) console.error("Error fetching customer memberships", error);
         };
-        fetchCustomerMembership();
+        fetchCustomerMemberships();
     }, [transaction]);
+
+    // Update current membership when vehicle changes in form
+    React.useEffect(() => {
+        const match = allCustomerMemberships.find(m => m.vehicle_id === formData.vehicleId || m.vehicle_id === null);
+        setCustomerMembership(match || null);
+
+        // If changing to a vehicle without membership, disable usage toggle
+        if (!match) setIsMembershipUsage(false);
+    }, [formData.vehicleId, allCustomerMemberships]);
 
     // SYNC PRICE: Recalculate anytime membership usage, service, or extras change
     React.useEffect(() => {
@@ -100,10 +111,12 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
         try {
             // Check if exists first to avoid onConflict unique constraint issues
+            vId = formData.vehicleId || transaction.vehicle_id;
             const { data: existing } = await supabase
                 .from('customer_memberships')
                 .select('id')
                 .eq('customer_id', cId)
+                .eq('vehicle_id', vId)
                 .maybeSingle();
 
             let opError;
@@ -121,19 +134,28 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             } else {
                 const { error } = await supabase
                     .from('customer_memberships')
-                    .insert({ customer_id: cId, membership_id: membershipId, status: 'active' });
+                    .insert({
+                        customer_id: cId,
+                        membership_id: membershipId,
+                        status: 'active',
+                        vehicle_id: vId
+                    });
                 opError = error;
             }
 
             if (opError) throw opError;
 
-            const { data: updatedMembership } = await supabase
+            const { data: updatedMemberships } = await supabase
                 .from('customer_memberships')
                 .select('*, memberships(*)')
                 .eq('customer_id', cId)
-                .single();
+                .eq('status', 'active');
 
-            setCustomerMembership(updatedMembership);
+            setAllCustomerMemberships(updatedMemberships || []);
+
+            const vId = formData.vehicleId || transaction.vehicle_id;
+            const match = updatedMemberships?.find(m => m.vehicle_id === vId || m.vehicle_id === null);
+            setCustomerMembership(match || null);
             setIsMembershipUsage(true);
 
             // FINANCIAL RECORD REMOVED: Handled by database trigger to prevent duplication.
@@ -155,7 +177,18 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         if (!cId) return;
         if (!window.confirm("¿Seguro que deseas eliminar/cancelar la membresía de este cliente?")) return;
 
-        const { error } = await supabase.from('customer_memberships').delete().eq('customer_id', cId);
+        vId = formData.vehicleId || transaction.vehicle_id;
+        if (!vId) {
+            alert("Selecciona un vehículo para cancelar su membresía.");
+            return;
+        }
+
+        const { error } = await supabase
+            .from('customer_memberships')
+            .delete()
+            .eq('customer_id', cId)
+            .eq('vehicle_id', vId);
+
         if (error) {
             console.error("Error removing membership:", error);
             alert("Error al cancelar la membresía");
