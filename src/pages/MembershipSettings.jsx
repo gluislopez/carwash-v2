@@ -46,11 +46,24 @@ const MembershipSettings = () => {
     const fetchSubscriptions = async () => {
         const { data, error } = await supabase
             .from('customer_memberships')
-            .select('*, customers(name, phone), memberships(name, price)')
+            .select('*, customers(name, phone), memberships(name, price), vehicles(brand, model, plate)')
             .eq('status', 'active');
 
         if (error) console.error("Error fetching subscriptions:", error);
         if (data) setSubscriptions(data);
+    };
+
+    const handleUpdateUsage = async (id, newUsage) => {
+        const { error } = await supabase
+            .from('customer_memberships')
+            .update({ usage_count: parseInt(newUsage) || 0 })
+            .eq('id', id);
+
+        if (error) {
+            alert("Error al actualizar usos: " + error.message);
+        } else {
+            fetchSubscriptions();
+        }
     };
 
     const handleSavePlan = async () => {
@@ -357,6 +370,22 @@ const MembershipSettings = () => {
                                             <td style={{ padding: '1rem' }}>
                                                 <div style={{ fontWeight: 'bold' }}>{sub.customers?.name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{sub.customers?.phone}</div>
+                                                {sub.vehicles && (
+                                                    <div style={{
+                                                        marginTop: '0.25rem',
+                                                        fontSize: '0.8rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.25rem',
+                                                        padding: '0.1rem 0.4rem',
+                                                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                                        color: 'var(--primary)',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid rgba(99, 102, 241, 0.2)'
+                                                    }}>
+                                                        🚗 {sub.vehicles.brand} {sub.vehicles.model} ({sub.vehicles.plate})
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <div>{sub.memberships?.name}</div>
@@ -370,7 +399,29 @@ const MembershipSettings = () => {
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1rem' }}>
-                                                {sub.usage_count} lavados
+                                                {sub.memberships?.type === 'unlimited' ? (
+                                                    <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>Ilimitado</span>
+                                                ) : (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <input
+                                                            type="number"
+                                                            value={sub.usage_count}
+                                                            onChange={(e) => handleUpdateUsage(sub.id, e.target.value)}
+                                                            style={{
+                                                                width: '60px',
+                                                                padding: '0.25rem',
+                                                                borderRadius: '0.25rem',
+                                                                border: '1px solid var(--border-color)',
+                                                                backgroundColor: 'var(--bg-secondary)',
+                                                                color: 'var(--text-primary)',
+                                                                textAlign: 'center'
+                                                            }}
+                                                        />
+                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                            / {sub.memberships?.limit_count || 0}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>
                                                 <button
