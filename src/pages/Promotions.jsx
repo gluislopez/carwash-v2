@@ -697,14 +697,14 @@ const FlyersTab = () => {
 
                 <div style={{ textAlign: 'center' }}>
                     <img
-                        src="/membership_flyer.png"
+                        src="/membership_flyer_v2.png"
                         alt="Membresía VIP Flyer"
                         style={{ maxWidth: '100%', borderRadius: '1rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}
                     />
 
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
                         <a
-                            href="/membership_flyer.png"
+                            href="/membership_flyer_v2.png"
                             download="Flyer_Membresia_VIP.png"
                             style={{
                                 padding: '1rem 2rem',
