@@ -144,6 +144,16 @@ const Promotions = () => {
                 >
                     4. Documentos Legales
                 </button>
+                <button
+                    onClick={() => setActiveTab('flyers')}
+                    style={{
+                        padding: '1rem', border: 'none', background: 'none', cursor: 'pointer',
+                        fontWeight: 'bold', color: activeTab === 'flyers' ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: activeTab === 'flyers' ? '3px solid var(--primary)' : 'none'
+                    }}
+                >
+                    5. Flyer & Material 🎨
+                </button>
             </div>
 
             {/* TAB CONTENT: PORTAL ANNOUNCEMENT */}
@@ -151,6 +161,9 @@ const Promotions = () => {
 
             {/* TAB CONTENT: LEGAL DOCUMENTS */}
             {activeTab === 'legal' && <LegalDocumentsTab customers={customers} memberships={memberships} />}
+
+            {/* TAB CONTENT: FLYERS */}
+            {activeTab === 'flyers' && <FlyersTab />}
 
             {/* TAB CONTENT: TEMPLATES */}
             {activeTab === 'templates' && (
@@ -659,6 +672,59 @@ const LegalDocumentsTab = ({ customers, memberships }) => {
                     <div style={{ marginLeft: '1.5rem', alignSelf: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                         <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', marginRight: '5px' }}></span>
                         {customerName ? 'Generando PDF personalizado' : 'Generando PDF genérico'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const FlyersTab = () => {
+    return (
+        <div style={{ maxWidth: '900px' }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--border-color)', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '0.75rem', backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderRadius: '0.5rem' }}>
+                        <FileText size={24} />
+                    </div>
+                    <div>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>Material de Promoción VIP</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            Descarga este flyer premium para compartirlo en tus redes sociales o imprimirlo para tu negocio.
+                        </p>
+                    </div>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                    <img
+                        src="/membership_flyer.png"
+                        alt="Membresía VIP Flyer"
+                        style={{ maxWidth: '100%', borderRadius: '1rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}
+                    />
+
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                        <a
+                            href="/membership_flyer.png"
+                            download="Flyer_Membresia_VIP.png"
+                            style={{
+                                padding: '1rem 2rem',
+                                borderRadius: '0.75rem',
+                                backgroundColor: 'var(--primary)',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                transition: 'transform 0.2s',
+                                cursor: 'pointer'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <Download size={20} />
+                            Descargar Flyer para Redes
+                        </a>
                     </div>
                 </div>
             </div>
