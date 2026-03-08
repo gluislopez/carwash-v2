@@ -343,7 +343,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
 
         // 1. DETERMINE NEW STATUS FIRST
         let newStatus = formData.status;
-        if (formData.status === 'pending') newStatus = 'paid';
+        if (formData.status === 'pending' || formData.status === 'unpaid') newStatus = 'paid';
         if (formData.status === 'ready') newStatus = 'completed';
 
         const isCompleting = newStatus === 'paid' || newStatus === 'completed';
@@ -504,7 +504,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     const handleSaveClick = () => {
         // Check if we are completing/paying
         let nextStatus = formData.status;
-        if (formData.status === 'pending') nextStatus = 'paid';
+        if (formData.status === 'pending' || formData.status === 'unpaid') nextStatus = 'paid';
         if (formData.status === 'ready') nextStatus = 'completed';
 
         const isCompleting = nextStatus === 'paid' || nextStatus === 'completed';
