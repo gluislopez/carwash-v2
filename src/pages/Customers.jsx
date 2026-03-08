@@ -25,6 +25,15 @@ const Customers = () => {
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for Stats Modal
     const [statsFormData, setStatsFormData] = useState({ points: 0, manual_visit_count: 0, usage_count: 0 });
 
+    // QUICK MEMBERSHIP STATE
+    const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+    const [memberModalData, setMemberModalData] = useState({
+        customer: null,
+        vehicle: null,
+        membership_id: '',
+        start_date: new Date().toISOString().split('T')[0]
+    });
+
     // Search and Stats State
     const [searchTerm, setSearchTerm] = useState('');
     const [visitCounts, setVisitCounts] = useState({});
@@ -616,22 +625,83 @@ const Customers = () => {
                 }
             }
             setIsModalOpen(false);
-            // Refresh memberships
-            const { data: memberData } = await supabase
-                .from('customer_memberships')
-                .select('*, memberships(name, type)')
-                .eq('status', 'active');
-            if (memberData) {
-                const map = {};
-                memberData.forEach(m => {
-                    const key = `${m.customer_id}-${m.vehicle_id || 'null'}`;
-                    map[key] = m;
-                });
-                setActiveMemberships(map);
-            }
+            refreshData();
         } catch (error) {
             alert('Error al guardar cliente: ' + error.message);
         }
+    };
+
+    const handleQuickAddMembership = async (e) => {
+        e.preventDefault();
+        try {
+            const { customer, vehicle, membership_id, start_date } = memberModalData;
+            if (!membership_id) return alert('Selecciona un plan');
+
+            const { error } = await supabase
+                .from('customer_memberships')
+                .upsert({
+                    customer_id: customer.id,
+                    vehicle_id: vehicle ? vehicle.id : null,
+                    membership_id: membership_id,
+                    status: 'active',
+                    start_date: new Date(start_date).toISOString(),
+                    last_reset_at: new Date(start_date).toISOString(),
+                    usage_count: 0
+                }, { onConflict: 'customer_id,vehicle_id' });
+
+            if (error) throw error;
+
+            // Optional: Create transaction record for the sale
+            const plan = availablePlans.find(p => p.id == membership_id);
+            if (plan) {
+                let empId = myEmployeeId;
+                if (!empId) {
+                    const { data: fallbackAdmin } = await supabase.from('employees').select('id').eq('role', 'admin').limit(1).single();
+                    empId = fallbackAdmin?.id;
+                }
+
+                await supabase.from('transactions').insert([{
+                    customer_id: customer.id,
+                    vehicle_id: vehicle ? vehicle.id : null,
+                    employee_id: empId,
+                    price: parseFloat(plan.price) || 0,
+                    total_price: parseFloat(plan.price) || 0,
+                    payment_method: 'membership_sale',
+                    status: 'paid',
+                    date: new Date(start_date).toISOString(),
+                    extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
+                }]);
+            }
+
+            setIsMemberModalOpen(false);
+            refreshData();
+            alert('✅ Membresía asignada correctamente');
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    };
+
+    const handleQuickRemoveMembership = async (customerId, vehicleId) => {
+        if (!window.confirm('¿Deseas quitar la membresía a este vehículo?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('customer_memberships')
+                .delete()
+                .eq('customer_id', customerId)
+                .eq('vehicle_id', vehicleId || null);
+
+            if (error) throw error;
+            refreshData();
+        } catch (error) {
+            alert('Error al eliminar: ' + error.message);
+        }
+    };
+
+    const refreshData = () => {
+        getMemberships();
+        getVisitCounts();
+        getAllVehicles();
     };
 
     const handleDelete = async (id) => {
@@ -941,7 +1011,27 @@ const Customers = () => {
                                             <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
                                             <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                                 {(v.brand || v.model) ? `${v.brand || ''} ${v.model || ''}` : 'Sin Modelo'}
-                                                {activeMemberships[`${customer.id}-${v.id}`] && <span style={{ marginLeft: '5px' }} title="Membresía Activa">💎</span>}
+                                                {activeMemberships[`${customer.id}-${v.id}`] ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <span title="Membresía Activa">💎</span>
+                                                        <button
+                                                            onClick={() => handleQuickRemoveMembership(customer.id, v.id)}
+                                                            style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', cursor: 'pointer' }}
+                                                        >
+                                                            Quitar
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            setMemberModalData({ ...memberModalData, customer, vehicle: v, membership_id: '', start_date: new Date().toISOString().split('T')[0] });
+                                                            setIsMemberModalOpen(true);
+                                                        }}
+                                                        style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22C55E', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}
+                                                    >
+                                                        + Membresía
+                                                    </button>
+                                                )}
                                             </span>
                                             <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
                                                 {v.plate || 'Sin Placa'}
@@ -953,7 +1043,27 @@ const Customers = () => {
                                         <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
                                         <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                             {customer.vehicle_model || 'Sin Modelo'}
-                                            {activeMemberships[`${customer.id}-null`] && <span style={{ marginLeft: '5px' }} title="Membresía Activa">💎</span>}
+                                            {activeMemberships[`${customer.id}-null`] ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    <span title="Membresía Activa">💎</span>
+                                                    <button
+                                                        onClick={() => handleQuickRemoveMembership(customer.id, null)}
+                                                        style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', cursor: 'pointer' }}
+                                                    >
+                                                        Quitar
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        setMemberModalData({ ...memberModalData, customer, vehicle: null, membership_id: '', start_date: new Date().toISOString().split('T')[0] });
+                                                        setIsMemberModalOpen(true);
+                                                    }}
+                                                    style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22C55E', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}
+                                                >
+                                                    + Membresía
+                                                </button>
+                                            )}
                                         </span>
                                         {customer.vehicle_plate && (
                                             <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>
@@ -1459,6 +1569,56 @@ const Customers = () => {
                     </div>
                 )
             }
+
+            {/* QUICK MEMBERSHIP MODAL */}
+            {isMemberModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
+                        <h3 style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>Asignar Membresía</span>
+                            <button onClick={() => setIsMemberModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                        </h3>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                            Cliente: <strong>{memberModalData.customer?.name}</strong><br />
+                            Vehículo: <strong>{memberModalData.vehicle ? `${memberModalData.vehicle.brand} ${memberModalData.vehicle.model} (${memberModalData.vehicle.plate})` : 'Membresía General'}</strong>
+                        </p>
+                        <form onSubmit={handleQuickAddMembership}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label className="label">Plan de Membresía</label>
+                                <select
+                                    className="input"
+                                    required
+                                    value={memberModalData.membership_id}
+                                    onChange={e => setMemberModalData({ ...memberModalData, membership_id: e.target.value })}
+                                    style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                >
+                                    <option value="">-- Seleccionar Plan --</option>
+                                    {availablePlans.map(plan => (
+                                        <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label className="label">Fecha de Comienzo</label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    required
+                                    value={memberModalData.start_date}
+                                    onChange={e => setMemberModalData({ ...memberModalData, start_date: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button type="button" className="btn" onClick={() => setIsMemberModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Activar ahora</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* CUSTOMER HISTORY MODAL */}
             {
