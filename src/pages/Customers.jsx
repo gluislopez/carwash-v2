@@ -31,6 +31,7 @@ const Customers = () => {
         customer: null,
         vehicle: null,
         membership_id: '',
+        manual_price: '',
         start_date: new Date().toISOString().split('T')[0]
     });
 
@@ -278,7 +279,9 @@ const Customers = () => {
         vehicle_plate: '',
         vehicle_model: '',
         points: 0,
+        points: 0,
         membership_id: '',
+        manual_price: '',
         stripe_subscription_id: ''
     });
 
@@ -301,6 +304,7 @@ const Customers = () => {
                 vehicle_model: '',
                 points: customer.points || 0,
                 membership_id: activeSub ? activeSub.membership_id : '',
+                manual_price: activeSub ? (activeSub.manual_price || '') : '',
                 membership_vehicle_id: activeSub ? (activeSub.vehicle_id || 'all') : 'all',
                 stripe_subscription_id: activeSub ? activeSub.stripe_subscription_id : ''
             });
@@ -308,7 +312,7 @@ const Customers = () => {
             setEditingCustomer(null);
             setCustomerVehicles([]);
             setCustomerVehicles([]);
-            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '', membership_vehicle_id: 'all', stripe_subscription_id: '' });
+            setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '', points: 0, membership_id: '', manual_price: '', membership_vehicle_id: 'all', stripe_subscription_id: '' });
         }
         setEditingVehicleId(null); // Reset vehicle edit state
         setIsModalOpen(true);
@@ -490,7 +494,7 @@ const Customers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { membership_id, membership_vehicle_id, stripe_subscription_id, ...pureCustomerData } = formData;
+            const { membership_id, manual_price, membership_vehicle_id, stripe_subscription_id, ...pureCustomerData } = formData;
             const customerData = {
                 ...pureCustomerData,
                 email: formData.email.trim() === '' ? null : formData.email.trim()
@@ -507,9 +511,8 @@ const Customers = () => {
                         customer_id: editingCustomer.id,
                         vehicle_id: vehicleIdValue,
                         membership_id: formData.membership_id,
-                        status: 'active',
-                        start_date: new Date().toISOString(),
-                        last_reset_at: new Date().toISOString()
+                        manual_price: formData.manual_price ? parseFloat(formData.manual_price) : null,
+                        status: 'active'
                     };
 
                     // Only add Stripe ID if it exists and has a value, to be safer
@@ -519,10 +522,7 @@ const Customers = () => {
 
                     const { error: upErr } = await supabase
                         .from('customer_memberships')
-                        .upsert({
-                            ...membershipData,
-                            usage_count: 0
-                        }, { onConflict: 'customer_id,vehicle_id' });
+                        .upsert(membershipData, { onConflict: 'customer_id,vehicle_id' });
 
                     if (upErr) {
                         console.error("Membership Upsert Error:", upErr);
@@ -531,7 +531,8 @@ const Customers = () => {
                         // FINANCIAL RECORD REMOVED: Handled by database trigger to prevent duplication.
                         const plan = availablePlans.find(p => p.id == formData.membership_id);
                         if (plan) {
-                            alert("✅ Membresía asignada correctamente.");
+                            const finalPrice = formData.manual_price ? parseFloat(formData.manual_price) : parseFloat(plan.price);
+                            alert(`✅ Membresía asignada correctamente con precio: $${finalPrice}`);
                             window.location.reload();
                         } else {
                             alert("✅ Datos guardados.");
@@ -580,6 +581,7 @@ const Customers = () => {
                         customer_id: newCustomer.id,
                         vehicle_id: vehicleIdValue,
                         membership_id: formData.membership_id,
+                        manual_price: formData.manual_price ? parseFloat(formData.manual_price) : null,
                         stripe_subscription_id: formData.stripe_subscription_id || null,
                         status: 'active',
                         usage_count: 0,
@@ -602,15 +604,15 @@ const Customers = () => {
                                 customer_id: newCustomer.id,
                                 vehicle_id: vehicleIdValue,
                                 employee_id: empId,
-                                price: parseFloat(plan.price) || 0,
-                                total_price: parseFloat(plan.price) || 0,
+                                price: formData.manual_price ? parseFloat(formData.manual_price) : (parseFloat(plan.price) || 0),
+                                total_price: formData.manual_price ? parseFloat(formData.manual_price) : (parseFloat(plan.price) || 0),
                                 payment_method: 'membership_sale',
                                 status: 'paid',
                                 date: new Date().toISOString(),
                                 service_id: null,
                                 commission_amount: 0,
                                 tip: 0,
-                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
+                                extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: formData.manual_price ? parseFloat(formData.manual_price) : (parseFloat(plan.price) || 0) }]
                             }]);
                         }
                     }
@@ -626,7 +628,7 @@ const Customers = () => {
     const handleQuickAddMembership = async (e) => {
         e.preventDefault();
         try {
-            const { customer, vehicle, membership_id, start_date } = memberModalData;
+            const { customer, vehicle, membership_id, manual_price, start_date } = memberModalData;
             if (!membership_id) return alert('Selecciona un plan');
 
             const { error } = await supabase
@@ -635,6 +637,7 @@ const Customers = () => {
                     customer_id: customer.id,
                     vehicle_id: vehicle ? vehicle.id : null,
                     membership_id: membership_id,
+                    manual_price: manual_price ? parseFloat(manual_price) : null,
                     status: 'active',
                     start_date: new Date(start_date).toISOString(),
                     last_reset_at: new Date(start_date).toISOString(),
@@ -656,12 +659,12 @@ const Customers = () => {
                     customer_id: customer.id,
                     vehicle_id: vehicle ? vehicle.id : null,
                     employee_id: empId,
-                    price: parseFloat(plan.price) || 0,
-                    total_price: parseFloat(plan.price) || 0,
+                    price: manual_price ? parseFloat(manual_price) : (parseFloat(plan.price) || 0),
+                    total_price: manual_price ? parseFloat(manual_price) : (parseFloat(plan.price) || 0),
                     payment_method: 'membership_sale',
                     status: 'paid',
                     date: new Date(start_date).toISOString(),
-                    extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: parseFloat(plan.price) || 0 }]
+                    extras: [{ description: `VENTA MEMBRESÍA: ${plan.name}`, price: manual_price ? parseFloat(manual_price) : (parseFloat(plan.price) || 0) }]
                 }]);
             }
 
@@ -1434,9 +1437,19 @@ const Customers = () => {
                                                     <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
                                                 ))}
                                             </select>
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                placeholder="Precio Especial"
+                                                value={formData.manual_price}
+                                                onChange={(e) => setFormData({ ...formData, manual_price: e.target.value })}
+                                                style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)', color: 'white', border: '1px solid gold' }}
+                                                title="Deja vacío para precio normal"
+                                            />
                                             <select
                                                 className="input"
                                                 value={formData.membership_vehicle_id}
+                                                style={{ gridColumn: 'span 2' }}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     setFormData(prev => {
@@ -1446,15 +1459,17 @@ const Customers = () => {
                                                         const existingSub = activeMemberships[key];
                                                         if (existingSub) {
                                                             newFormData.membership_id = existingSub.membership_id;
+                                                            newFormData.manual_price = existingSub.manual_price || '';
                                                             newFormData.stripe_subscription_id = existingSub.stripe_subscription_id || '';
                                                         } else {
                                                             newFormData.membership_id = '';
+                                                            newFormData.manual_price = '';
                                                             newFormData.stripe_subscription_id = '';
                                                         }
                                                         return newFormData;
                                                     });
                                                 }}
-                                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}
+                                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'white', gridColumn: 'span 2' }}
                                                 disabled={!editingCustomer}
                                             >
                                                 <option value="all">Todo el Cliente</option>
@@ -1592,6 +1607,18 @@ const Customers = () => {
                                         <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
                                     ))}
                                 </select>
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label className="label">Precio Especial (Manual)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    placeholder="Ej. 30.00"
+                                    value={memberModalData.manual_price || ''}
+                                    onChange={e => setMemberModalData({ ...memberModalData, manual_price: e.target.value })}
+                                    style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)', color: 'white', border: '1px solid gold' }}
+                                />
+                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>* Deja vacío para usar el precio normal del plan.</p>
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label className="label">Fecha de Comienzo</label>
