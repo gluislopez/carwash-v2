@@ -137,11 +137,6 @@ const CustomerPortal = () => {
     const vehiclePoints = selectedVehicle ? selectedVehicle.points : (customer?.points || totalVehiclePoints || 0);
     const vehicleRedeemed = selectedVehicle ? selectedVehicle.redeemed_coupons : (customer?.redeemed_coupons || totalVehicleRedeemed || 0);
 
-    const availableCouponsCount = useMemo(() => {
-        const earned = Math.floor(vehiclePoints / 10);
-        return Math.max(0, earned - vehicleRedeemed);
-    }, [vehiclePoints, vehicleRedeemed]);
-
     const filteredHistory = useMemo(() => {
         const visibleHistory = history.filter(tx => tx.status !== 'cancelled');
         if (!selectedVehicleId) return visibleHistory;
@@ -154,6 +149,11 @@ const CustomerPortal = () => {
         if (!selectedVehicleId) return baseVisits + (customer?.manual_visit_count || 0);
         return baseVisits; // For specific vehicle, we don't often use manual_visit_count unless linked
     }, [filteredHistory, selectedVehicleId, customer?.manual_visit_count]);
+
+    const availableCouponsCount = useMemo(() => {
+        const earned = Math.floor(visitsCount / 10);
+        return Math.max(0, earned - vehicleRedeemed);
+    }, [visitsCount, vehicleRedeemed]);
 
     // Timer to update progress bar every minute
     useEffect(() => {
@@ -700,7 +700,7 @@ const CustomerPortal = () => {
                     }} onClick={e => e.stopPropagation()}>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b' }}>Mis Vehículos y Puntos</h2>
+                            <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#1e293b' }}>Mis Vehículos y Visitas</h2>
                             <button onClick={() => setShowVehiclesModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
                                 <X size={24} />
                             </button>
@@ -723,16 +723,33 @@ const CustomerPortal = () => {
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'center' }}>
-                                        {!membership && (
-                                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
-                                                {v.points || 0} pts
-                                            </div>
-                                        )}
-                                        {membership && (
-                                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#166534' }}>
-                                                PLAN 💎
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const vVisits = history.filter(tx =>
+                                                tx.vehicle_id === v.id &&
+                                                tx.status !== 'cancelled' &&
+                                                getTransactionCategory(tx) !== 'membership_sale'
+                                            ).length;
+                                            const vCoupons = Math.floor(vVisits / 10);
+                                            const vRedeemed = v.redeemed_coupons || 0;
+                                            const vCouponsAvailable = Math.max(0, vCoupons - vRedeemed);
+                                            return (
+                                                <>
+                                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>
+                                                        {vVisits} visitas
+                                                    </div>
+                                                    {vCouponsAvailable > 0 && (
+                                                        <div style={{ fontSize: '0.7rem', color: '#4f46e5', fontWeight: 'bold', marginTop: '0.1rem' }}>
+                                                            🎁 {vCouponsAvailable} 50% OFF
+                                                        </div>
+                                                    )}
+                                                    {vCouponsAvailable === 0 && (
+                                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.1rem' }}>
+                                                            {10 - (vVisits % 10)} para 50%
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                         <button
                                             onClick={() => {
                                                 setSelectedVehicleId(v.id);
@@ -742,7 +759,7 @@ const CustomerPortal = () => {
                                                 fontSize: '0.75rem', padding: '0.3rem 0.6rem',
                                                 backgroundColor: '#3b82f6', color: 'white',
                                                 border: 'none', borderRadius: '0.4rem',
-                                                marginTop: '0.2rem', cursor: 'pointer'
+                                                marginTop: '0.3rem', cursor: 'pointer'
                                             }}
                                         >
                                             Ver Historial
@@ -849,10 +866,6 @@ const CustomerPortal = () => {
                         </div>
                         {!membership && (
                             <>
-                                <div style={{ textAlign: 'center', flex: 1 }}>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{vehiclePoints}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Puntos</div>
-                                </div>
                                 <div style={{ textAlign: 'center', flex: 1.5, borderLeft: '1px solid #e2e8f0', paddingLeft: '0.75rem' }}>
                                     {availableCouponsCount > 0 ? (
                                         <button
@@ -868,7 +881,7 @@ const CustomerPortal = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                             <div style={{ fontSize: '1.3rem', filter: 'grayscale(0.5)', opacity: 0.8 }}>🎁</div>
                                             <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.2rem' }}>
-                                                {10 - (vehiclePoints % 10)} pts para 50%
+                                                {10 - (visitsCount % 10)} visitas para 50%
                                             </div>
                                         </div>
                                     )}
@@ -943,8 +956,8 @@ const CustomerPortal = () => {
                                         : `Lavados disponibles: ${Math.max(0, (membership.memberships?.limit_count || 0) - (membership.usage_count || 0))} de ${membership.memberships?.limit_count || 0}`}
                                 </span>
                                 {membership.last_reset_at && (
-                                    <span style={{ fontSize: '0.75rem', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                        <Calendar size={12} />
+                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                        <Calendar size={16} />
                                         Renovación: {(() => {
                                             try {
                                                 const d = new Date(membership.last_reset_at);
