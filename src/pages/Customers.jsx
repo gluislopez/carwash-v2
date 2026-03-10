@@ -522,19 +522,11 @@ const Customers = () => {
                         .upsert({
                             ...membershipData,
                             usage_count: 0
-                        }, { onConflict: 'customer_id,vehicle_id' }); // Updated conflict constraint
+                        }, { onConflict: 'customer_id,vehicle_id' });
 
                     if (upErr) {
                         console.error("Membership Upsert Error:", upErr);
-                        if (upErr.message.includes("stripe_subscription_id")) {
-                            delete membershipData.stripe_subscription_id;
-                            const { error: retryErr } = await supabase
-                                .from('customer_memberships')
-                                .upsert({ ...membershipData, usage_count: 0 }, { onConflict: 'customer_id,vehicle_id' });
-                            if (retryErr) alert("Error al guardar membresía: " + retryErr.message);
-                        } else {
-                            alert("Error al guardar membresía: " + upErr.message);
-                        }
+                        alert("Error al guardar membresía: " + upErr.message + "\n\nTip: Verifica que no haya duplicados o que la base de datos tenga la columna 'vehicle_id'.");
                     } else {
                         // FINANCIAL RECORD REMOVED: Handled by database trigger to prevent duplication.
                         const plan = availablePlans.find(p => p.id == formData.membership_id);
