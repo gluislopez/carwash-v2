@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Trash2, Edit2, Save, X, Award, CheckCircle, Info, Users, DollarSign, Calendar } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Award, CheckCircle, Info, Users, DollarSign, Calendar, Pencil } from 'lucide-react';
 
 const MembershipSettings = () => {
     const [activeTab, setActiveTab] = useState('plans'); // 'plans' or 'subs'
@@ -15,6 +15,10 @@ const MembershipSettings = () => {
         type: 'limit',
         limit_count: 0
     });
+
+    // INLINE PRICE EDITING STATE
+    const [editingPriceId, setEditingPriceId] = useState(null);
+    const [editingPriceValue, setEditingPriceValue] = useState('');
 
     const [error, setError] = useState(null);
 
@@ -101,7 +105,7 @@ const MembershipSettings = () => {
     };
 
     const handleCollectPayment = async (sub) => {
-        const amount = sub.memberships.price;
+        const amount = sub.manual_price != null ? sub.manual_price : sub.memberships.price;
         const nextDate = new Date();
         nextDate.setMonth(nextDate.getMonth() + 1);
 
@@ -126,7 +130,26 @@ const MembershipSettings = () => {
         }
     };
 
-    const mrr = subscriptions.reduce((sum, sub) => sum + (sub.memberships?.price || 0), 0);
+    const handleSavePrice = async (subId) => {
+        const newPrice = editingPriceValue.trim() === '' ? null : parseFloat(editingPriceValue);
+        const { error } = await supabase
+            .from('customer_memberships')
+            .update({ manual_price: newPrice })
+            .eq('id', subId);
+
+        if (error) {
+            alert('Error al actualizar precio: ' + error.message);
+        } else {
+            setEditingPriceId(null);
+            setEditingPriceValue('');
+            fetchSubscriptions();
+        }
+    };
+
+    const mrr = subscriptions.reduce((sum, sub) => {
+        const effectivePrice = sub.manual_price != null ? sub.manual_price : (sub.memberships?.price || 0);
+        return sum + effectivePrice;
+    }, 0);
 
     return (
         <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)' }}>
@@ -389,7 +412,50 @@ const MembershipSettings = () => {
                                             </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <div>{sub.memberships?.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>${sub.memberships?.price}/mes</div>
+                                                {editingPriceId === sub.id ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
+                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>$</span>
+                                                        <input
+                                                            type="number"
+                                                            value={editingPriceValue}
+                                                            onChange={e => setEditingPriceValue(e.target.value)}
+                                                            placeholder={sub.memberships?.price?.toString()}
+                                                            autoFocus
+                                                            onKeyDown={e => { if (e.key === 'Enter') handleSavePrice(sub.id); if (e.key === 'Escape') setEditingPriceId(null); }}
+                                                            style={{
+                                                                width: '80px', padding: '0.25rem 0.4rem', borderRadius: '0.25rem',
+                                                                border: '2px solid gold', backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                                                                color: 'white', textAlign: 'center', fontSize: '0.85rem'
+                                                            }}
+                                                        />
+                                                        <button onClick={() => handleSavePrice(sub.id)} title="Guardar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--success)', padding: '0.15rem' }}>
+                                                            <Save size={14} />
+                                                        </button>
+                                                        <button onClick={() => setEditingPriceId(null)} title="Cancelar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '0.15rem' }}>
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>
+                                                        {sub.manual_price != null ? (
+                                                            <>
+                                                                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'gold' }}>${sub.manual_price}/mes</span>
+                                                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>${sub.memberships?.price}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>${sub.memberships?.price}/mes</span>
+                                                        )}
+                                                        <button
+                                                            onClick={() => { setEditingPriceId(sub.id); setEditingPriceValue(sub.manual_price != null ? sub.manual_price.toString() : ''); }}
+                                                            title="Editar precio"
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.15rem', opacity: 0.6, transition: 'opacity 0.2s' }}
+                                                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                                            onMouseLeave={e => e.currentTarget.style.opacity = 0.6}
+                                                        >
+                                                            <Pencil size={13} />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: isOverdue ? 'var(--danger)' : 'inherit', fontWeight: isOverdue ? 'bold' : 'normal' }}>
