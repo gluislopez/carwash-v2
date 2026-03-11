@@ -1726,7 +1726,7 @@ const CustomerPortal = () => {
                                         <div style={{ marginBottom: '1.5rem', backgroundColor: '#eff6ff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #bfdbfe' }}>
                                             <h4 style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '0.75rem' }}>Resumen de Suscripción:</h4>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{availablePlans.find(p => p.id === selectedPlanId)?.name}</span>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b' }}>{availablePlans.find(p => p.id === selectedPlanId)?.name}</span>
                                                 <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#3b82f6' }}>${availablePlans.find(p => p.id === selectedPlanId)?.price}/mes</span>
                                             </div>
                                             {selectedVehicleId && (
