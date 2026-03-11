@@ -582,9 +582,22 @@ const CustomerPortal = () => {
         if (!selectedPlanId) return;
         const plan = availablePlans.find(p => p.id === selectedPlanId);
         
-        // Dynamic import to avoid heavy bundle if not used
-        import('../utils/pdfGenerator').then(module => {
-            module.generateMembershipTermsPDF(customer, plan);
+        import('../utils/pdfGenerator').then(async (module) => {
+            const vehicleInfo = selectedVehicleId ? getVehicleDisplayName(vehicles.find(v => v.id === selectedVehicleId), customer) : (vehicles.length > 0 ? getVehicleDisplayName(vehicles[0], customer) : 'Vehículo general');
+            const { blob, fileName } = await module.generateMembershipTermsPDF(
+                customer?.name || '',
+                plan?.name || '',
+                vehicleInfo,
+                new Date().toLocaleDateString('es-PR')
+            );
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         });
     };
 
@@ -1652,7 +1665,7 @@ const CustomerPortal = () => {
                             </div>
 
                             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {availablePlans.map(plan => {
+                                {!selectedPlanId ? availablePlans.map(plan => {
                                     const isUnlimited = (plan.type === 'unlimited' || plan.name.toLowerCase().includes('ilimitado') || plan.name.toLowerCase().includes('unlimited'));
 
                                     return (
@@ -1694,11 +1707,7 @@ const CustomerPortal = () => {
                                             </ul>
 
                                             <button
-                                                onClick={() => {
-                                                    const message = `Hola, soy ${customer.name}, me interesa suscribirme al plan *${plan.name}* de $${plan.price}.`;
-                                                    const whatsappUrl = `https://wa.me/17878578983?text=${encodeURIComponent(message)}`;
-                                                    window.open(whatsappUrl, '_blank');
-                                                }}
+                                                onClick={() => setSelectedPlanId(plan.id)}
                                                 style={{
                                                     width: '100%', padding: '0.8rem',
                                                     backgroundColor: '#3b82f6', color: 'white',
@@ -1708,16 +1717,82 @@ const CustomerPortal = () => {
                                                     cursor: 'pointer', boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
                                                 }}
                                             >
-                                                Suscribirme <span style={{ fontSize: '0.8rem' }}>via WhatsApp</span>
+                                                Seleccionar Plan
                                             </button>
                                         </div>
                                     );
-                                })}
+                                }) : (
+                                    <div style={{ padding: '0.5rem' }}>
+                                        <div style={{ marginBottom: '1.5rem', backgroundColor: '#eff6ff', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #bfdbfe' }}>
+                                            <h4 style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '0.75rem' }}>Resumen de Suscripción:</h4>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{availablePlans.find(p => p.id === selectedPlanId)?.name}</span>
+                                                <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#3b82f6' }}>${availablePlans.find(p => p.id === selectedPlanId)?.price}/mes</span>
+                                            </div>
+                                            {selectedVehicleId && (
+                                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#3b82f6', fontWeight: '600' }}>
+                                                    🚗 Vinculado a: {getVehicleDisplayName(vehicles.find(v => v.id === selectedVehicleId), customer)}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={acceptedTerms}
+                                                    onChange={e => setAcceptedTerms(e.target.checked)}
+                                                    style={{ width: '20px', height: '20px', marginTop: '0.1rem', cursor: 'pointer' }}
+                                                />
+                                                <span style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5' }}>
+                                                    Acepto los términos y condiciones. Entiendo que esta es una suscripción mensual. Solo aplica al vehículo especificado.
+                                                </span>
+                                            </label>
+                                        </div>
+
+                                        <button 
+                                            onClick={handleDownloadTerms}
+                                            style={{ 
+                                                width: '100%', padding: '0.75rem', backgroundColor: 'transparent',
+                                                border: '1px solid #3b82f6', color: '#3b82f6', fontWeight: 'bold',
+                                                borderRadius: '0.5rem', marginBottom: '1rem', cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                            }}
+                                        >
+                                            <FileText size={18} /> Leer Términos Completos
+                                        </button>
+
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button 
+                                                onClick={() => { setSelectedPlanId(null); setAcceptedTerms(false); }}
+                                                style={{ flex: 1, padding: '0.8rem', backgroundColor: '#f1f5f9', color: '#64748b', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                Atrás
+                                            </button>
+                                            <button 
+                                                onClick={handleSubscribe}
+                                                disabled={!acceptedTerms || submittingSubscription}
+                                                style={{ 
+                                                    flex: 2, padding: '0.8rem', backgroundColor: '#10b981', color: 'white', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', 
+                                                    cursor: (!acceptedTerms || submittingSubscription) ? 'not-allowed' : 'pointer',
+                                                    opacity: (!acceptedTerms || submittingSubscription) ? 0.6 : 1
+                                                }}
+                                            >
+                                                {submittingSubscription ? 'Procesando...' : 'Confirmar Petición'}
+                                            </button>
+                                        </div>
+                                        <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '1rem' }}>
+                                            Completarás tu suscripción al realizar el primer pago en el carwash.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
-                            <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
-                                Puedes cancelar en cualquier momento.
-                            </div>
+                            {!selectedPlanId && (
+                                <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                    Puedes cancelar en cualquier momento.
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
