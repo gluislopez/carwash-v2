@@ -1354,27 +1354,29 @@ const CustomerPortal = () => {
                         <div
                             onClick={() => setShowMembershipModal(true)}
                             style={{
-                                width: '100%', maxWidth: '350px',
-                                backgroundColor: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', // Fallback color
-                                background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
-                                borderRadius: '1rem', padding: '1rem',
-                                boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
+                                width: '100%', maxWidth: '100%', // take full width of container
+                                backgroundColor: 'white',
+                                borderRadius: '1rem', padding: '1.25rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
                                 cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                color: 'white'
+                                transition: 'transform 0.1s',
+                                border: '1px solid #e2e8f0'
                             }}
+                            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.8rem', borderRadius: '50%' }}>
-                                    <Award size={24} color="white" />
+                                <div style={{ backgroundColor: '#eff6ff', padding: '0.8rem', borderRadius: '50%' }}>
+                                    <Award size={26} color="#3b82f6" />
                                 </div>
-                                <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Membresías VIP</div>
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Ahorra con planes mensuales</div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.15rem', color: '#1e293b' }}>Membresías VIP</div>
+                                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Ahorra con planes mensuales</div>
                                 </div>
                             </div>
                             <div>
-                                <div style={{ backgroundColor: 'white', color: '#4f46e5', fontWeight: 'bold', padding: '0.4rem 0.8rem', borderRadius: '2rem', fontSize: '0.85rem' }}>
+                                <div style={{ backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold', padding: '0.5rem 1rem', borderRadius: '2rem', fontSize: '0.85rem', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}>
                                     Ver Planes
                                 </div>
                             </div>
