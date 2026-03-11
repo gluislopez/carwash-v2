@@ -22,6 +22,7 @@ import BusinessSettings from './pages/BusinessSettings';
 import Commissions from './pages/Commissions';
 import TestDeployment from './pages/TestDeployment';
 import CouponVerifier from './pages/CouponVerifier';
+import MembershipSubscribe from './pages/MembershipSubscribe';
 
 // Componente para proteger rutas
 const RequireAuth = ({ children }) => {
@@ -161,6 +162,7 @@ const AppRoot = () => {
                 <Route path="/test-deployment" element={<TestDeployment />} />
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
+                <Route path="/subscribe" element={<MembershipSubscribe />} />
 
                 {/* SMART ROOT (Decides where to go) */}
                 <Route path="/" element={<SmartRoot />} />

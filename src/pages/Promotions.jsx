@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Trash2, Send, MessageSquare, Search, Users, Edit2, Save, X, FileText, Download } from 'lucide-react';
+import { Plus, Trash2, Send, MessageSquare, Search, Users, Edit2, Save, X, FileText, Download, Link, Copy, ExternalLink } from 'lucide-react';
 import { generateMembershipTermsPDF } from '../utils/pdfGenerator';
 
 const Promotions = () => {
@@ -154,6 +154,16 @@ const Promotions = () => {
                 >
                     5. Flyer & Material 🎨
                 </button>
+                <button
+                    onClick={() => setActiveTab('subscription')}
+                    style={{
+                        padding: '1rem', border: 'none', background: 'none', cursor: 'pointer',
+                        fontWeight: 'bold', color: activeTab === 'subscription' ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: activeTab === 'subscription' ? '3px solid var(--primary)' : 'none'
+                    }}
+                >
+                    6. Link de Suscripción 🔥
+                </button>
             </div>
 
             {/* TAB CONTENT: PORTAL ANNOUNCEMENT */}
@@ -164,6 +174,9 @@ const Promotions = () => {
 
             {/* TAB CONTENT: FLYERS */}
             {activeTab === 'flyers' && <FlyersTab />}
+
+            {/* TAB CONTENT: SUBSCRIPTION LINK */}
+            {activeTab === 'subscription' && <SubscriptionLinkTab />}
 
             {/* TAB CONTENT: TEMPLATES */}
             {activeTab === 'templates' && (
@@ -726,6 +739,87 @@ const FlyersTab = () => {
                             Descargar Flyer para Redes
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SubscriptionLinkTab = () => {
+    const subscribeUrl = `${window.location.origin}/subscribe`;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(subscribeUrl);
+        alert("¡Link copiado al portapapeles! Ya puedes enviarlo por WhatsApp.");
+    };
+
+    return (
+        <div style={{ maxWidth: '800px' }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--border-color)', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '0.75rem', backgroundColor: 'rgba(249, 115, 22, 0.1)', color: '#f97316', borderRadius: '0.5rem' }}>
+                        <Link size={24} />
+                    </div>
+                    <div>
+                        <h3 style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>Link Público de Suscripción</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            Usa este link para que tus clientes se registren ellos mismos en una membresía desde su celular.
+                        </p>
+                    </div>
+                </div>
+
+                <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '2rem', border: '1px dashed var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '200px', backgroundColor: 'var(--bg-card)', padding: '0.75rem 1rem', borderRadius: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {subscribeUrl}
+                        </div>
+                        <button 
+                            onClick={handleCopy}
+                            style={{ 
+                                padding: '0.75rem 1.5rem', 
+                                borderRadius: '0.5rem', 
+                                border: 'none', 
+                                backgroundColor: 'var(--primary)', 
+                                color: 'white', 
+                                fontWeight: 'bold', 
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <Copy size={18} /> Copiar Link
+                        </button>
+                        <a 
+                            href={subscribeUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                                padding: '0.75rem 1.5rem', 
+                                borderRadius: '0.5rem', 
+                                border: '1px solid var(--border-color)', 
+                                backgroundColor: 'transparent', 
+                                color: 'var(--text-primary)', 
+                                fontWeight: 'bold', 
+                                textDecoration: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <ExternalLink size={18} /> Probar Link
+                        </a>
+                    </div>
+                </div>
+
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <h4 style={{ color: 'var(--text-primary)', fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 ¿Cómo usarlo?</h4>
+                    <ol style={{ paddingLeft: '1.2rem', marginBottom: '0' }}>
+                        <li style={{ marginBottom: '0.5rem' }}><b>Copia el link</b> arriba.</li>
+                        <li style={{ marginBottom: '0.5rem' }}>Ve a WhatsApp y pega el link en el chat de tu cliente o en tus estados.</li>
+                        <li style={{ marginBottom: '0.5rem' }}>El cliente abrirá el link, elegirá su plan y completará sus datos.</li>
+                        <li>Recibirás la suscripción como <b>Pendiente</b> en "Membresías" hasta que el cliente pague en el carwash.</li>
+                    </ol>
                 </div>
             </div>
         </div>

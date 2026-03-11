@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard, List, Award } from 'lucide-react';
+import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard, List, Award, FileText, Download, Check } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const CustomerPortal = () => {
@@ -46,6 +46,9 @@ const CustomerPortal = () => {
     const [showMembershipModal, setShowMembershipModal] = useState(false); // NEW MODAL FOR MEMBERSHIPS
     const [availablePlans, setAvailablePlans] = useState([]); // Store all plans
     const [portalMessage, setPortalMessage] = useState(''); // Global announcement
+    const [submittingSubscription, setSubmittingSubscription] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [selectedPlanId, setSelectedPlanId] = useState(null);
     const [branding, setBranding] = useState({ name: 'Express CarWash', logo: '/logo.jpg' });
 
     // PWA State
@@ -355,7 +358,7 @@ const CustomerPortal = () => {
                     .from('customer_memberships')
                     .select('*, memberships(*)')
                     .eq('customer_id', customerId)
-                    .eq('status', 'active');
+                    .in('status', ['active', 'pending_payment']);
 
                 if (memberData) {
                     setAllMemberships(memberData);
@@ -460,7 +463,7 @@ const CustomerPortal = () => {
                             .from('customer_memberships')
                             .select('*, memberships(*)')
                             .eq('customer_id', customerId)
-                            .eq('status', 'active');
+                            .in('status', ['active', 'pending_payment']);
                         if (data) setAllMemberships(data);
                     };
                     refreshMemberships();
@@ -530,6 +533,59 @@ const CustomerPortal = () => {
         } finally {
             setIsUpdatingExtras(false);
         }
+    };
+
+    const handleSubscribe = async () => {
+        if (!selectedPlanId) return alert("Por favor selecciona un plan.");
+        if (!acceptedTerms) return alert("Debes aceptar los Términos y Condiciones para continuar.");
+        
+        setSubmittingSubscription(true);
+        try {
+            const plan = availablePlans.find(p => p.id === selectedPlanId);
+            
+            // 1. Create the pending membership
+            const { data: subData, error } = await supabase
+                .from('customer_memberships')
+                .insert([{
+                    customer_id: customerId,
+                    membership_id: selectedPlanId,
+                    vehicle_id: selectedVehicleId,
+                    status: 'pending_payment',
+                    start_date: new Date().toISOString().split('T')[0],
+                    usage_count: 0
+                }])
+                .select();
+
+            if (error) throw error;
+
+            alert("¡Solicitud enviada! Tu membresía está en estado 'Pendiente de Pago'. Por favor, realiza el pago en el carwash para activarla.");
+            setShowMembershipModal(false);
+            setAcceptedTerms(false);
+            setSelectedPlanId(null);
+            
+            // Refresh memberships locally
+            const { data: refreshData } = await supabase
+                .from('customer_memberships')
+                .select('*, memberships(*)')
+                .eq('customer_id', customerId);
+            if (refreshData) setAllMemberships(refreshData);
+
+        } catch (err) {
+            console.error("Error subscribing:", err);
+            alert("Error al procesar la suscripción: " + err.message);
+        } finally {
+            setSubmittingSubscription(false);
+        }
+    };
+
+    const handleDownloadTerms = () => {
+        if (!selectedPlanId) return;
+        const plan = availablePlans.find(p => p.id === selectedPlanId);
+        
+        // Dynamic import to avoid heavy bundle if not used
+        import('../utils/pdfGenerator').then(module => {
+            module.generateMembershipTermsPDF(customer, plan);
+        });
     };
 
     const [queueCount, setQueueCount] = useState(0);
@@ -937,17 +993,25 @@ const CustomerPortal = () => {
                                         )}
                                     </span>
                                 </div>
-                                <span style={{
+
+                                <div style={{
                                     fontSize: '0.75rem',
-                                    backgroundColor: '#22c55e',
+                                    backgroundColor: membership.status === 'pending_payment' ? '#f59e0b' : '#22c55e',
                                     color: 'white',
                                     padding: '0.2rem 0.6rem',
                                     borderRadius: '1rem',
-                                    fontWeight: 'bold'
+                                    fontWeight: 'bold',
+                                    alignSelf: 'flex-start'
                                 }}>
-                                    ACTIVO
-                                </span>
+                                    {membership.status === 'pending_payment' ? 'PENDIENTE DE PAGO' : 'ACTIVO'}
+                                </div>
                             </div>
+
+                            {membership.status === 'pending_payment' && (
+                                <p style={{ fontSize: '0.8rem', color: '#b45309', margin: 0, fontWeight: '500' }}>
+                                    Tu solicitud ha sido recibida. Visítanos para pagar y activar tus beneficios.
+                                </p>
+                            )}
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#166534', marginTop: '0.25rem' }}>
                                 <span style={{ fontWeight: '500' }}>

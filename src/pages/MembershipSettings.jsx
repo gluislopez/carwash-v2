@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { Plus, Trash2, Edit2, Save, X, Award, CheckCircle, Info, Users, DollarSign, Calendar, Pencil } from 'lucide-react';
 
 const MembershipSettings = () => {
-    const [activeTab, setActiveTab] = useState('plans'); // 'plans' or 'subs'
+    const [activeTab, setActiveTab] = useState('plans'); // 'plans', 'subs', or 'pending'
     const [memberships, setMemberships] = useState([]);
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,7 +51,8 @@ const MembershipSettings = () => {
         const { data, error } = await supabase
             .from('customer_memberships')
             .select('*, customers(name, phone), memberships(name, price), vehicles(brand, model, plate)')
-            .eq('status', 'active');
+            // If sub or pending tab, we might want different filters, but for now let's just fetch all non-expired/active ones
+            .in('status', ['active', 'pending_payment']);
 
         if (error) console.error("Error fetching subscriptions:", error);
         if (data) setSubscriptions(data);
@@ -118,12 +119,13 @@ const MembershipSettings = () => {
 
         if (!error) {
             await supabase.from('customer_memberships').update({
+                status: 'active',
                 last_payment_date: new Date().toISOString().split('T')[0],
                 next_billing_date: nextDate.toISOString().split('T')[0],
                 usage_count: 0 // Reset usage for new billing cycle
             }).eq('id', sub.id);
 
-            alert(`Pago de $${amount} registrado para ${sub.customers.name}`);
+            alert(`Pago de $${amount} registrado para ${sub.customers.name}. Suscripción ACTIVADA.`);
             fetchSubscriptions();
         } else {
             alert("Error al registrar pago: " + error.message);
@@ -185,7 +187,18 @@ const MembershipSettings = () => {
                             fontWeight: 'bold', transition: 'all 0.2s'
                         }}
                     >
-                        Suscripciones
+                        Activas
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('pending')}
+                        style={{
+                            padding: '0.5rem 1rem', borderRadius: '0.4rem', border: 'none', cursor: 'pointer',
+                            backgroundColor: activeTab === 'pending' ? 'var(--primary)' : 'transparent',
+                            color: activeTab === 'pending' ? 'white' : 'var(--text-muted)',
+                            fontWeight: 'bold', transition: 'all 0.2s'
+                        }}
+                    >
+                        Pendientes {subscriptions.filter(s => s.status === 'pending_payment').length > 0 && `(${subscriptions.filter(s => s.status === 'pending_payment').length})`}
                     </button>
                 </div>
             </div>
@@ -384,9 +397,11 @@ const MembershipSettings = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {subscriptions.map(sub => {
+                                {subscriptions
+                                    .filter(s => activeTab === 'pending' ? s.status === 'pending_payment' : s.status === 'active')
+                                    .map(sub => {
                                     const today = new Date().toISOString().split('T')[0];
-                                    const isOverdue = sub.next_billing_date && sub.next_billing_date <= today;
+                                    const isOverdue = sub.next_billing_date && sub.next_billing_date <= today && sub.status === 'active';
 
                                     return (
                                         <tr key={sub.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.1)' : 'transparent' }}>
@@ -494,12 +509,13 @@ const MembershipSettings = () => {
                                                     onClick={() => handleCollectPayment(sub)}
                                                     className="btn"
                                                     style={{
-                                                        backgroundColor: 'var(--success)', color: 'white', padding: '0.5rem 1rem',
+                                                        backgroundColor: sub.status === 'pending_payment' ? 'var(--primary)' : 'var(--success)', 
+                                                        color: 'white', padding: '0.5rem 1rem',
                                                         borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer',
                                                         display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
                                                     }}
                                                 >
-                                                    <DollarSign size={16} /> Cobrar
+                                                    <DollarSign size={16} /> {sub.status === 'pending_payment' ? 'Activar y Cobrar' : 'Cobrar'}
                                                 </button>
                                             </td>
                                         </tr>
