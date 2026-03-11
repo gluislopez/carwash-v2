@@ -32,13 +32,11 @@ const RequireAuth = ({ children }) => {
     const location = useLocation();
 
     useEffect(() => {
-        // Timeout de seguridad: si Supabase no responde en 5 segundos, mostramos error
+        // Timeout de seguridad ampliado a 20 segundos para permitir que Supabase "despierte" en caso de inactividad
         const timer = setTimeout(() => {
-            if (loading) {
-                setLoading(false);
-                setError("Tiempo de espera agotado conectando a Supabase. Verifica tu conexión o configuración.");
-            }
-        }, 5000);
+            setLoading(false);
+            setError("Tiempo de espera agotado. Es posible que el servidor esté despertando tras un periodo de inactividad. Por favor, intenta recargar la página.");
+        }, 20000);
 
         supabase.auth.getSession().then(async ({ data: { session }, error }) => {
             if (error) {
