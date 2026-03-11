@@ -1802,18 +1802,18 @@ const CustomerPortal = () => {
 
 
                 {/* PAYMENT METHODS CARD */}
-                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.2rem' }}>
+                <div style={{ backgroundColor: '#10b981', color: 'white', borderRadius: '1rem', padding: '0.85rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '0.75rem' }}>
+                    <h3 style={{ fontWeight: 'bold', marginBottom: '0.75rem', fontSize: '1.05rem' }}>
                         💳 Métodos de Pago
                     </h3>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {/* CASH OPTION */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
-                                <DollarSign size={24} color="white" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.4rem', borderRadius: '0.5rem' }}>
+                                <DollarSign size={20} color="white" />
                             </div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>Efectivo</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: '600' }}>Efectivo</div>
                         </div>
 
                         {/* Stripe OPTION */}
@@ -1827,26 +1827,26 @@ const CustomerPortal = () => {
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '0.75rem',
+                                        gap: '0.6rem',
                                         textDecoration: 'none',
                                         color: 'white',
                                         backgroundColor: 'rgba(255,255,255,0.1)',
-                                        padding: '0.75rem',
-                                        borderRadius: '0.75rem'
+                                        padding: '0.6rem',
+                                        borderRadius: '0.6rem'
                                     }}
                                 >
-                                    <div style={{ backgroundColor: '#6366f1', padding: '0.5rem', borderRadius: '0.5rem' }}>
-                                        <CreditCard size={24} color="white" />
+                                    <div style={{ backgroundColor: '#6366f1', padding: '0.4rem', borderRadius: '0.5rem' }}>
+                                        <CreditCard size={20} color="white" />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>Pagar con Tarjeta</div>
-                                        <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
+                                        <div style={{ fontSize: '0.95rem', fontWeight: '600' }}>Pagar con Tarjeta</div>
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>
                                             Total: ${(parseFloat(activeService?.price || 0) * 1.03).toFixed(2)} (incl. 3%)
                                         </div>
                                     </div>
-                                    <div style={{ fontSize: '1.2rem', opacity: 0.7 }}>&rarr;</div>
+                                    <div style={{ fontSize: '1rem', opacity: 0.7 }}>&rarr;</div>
                                 </a>
-                                <p style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '0.5rem', fontStyle: 'italic' }}>
+                                <p style={{ fontSize: '0.65rem', opacity: 0.8, marginTop: '0.25rem', fontStyle: 'italic' }}>
                                     * Los pagos con tarjeta incluyen un cargo por procesamiento del 3%.
                                 </p>
                             </>
@@ -1856,14 +1856,14 @@ const CustomerPortal = () => {
                         <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />
 
                         {/* ATH MOVIL OPTION */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '0.5rem' }}>
-                                <Phone size={24} color="white" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '0.4rem', borderRadius: '0.5rem' }}>
+                                <Phone size={20} color="white" />
                             </div>
                             <div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>ATH Móvil</div>
-                                <div style={{ fontSize: '1.3rem', fontWeight: '800', marginTop: '0.1rem' }}>787-857-8983</div>
-                                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Express CarWash</div>
+                                <div style={{ fontSize: '0.95rem', fontWeight: '600' }}>ATH Móvil</div>
+                                <div style={{ fontSize: '1.15rem', fontWeight: '800', marginTop: '0.1rem' }}>787-857-8983</div>
+                                <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Express CarWash</div>
                             </div>
                         </div>
                     </div>
