@@ -148,7 +148,7 @@ const MembershipSettings = () => {
         }
     };
 
-    const mrr = subscriptions.reduce((sum, sub) => {
+    const mrr = subscriptions.filter(s => s.status === 'active').reduce((sum, sub) => {
         const effectivePrice = sub.manual_price != null ? sub.manual_price : (sub.memberships?.price || 0);
         return sum + effectivePrice;
     }, 0);

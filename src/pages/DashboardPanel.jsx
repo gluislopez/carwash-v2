@@ -352,9 +352,22 @@ const Dashboard = () => {
         const totalToPay = (parseFloat(transaction.price) + extrasTotal).toFixed(2);
         const serviceName = getServiceName(transaction.service_id);
 
+        const isMembership = getTransactionCategory(transaction) === 'membership_usage';
         const portalLink = `${window.location.origin}/portal/${transaction.customer_id}`;
+        
+        let message = '';
 
-        const message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.\n\n📲 *Ver Link de Pago y Calificar:*\n${portalLink}\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n¡Lo esperamos!`;
+        if (isMembership) {
+            const hasExtras = extrasTotal > 0;
+            const extrasDetail = hasExtras ? `\nExtras/Adicionales: $${extrasTotal.toFixed(2)}` : '';
+            const paymentPrompt = hasExtras 
+                ? `Para los adicionales: \n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.`
+                : `Todo está cubierto por su plan. ✨`;
+
+            message = `¡Hola ${customerName}! Su vehículo ${vehicle} ya está listo. 🚗💎\n\n🌟 *Cliente de Membresía*\nEl servicio solicitado está cubierto por su plan.${extrasDetail}\n\n${paymentPrompt}\n\n🧤 *Nuestro equipo puso todo su empeño en su auto. Una propina para el lavador es el mejor reconocimiento a su trabajo.* 🤝\n\n📲 *Ver detalles y calificar aquí:* ${portalLink}\n\n¡Le esperamos!`;
+        } else {
+            message = `Hola ${customerName}, su vehículo ${vehicle} ya está listo. 🚗✨\n\n🧾 *Resumen de Cuenta:*\nServicio: ${serviceName}\nTotal a Pagar: $${totalToPay}\n\n💳 *Métodos de Pago:*\n1. 📱 *ATH Móvil:* 787-857-8983\n2. 💵 *Efectivo* al recoger.\n\n📲 *Ver Link de Pago y Calificar:*\n${portalLink}\n\n*Propina es bien recibida por nuestro equipo.* 🤝\n\n¡Lo esperamos!`;
+        }
 
         // Use api.whatsapp.com for better compatibility
         const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
@@ -1074,7 +1087,7 @@ const Dashboard = () => {
 
     const totalIncome = filteredTransactions
         .filter(t => t.status === 'completed' || t.status === 'paid')
-        .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
+        .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const completionCount = filteredTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
     const averageTicket = completionCount > 0 ? (totalIncome / completionCount) : 0;
