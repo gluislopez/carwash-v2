@@ -22,7 +22,7 @@ const Dashboard = () => {
     const [myUserId, setMyUserId] = useState(null);
     const [myEmployeeId, setMyEmployeeId] = useState(null); // Nuevo: ID del perfil de empleado
 
-    const [dateFilter, setDateFilter] = useState('today'); // 'today', 'manual', 'range'
+    const [dateFilter, setDateFilter] = useState('today'); // 'today', 'manual', 'range', 'month'
     const [dateRange, setDateRange] = useState({
         start: new Date().toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
@@ -990,6 +990,7 @@ const Dashboard = () => {
     // getPRDateString computes YYYY-MM-DD for Puerto Rico
 
     const todayStr = getPRDateString(new Date());
+    const currentMonthStr = todayStr.substring(0, 7); // YYYY-MM
 
     // Filter transactions
     const filteredTransactions = transactions.filter(t => {
@@ -998,6 +999,8 @@ const Dashboard = () => {
 
         if (dateFilter === 'today') {
             return txDateLocal === todayStr || isActive;
+        } else if (dateFilter === 'month') {
+            return txDateLocal.startsWith(currentMonthStr) || isActive;
         } else {
             // Manual Range
             return txDateLocal >= dateRange.start && txDateLocal <= dateRange.end;
@@ -1542,6 +1545,26 @@ const Dashboard = () => {
             return;
         }
 
+        // [GUARD] PREVENT DUPLICATE MEMBERSHIP CHARGES
+        const selectedService = services.find(s => s.id === formData.serviceId);
+        const isMembershipSale = selectedService?.name?.toLowerCase().includes('membresía') || 
+                                (formData.extras || []).some(ex => ex.description?.toLowerCase().includes('membresía'));
+        
+        if (isMembershipSale && !isMembershipUsage) {
+            const currentMonth = new Date().toISOString().substring(0, 7);
+            const hasDuplicate = transactions.some(t => 
+                t.customer_id === formData.customerId && 
+                getTransactionCategory(t) === 'membership_sale' &&
+                t.date.startsWith(currentMonth) &&
+                t.status !== 'cancelled'
+            );
+
+            if (hasDuplicate) {
+                const proceed = window.confirm("⚠️ ALERTA DE DUPLICADO: Este cliente ya tiene un pago de membresía registrado este mes.\n\n¿Estás SEGURO de que quieres cobrarle la membresía otra vez?");
+                if (!proceed) return;
+            }
+        }
+
         const basePrice = parseFloat(formData.price) || 0;
         const transactionDate = new Date();
         const [hours, minutes] = formData.serviceTime.split(':');
@@ -1954,6 +1977,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--bg-card)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                             <button onClick={() => setDateFilter('today')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'today' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'today' ? 'white' : 'var(--text-muted)' }}>Hoy</button>
+                            <button onClick={() => setDateFilter('month')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'month' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'month' ? 'white' : 'var(--text-muted)' }}>Mes</button>
                             <button onClick={() => setDateFilter('manual')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'manual' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'manual' ? 'white' : 'var(--text-muted)' }}>Fechas</button>
                         </div>
 
