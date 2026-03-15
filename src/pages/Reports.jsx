@@ -254,8 +254,8 @@ const Reports = () => {
         // Priority 1: Use of Plan Benefits (Explicit method check)
         if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
 
-        // Priority 2: Sale of a Plan (Keywords or explicit sale method)
-        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
+        // Priority 2: Sale of a Plan (Explicit keywords or explicit sale method)
+        if (method === 'membership_sale' || desc.includes('VENTA MEMBRESÍA') || desc.includes('VENTA DE PLAN')) return 'membership_sale';
 
         // Standard methods
         if (method === 'transfer') return 'transfer';
@@ -688,8 +688,9 @@ const Reports = () => {
                             <div style={{ color: 'white' }}>
                                 ${allTransactions?.filter(t => {
                                     const isSale = getTransactionCategory(t) === 'membership_sale';
+                                    const isPaid = t.status === 'completed' || t.status === 'paid';
                                     const isToday = getPRDateString(t.date || t.created_at) === getPRDateString(new Date());
-                                    return isSale && isToday;
+                                    return isSale && isPaid && isToday;
                                 }).reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
                             </div>
 
@@ -705,8 +706,11 @@ const Reports = () => {
 
                             <div>Ventas Históricas:</div>
                             <div style={{ color: '#ec4899', fontWeight: 'bold' }}>
-                                ${allTransactions?.filter(t => getTransactionCategory(t) === 'membership_sale')
-                                    .reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
+                                ${allTransactions?.filter(t => {
+                                    const isSale = getTransactionCategory(t) === 'membership_sale';
+                                    const isPaid = t.status === 'completed' || t.status === 'paid';
+                                    return isSale && isPaid;
+                                }).reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}
                             </div>
                         </div>
                         <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(236, 72, 153, 0.2)', paddingTop: '0.5rem' }}>
