@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode, AlertCircle, TrendingUp, AlertTriangle, Phone } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
-import ProductivityBar from '../components/ProductivityBar';
+
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
-import EmployeeProductivityChart from '../components/EmployeeProductivityChart';
+
 import PeakHoursChart from '../components/PeakHoursChart';
 import TopCustomersReport from '../components/TopCustomersReport';
 import EditTransactionModal from '../components/EditTransactionModal';
@@ -28,55 +28,9 @@ const Dashboard = () => {
         end: new Date().toISOString().split('T')[0]
     });
 
-    // Notes State
-    const [dailyNotes, setDailyNotes] = useState([]);
-    const [newNote, setNewNote] = useState('');
-    const [showNotes, setShowNotes] = useState(false); // Default CLOSED
 
-    useEffect(() => {
-        const fetchNotes = async () => {
-            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
-            const { data } = await supabase
-                .from('daily_notes')
-                .select('*')
-                .eq('date', today)
-                .order('created_at', { ascending: true });
-            if (data) setDailyNotes(data);
-        };
-        fetchNotes();
 
-        // Realtime subscription for notes
-        const channel = supabase
-            .channel('daily_notes_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_notes' }, () => {
-                fetchNotes();
-            })
-            .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
-
-    const handleAddNote = async () => {
-        if (!newNote.trim()) return;
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Puerto_Rico' });
-
-        // Get employee name for attribution
-        let authorName = 'Empleado';
-        if (myEmployeeId) {
-            const me = employees.find(e => e.id === myEmployeeId);
-            if (me) authorName = me.name || me.first_name;
-        }
-
-        const contentWithAuthor = `${authorName}: ${newNote}`;
-
-        const { error } = await supabase.from('daily_notes').insert([
-            { content: contentWithAuthor, date: today }
-        ]);
-
-        if (!error) setNewNote('');
-    };
 
     // REFACTOR: Store ID only, not the whole object
     const [editingTransactionId, setEditingTransactionId] = useState(null); // Nuevo: ID del perfil de empleado
@@ -317,24 +271,7 @@ const Dashboard = () => {
                 finished_at: new Date().toISOString()
             });
 
-            // [LOYALTY] Award Point - ONLY if not membership usage
-            const isMembershipUsageTx = getTransactionCategory(transaction) === 'membership_usage';
-            if (transaction.customer_id && !isMembershipUsageTx) {
-                // Award to customer (compatibility)
-                const { data: customer } = await supabase.from('customers').select('points').eq('id', transaction.customer_id).single();
-                if (customer) {
-                    await supabase.from('customers').update({ points: (customer.points || 0) + 1 }).eq('id', transaction.customer_id);
-                }
 
-                // NEW: Award to vehicle independently
-                if (transaction.vehicle_id) {
-                    const { data: vehicle } = await supabase.from('vehicles').select('points').eq('id', transaction.vehicle_id).single();
-                    if (vehicle) {
-                        await supabase.from('vehicles').update({ points: (vehicle.points || 0) + 1 }).eq('id', transaction.vehicle_id);
-                        console.log(`Point awarded to vehicle ${transaction.vehicle_id}`);
-                    }
-                }
-            }
 
             await refreshTransactions();
             setVerifyingTransaction(null); // Close modal
@@ -499,11 +436,10 @@ const Dashboard = () => {
     });
 
     // PRODUCTIVITY FEATURES STATE
-    const [vipInfo, setVipInfo] = useState(null);
+
     const [lastService, setLastService] = useState(null);
 
-    const [canRedeemPoints, setCanRedeemPoints] = useState(false); // Loyalty State
-    const [isRedemption, setIsRedemption] = useState(false); // Loyalty State
+
     const [customerMembership, setCustomerMembership] = useState(null);
     const [allCustomerMemberships, setAllCustomerMemberships] = useState([]); // Array of all active memberships for selected customer
     const [isMembershipUsage, setIsMembershipUsage] = useState(false);
@@ -550,13 +486,7 @@ const Dashboard = () => {
             setLastService(null);
         }
 
-        // 3. Loyalty Points Check
-        const customer = customers.find(c => c.id == customerId);
-        if (customer && (customer.points || 0) >= 10) {
-            setCanRedeemPoints(true);
-        } else {
-            setCanRedeemPoints(false);
-        }
+
 
         // 4. Membership Check
         // Trigger auto-renewal check first if a month has passed
@@ -1135,51 +1065,23 @@ const Dashboard = () => {
 
     const netCommissions = totalCommissions - totalLunches;
 
-    // GAMIFICATION CALCULATIONS
-    // 1. Daily Count: Already filtered in 'myTransactions' (todaysTransactions for Admin, myTransactions for Employee)
-    // For the bar, we want to show the specific employee's progress. If Admin, maybe show global? Let's show personal for now.
-    // FIX: Exclude 'waiting' from productivity count
-    const dailyProductivityCount = myTransactions.filter(t => t.status !== 'waiting').length;
-
-    // 2. Total XP (Lifetime Cars)
-    const [totalXp, setTotalXp] = useState(0);
-    const [dailyTarget, setDailyTarget] = useState(10); // Default 10
-    const [reviewLink, setReviewLink] = useState(''); // Review link setting
-    const [stripeLink, setStripeLink] = useState(''); // Stripe payment link
-    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-
     useEffect(() => {
-        const fetchXpAndSettings = async () => {
+        const fetchSettings = async () => {
             // Fetch Settings
             const { data: settingsData } = await supabase
                 .from('settings')
                 .select('key, value');
 
             if (settingsData) {
-                const target = settingsData.find(s => s.key === 'daily_target');
-                if (target) setDailyTarget(parseInt(target.value, 10) || 10);
-
                 const link = settingsData.find(s => s.key === 'review_link');
                 if (link) setReviewLink(link.value);
 
                 const sLink = settingsData.find(s => s.key === 'stripe_link');
                 if (sLink) setStripeLink(sLink.value);
             }
-
-            if (myEmployeeId) {
-                // Count assignments (Source of Truth for XP)
-                const { count, error } = await supabase
-                    .from('transaction_assignments')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('employee_id', myEmployeeId);
-
-                if (!error) {
-                    setTotalXp(count || 0);
-                }
-            }
         };
-        fetchXpAndSettings();
-    }, [myEmployeeId, transactions]); // Re-fetch when transactions change
+        fetchSettings();
+    }, [transactions]); // Refresh when transactions change
 
     useEffect(() => {
         const fetchFeedback = async () => {
@@ -1720,19 +1622,7 @@ const Dashboard = () => {
                                     <span role="img" aria-label="sound">🔔</span>
                                 </button>
 
-                                {/* NOTES TOGGLE */}
-                                <button
-                                    onClick={() => setShowNotes(!showNotes)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.3rem',
-                                        backgroundColor: showNotes ? 'var(--primary)' : 'var(--bg-secondary)',
-                                        color: showNotes ? 'white' : 'var(--text-muted)',
-                                        border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.8rem',
-                                        fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer'
-                                    }}
-                                >
-                                    <Edit2 size={14} /> Notas
-                                </button>
+
 
                                 <button
                                     className="btn mobile-hide-text"
@@ -1885,22 +1775,7 @@ const Dashboard = () => {
                                                 headStyles: { fillColor: [75, 85, 99] } // Gray
                                             });
 
-                                            // 2.4 NOTES
-                                            if (dailyNotes.length > 0) {
-                                                const notesBody = dailyNotes.map(n => [
-                                                    new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                                    n.content
-                                                ]);
 
-                                                doc.addPage(); // Start notes on new page if needed, or check Y
-                                                doc.text("Bitácora / Notas", 14, 20);
-                                                autoTable(doc, {
-                                                    startY: 30,
-                                                    head: [['Hora', 'Nota']],
-                                                    body: notesBody,
-                                                    theme: 'plain'
-                                                });
-                                            }
 
                                             // 3. Share or Download
                                             const pdfBlob = doc.output('blob');
@@ -1935,32 +1810,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* NOTES PANEL (Full Width) */}
-                {showNotes && (
-                    <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '0.8rem', border: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
-                        {/* ... Note Input UI ... */}
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Nueva nota..." className="input" style={{ flex: 1 }} onKeyDown={(e) => e.key === 'Enter' && handleAddNote()} />
-                            <button onClick={handleAddNote} className="btn btn-primary"><Send size={16} /></button>
-                        </div>
-                        <div style={{ marginTop: '0.5rem', maxHeight: '100px', overflowY: 'auto' }}>
-                            {dailyNotes.length > 0 ? (
-                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                    {dailyNotes.map(note => (
-                                        <li key={note.id} style={{ marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.9rem' }}>
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginRight: '0.5rem' }}>
-                                                {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                            {note.content}
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem', marginBottom: '0' }}>No hay notas hoy.</p>
-                            )}
-                        </div>
-                    </div>
-                )}
+
 
                 {/* ROW 2: CONTROLS & FILTERS */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', backgroundColor: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '0.8rem' }}>
@@ -2302,27 +2152,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            {/* DAILY NOTES CARD */}
-                            <div
-                                className="card"
-                                onClick={() => setActiveDetailModal('daily_notes')}
-                                style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.01)'}
-                                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                                        <MessageCircle size={24} color="#EAB308" />
-                                    </div>
-                                    <div>
-                                        <h3 className="label" style={{ fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--text-primary)' }}>Notas del Día</h3>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bitácora de empleados</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1, color: 'var(--text-primary)' }}>{dailyNotes.length}</p>
-                                </div>
-                            </div>
+
                         </div>
                     )}
 
@@ -2515,7 +2345,6 @@ const Dashboard = () => {
                                             {activeDetailModal === 'income' && '💰 Desglose de Ingresos'}
                                             {activeDetailModal === 'commissions' && '👥 Desglose de Comisiones'}
                                             {activeDetailModal === 'feedback' && '💬 Feedback Privado de Clientes'}
-                                            {activeDetailModal === 'daily_notes' && '📝 Notas del Día por Empleado'}
                                         </h2>
                                         <button
                                             onClick={() => setActiveDetailModal(null)}
@@ -2551,64 +2380,7 @@ const Dashboard = () => {
                                             </div>
                                         )}
 
-                                        {activeDetailModal === 'daily_notes' && (
-                                            <div style={{ display: 'grid', gap: '1.5rem' }}>
-                                                {dailyNotes.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay notas registradas hoy.</p>}
-                                                {(() => {
-                                                    // Group notes by Author (parsing "Name: Content")
-                                                    const groupedNotes = {};
-                                                    dailyNotes.forEach(note => {
-                                                        const parts = note.content.split(':');
-                                                        let author = 'Desconocido';
-                                                        let content = note.content;
 
-                                                        if (parts.length > 1) {
-                                                            author = parts[0].trim();
-                                                            content = parts.slice(1).join(':').trim();
-                                                        }
-
-                                                        if (!groupedNotes[author]) groupedNotes[author] = [];
-                                                        groupedNotes[author].push({ ...note, cleanContent: content });
-                                                    });
-
-                                                    return Object.entries(groupedNotes).map(([author, notes]) => (
-                                                        <div key={author} className="card" style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)' }}>
-                                                            <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                                                                👤 {author}
-                                                            </h3>
-                                                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                                                {notes.map(n => (
-                                                                    <li key={n.id} style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '60px' }}>
-                                                                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                        </span>
-                                                                        <span style={{ fontSize: '0.95rem' }}>{n.cleanContent}</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    ));
-                                                })()}
-
-                                                {/* ADD NOTE INPUT IN MODAL */}
-                                                <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <input
-                                                            type="text"
-                                                            className="input"
-                                                            placeholder="Escribir nueva nota..."
-                                                            value={newNote}
-                                                            onChange={(e) => setNewNote(e.target.value)}
-                                                            onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-                                                            style={{ flex: 1 }}
-                                                        />
-                                                        <button className="btn btn-primary" onClick={handleAddNote} disabled={!newNote.trim()}>
-                                                            <Send size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
 
                                         {activeDetailModal === 'cancelled' && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -4143,22 +3915,7 @@ const Dashboard = () => {
                                             </div>
                                         </div>
 
-                                        {/* LOYALTY REDEMPTION BUTTON */}
-                                        {canRedeemPoints && (
-                                            <button
-                                                type="button"
-                                                className="btn"
-                                                onClick={() => {
-                                                    setFormData({ ...formData, price: 0 });
-                                                    setIsRedemption(true);
-                                                    setCanRedeemPoints(false);
-                                                    alert('¡Lavado Gratis aplicado! El precio se ha ajustado a $0.00');
-                                                }}
-                                                style={{ width: '100%', marginTop: '1rem', backgroundColor: '#F59E0B', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-                                            >
-                                                🌟 Canjear Lavado Gratis (10 Pts)
-                                            </button>
-                                        )}
+
 
                                         {/* TOTAL PRICE DISPLAY */}
                                         <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4626,20 +4383,7 @@ const Dashboard = () => {
                 )
             }
 
-            {/* GAMIFICATION BAR OR ADMIN CHART (MOVED TO BOTTOM) */}
-            {
-                userRole === 'admin' && dateFilter === 'custom' ? (
-                    <EmployeeProductivityChart transactions={transactions} employees={employees} />
-                ) : (
-                    <ProductivityBar
-                        dailyCount={fractionalCount}
-                        dailyTarget={dailyTarget}
-                        totalXp={totalXp}
-                        isEditable={userRole === 'admin'}
-                        onEditTarget={(newTarget) => handleUpdateSettings({ daily_target: newTarget })}
-                    />
-                )
-            }
+
 
 
             {/* VERIFICATION MODAL */}

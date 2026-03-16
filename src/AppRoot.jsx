@@ -10,8 +10,7 @@ import Employees from './pages/Employees';
 import Customers from './pages/Customers';
 import Reports from './pages/Reports';
 import Expenses from './pages/Expenses';
-import Inventory from './pages/Inventory';
-import GamificationSettings from './pages/GamificationSettings';
+
 import Promotions from './pages/Promotions';
 import CustomerFeedback from './pages/CustomerFeedback';
 import CustomerPortal from './pages/CustomerPortal';
@@ -20,8 +19,7 @@ import MembershipSettings from './pages/MembershipSettings';
 import BusinessSettings from './pages/BusinessSettings';
 
 import Commissions from './pages/Commissions';
-import TestDeployment from './pages/TestDeployment';
-import CouponVerifier from './pages/CouponVerifier';
+
 import MembershipSubscribe from './pages/MembershipSubscribe';
 
 // Componente para proteger rutas
@@ -157,7 +155,7 @@ const AppRoot = () => {
         <ErrorBoundary>
             <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/test-deployment" element={<TestDeployment />} />
+
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
                 <Route path="/subscribe" element={<MembershipSubscribe />} />
@@ -179,10 +177,7 @@ const AppRoot = () => {
                                     <Route path="/customers" element={<Customers />} />
                                     <Route path="/reports" element={<Reports />} />
                                     <Route path="/expenses" element={<Expenses />} />
-                                    <Route path="/commissions" element={<Commissions />} />
-                                    <Route path="/verify-coupon" element={<CouponVerifier />} />
-                                    <Route path="/inventory" element={<Inventory />} />
-                                    <Route path="/gamification-settings" element={<GamificationSettings />} />
+
                                     <Route path="/promotions" element={<Promotions />} />
                                     <Route path="/memberships" element={<MembershipSettings />} />
                                     <Route path="/settings" element={<BusinessSettings />} />

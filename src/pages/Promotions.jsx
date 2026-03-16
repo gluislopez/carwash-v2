@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Trash2, Send, MessageSquare, Search, Users, Edit2, Save, X, FileText, Download, Link, Copy, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Send, MessageSquare, Search, Users, Edit2, Save, X, FileText, Download, Link, Copy, ExternalLink, CheckCircle, XCircle, Loader, Gift, Ticket } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { generateMembershipTermsPDF } from '../utils/pdfGenerator';
 
 const Promotions = () => {
-    const [activeTab, setActiveTab] = useState('templates'); // 'templates' | 'campaign'
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const initialTab = (searchParams.get('customerId') && searchParams.get('couponIndex')) ? 'verify' : 'templates';
+    const [activeTab, setActiveTab] = useState(initialTab); // 'templates' | 'campaign' | 'portal' | 'legal' | 'flyers' | 'subscription' | 'verify'
     const [templates, setTemplates] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [memberships, setMemberships] = useState([]);
@@ -164,7 +168,20 @@ const Promotions = () => {
                 >
                     6. Link de Suscripción 🔥
                 </button>
+                <button
+                    onClick={() => setActiveTab('verify')}
+                    style={{
+                        padding: '1rem', border: 'none', background: 'none', cursor: 'pointer',
+                        fontWeight: 'bold', color: activeTab === 'verify' ? 'var(--primary)' : 'var(--text-muted)',
+                        borderBottom: activeTab === 'verify' ? '3px solid var(--primary)' : 'none'
+                    }}
+                >
+                    7. Verificar Cupón 🎟️
+                </button>
             </div>
+
+            {/* TAB CONTENT: COUPON VERIFIER */}
+            {activeTab === 'verify' && <CouponVerifierTab />}
 
             {/* TAB CONTENT: PORTAL ANNOUNCEMENT */}
             {activeTab === 'portal' && <PortalAnnouncement />}
@@ -821,6 +838,170 @@ const SubscriptionLinkTab = () => {
                         <li>Recibirás la suscripción como <b>Pendiente</b> en "Membresías" hasta que el cliente pague en el carwash.</li>
                     </ol>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const CouponVerifierTab = () => {
+    const [searchParams] = useSearchParams();
+    const customerId = searchParams.get('customerId');
+    const couponIndex = searchParams.get('couponIndex');
+
+    const [status, setStatus] = useState('loading'); 
+    const [customer, setCustomer] = useState(null);
+    const [verifyingDetails, setVerifyingDetails] = useState(null);
+    const [manualId, setManualId] = useState('');
+
+    useEffect(() => {
+        if (customerId && couponIndex) {
+            checkCoupon(customerId, couponIndex);
+        } else {
+            setStatus('idle');
+        }
+    }, [customerId, couponIndex]);
+
+    const checkCoupon = async (cId, cIdx) => {
+        setStatus('loading');
+        try {
+            const { data: cust, error: custError } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('id', cId)
+                .single();
+
+            if (custError || !cust) throw new Error('Cliente no encontrado');
+            setCustomer(cust);
+
+            const { count: visitCount, error: countError } = await supabase
+                .from('transactions')
+                .select('*', { count: 'exact', head: true })
+                .eq('customer_id', cId)
+                .eq('status', 'ready');
+
+            if (countError) throw countError;
+
+            const couponsEarned = Math.floor(visitCount / 5);
+            const couponsRedeemed = cust.redeemed_coupons || 0;
+            const targetCouponIndex = parseInt(cIdx);
+
+            setVerifyingDetails({
+                visitCount,
+                couponsEarned,
+                couponsRedeemed,
+                targetCouponIndex
+            });
+
+            if (targetCouponIndex > couponsEarned) {
+                setStatus('invalid');
+            } else if (targetCouponIndex <= couponsRedeemed) {
+                setStatus('used');
+            } else {
+                setStatus('valid');
+            }
+
+        } catch (err) {
+            console.error(err);
+            setStatus('error');
+        }
+    };
+
+    const handleRedeem = async () => {
+        try {
+            const newCount = (customer.redeemed_coupons || 0) + 1;
+            const { error } = await supabase
+                .from('customers')
+                .update({ redeemed_coupons: newCount })
+                .eq('id', customerId);
+
+            if (error) throw error;
+            setStatus('success');
+        } catch (err) {
+            alert('Error al canjear: ' + err.message);
+        }
+    };
+
+    return (
+        <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                {status === 'idle' && (
+                    <div>
+                        <Ticket size={48} style={{ margin: '0 auto 1rem', color: 'var(--primary)' }} />
+                        <h3 style={{ fontWeight: 'bold', marginBottom: '1rem' }}>Verificador de Cupones</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Escanea un código QR de cupón o ingresa los datos manualmente si el link no cargó automáticamente.</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <input 
+                                type="text" 
+                                placeholder="ID del Cliente" 
+                                className="input" 
+                                value={manualId}
+                                onChange={e => setManualId(e.target.value)}
+                                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'white', padding: '0.75rem', borderRadius: '0.5rem' }}
+                            />
+                            <button 
+                                onClick={() => checkCoupon(manualId, 1)}
+                                className="btn btn-primary"
+                                style={{ padding: '0.75rem', fontWeight: 'bold' }}
+                            >
+                                Verificar Cupón #1
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'loading' && <div style={{ padding: '2rem' }}><Loader className="animate-spin" style={{ margin: '0 auto' }} /> <p>Verificando...</p></div>}
+
+                {status === 'valid' && (
+                    <>
+                        <Gift size={64} style={{ color: 'var(--primary)', margin: '0 auto 1rem' }} />
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>¡Cupón Válido!</h1>
+                        <p style={{ marginBottom: '1rem' }}>Cliente: <strong>{customer.name}</strong></p>
+                        <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '1px solid #22c55e' }}>
+                            <div style={{ fontWeight: 'bold' }}>10% OFF en este servicio</div>
+                            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Cupón #{couponIndex} (Visita #{verifyingDetails?.visitCount})</div>
+                        </div>
+                        <button onClick={handleRedeem} style={{ width: '100%', padding: '1rem', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+                            ✅ CANJEAR AHORA
+                        </button>
+                    </>
+                )}
+
+                {status === 'used' && (
+                    <>
+                        <XCircle size={64} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
+                        <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Este cupón ya fue usado</h1>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ya ha sido canjeado anteriormente.</p>
+                        <button onClick={() => setStatus('idle')} style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '0.5rem', cursor: 'pointer' }}>Volver</button>
+                    </>
+                )}
+
+                {status === 'invalid' && (
+                    <>
+                        <XCircle size={64} style={{ color: 'var(--danger)', margin: '0 auto 1rem' }} />
+                        <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)', marginBottom: '0.5rem' }}>Cupón Inválido</h1>
+                        <p style={{ marginBottom: '0.5rem' }}>El cliente aún no cumple los requisitos.</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Visitas actuales: {verifyingDetails?.visitCount} (Necesita {parseInt(couponIndex) * 5})</p>
+                        <button onClick={() => setStatus('idle')} style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '0.5rem', cursor: 'pointer' }}>Volver</button>
+                    </>
+                )}
+
+                {status === 'success' && (
+                    <>
+                        <CheckCircle size={64} style={{ color: '#22c55e', margin: '0 auto 1rem' }} />
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#22c55e', marginBottom: '0.5rem' }}>¡Canjeado con Éxito!</h1>
+                        <p>Puedes aplicar el descuento en la venta.</p>
+                        <button onClick={() => setStatus('idle')} style={{ marginTop: '1.5rem', width: '100%', padding: '1rem', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer' }}>Ir al Inicio</button>
+                    </>
+                )}
+
+                {status === 'error' && (
+                    <>
+                        <XCircle size={64} style={{ color: 'var(--danger)', margin: '0 auto 1rem' }} />
+                        <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)', marginBottom: '0.5rem' }}>Error de Verificación</h1>
+                        <p style={{ fontSize: '0.9rem' }}>No se pudo encontrar la información del cupón.</p>
+                        <button onClick={() => setStatus('idle')} style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '0.5rem', cursor: 'pointer' }}>Volver</button>
+                    </>
+                )}
             </div>
         </div>
     );

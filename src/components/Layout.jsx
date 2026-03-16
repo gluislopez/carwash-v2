@@ -99,16 +99,15 @@ const Layout = ({ children }) => {
     if (userRole === 'admin') {
         navItems.push({ path: '/employees', label: 'Empleados', icon: <Users size={20} /> });
         navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
-        navItems.push({ path: '/gamification-settings', label: 'Gamificación', icon: <Trophy size={20} /> });
+
         navItems.push({ path: '/promotions', label: 'Promociones', icon: <Megaphone size={20} /> });
         navItems.push({ path: '/memberships', label: 'Membresías', icon: <Award size={20} /> });
         navItems.push({ path: '/settings', label: 'Configuración Negocio', icon: <Settings size={20} /> });
     }
 
-    // Inventory for Admin and Manager
-    if (userRole === 'admin' || userRole === 'manager') {
-        navItems.push({ path: '/inventory', label: 'Inventario', icon: <Package size={20} /> });
-    }
+        if (userRole === 'admin' || userRole === 'manager') {
+            // Inventory removed
+        }
 
     // SWIPE GESTURE LOGIC
     const [touchStart, setTouchStart] = useState(null);

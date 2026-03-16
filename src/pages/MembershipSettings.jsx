@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Trash2, Edit2, Save, X, Award, CheckCircle, Info, Users, DollarSign, Calendar, Pencil } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Award, CheckCircle, Info, Users, DollarSign, Calendar, Pencil, History } from 'lucide-react';
 
 const MembershipSettings = () => {
     const [activeTab, setActiveTab] = useState('plans'); // 'plans', 'subs', or 'pending'
@@ -21,6 +21,16 @@ const MembershipSettings = () => {
     const [editingPriceValue, setEditingPriceValue] = useState('');
 
     const [error, setError] = useState(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [selectedHistorySub, setSelectedHistorySub] = useState(null);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [paymentHistory, setPaymentHistory] = useState([]);
+    const [isAddingPayment, setIsAddingPayment] = useState(false);
+    const [manualPaymentData, setManualPaymentData] = useState({
+        amount: '',
+        date: new Date().toISOString().split('T')[0],
+        concept: ''
+    });
 
     useEffect(() => {
         fetchMemberships();
@@ -110,25 +120,114 @@ const MembershipSettings = () => {
         const nextDate = new Date();
         nextDate.setMonth(nextDate.getMonth() + 1);
 
-        const { error } = await supabase.from('subscription_payments').insert([{
+        // 1. Record in subscription_payments
+        const { error: payErr } = await supabase.from('subscription_payments').insert([{
             customer_id: sub.customer_id,
             membership_id: sub.membership_id,
             amount: amount,
             status: 'success'
         }]);
 
-        if (!error) {
-            await supabase.from('customer_memberships').update({
-                status: 'active',
-                last_payment_date: new Date().toISOString().split('T')[0],
-                next_billing_date: nextDate.toISOString().split('T')[0],
-                usage_count: 0 // Reset usage for new billing cycle
-            }).eq('id', sub.id);
+        if (payErr) {
+            alert("Error al registrar pago: " + payErr.message);
+            return;
+        }
 
-            alert(`Pago de $${amount} registrado para ${sub.customers.name}. Suscripción ACTIVADA.`);
-            fetchSubscriptions();
+        // 2. Record in transactions (for reports)
+        const { error: txErr } = await supabase.from('transactions').insert([{
+            customer_id: sub.customer_id,
+            vehicle_id: sub.vehicle_id,
+            price: amount,
+            total_price: amount,
+            payment_method: 'membership_sale',
+            status: 'paid',
+            date: new Date().toISOString(),
+            extras: [{ description: `RENOVACIÓN MEMBRESÍA: ${sub.memberships.name}`, price: amount }]
+        }]);
+
+        if (txErr) console.error("Error creating transaction record:", txErr);
+
+        // 3. Update active subscription
+        await supabase.from('customer_memberships').update({
+            status: 'active',
+            last_payment_date: new Date().toISOString().split('T')[0],
+            next_billing_date: nextDate.toISOString().split('T')[0],
+            usage_count: 0 // Reset usage for new billing cycle
+        }).eq('id', sub.id);
+
+        alert(`Pago de $${amount} registrado para ${sub.customers.name}. Suscripción ACTIVADA.`);
+        fetchSubscriptions();
+    };
+
+    const handleDeleteMembership = async (id) => {
+        if (!confirm("¿Seguro que deseas ELIMINAR esta membresía? El cliente dejará de ser socio.")) return;
+        const { error } = await supabase.from('customer_memberships').delete().eq('id', id);
+        if (error) {
+            alert("Error al eliminar membresía: " + error.message);
         } else {
-            alert("Error al registrar pago: " + error.message);
+            fetchSubscriptions();
+        }
+    };
+
+    const openHistory = async (sub) => {
+        setSelectedHistorySub(sub);
+        setIsHistoryModalOpen(true);
+        setHistoryLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .eq('customer_id', sub.customer_id)
+                .is('service_id', null)
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            // Filter only membership related transactions
+            const filtered = (data || []).filter(tx => 
+                (tx.payment_method === 'membership_sale') || 
+                (tx.extras && JSON.stringify(tx.extras).toUpperCase().includes('MEMBRES'))
+            );
+            setPaymentHistory(filtered);
+        } catch (error) {
+            console.error("Error fetching payment history:", error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handleDeletePayment = async (txId) => {
+        if (!confirm("¿Borrar este registro de pago de los reportes?")) return;
+        const { error } = await supabase.from('transactions').delete().eq('id', txId);
+        if (error) {
+            alert("Error al borrar pago: " + error.message);
+        } else {
+            setPaymentHistory(prev => prev.filter(tx => tx.id !== txId));
+        }
+    };
+
+    const handleAddManualPayment = async () => {
+        if (!manualPaymentData.amount || !manualPaymentData.concept) return alert("Monto y concepto requeridos.");
+
+        try {
+            const { error } = await supabase.from('transactions').insert([{
+                customer_id: selectedHistorySub.customer_id,
+                vehicle_id: selectedHistorySub.vehicle_id,
+                price: parseFloat(manualPaymentData.amount),
+                total_price: parseFloat(manualPaymentData.amount),
+                payment_method: 'membership_sale',
+                status: 'paid',
+                date: new Date(manualPaymentData.date).toISOString(),
+                extras: [{ description: manualPaymentData.concept, price: parseFloat(manualPaymentData.amount) }]
+            }]);
+
+            if (error) throw error;
+
+            alert("Pago manual añadido correctamente.");
+            setIsAddingPayment(false);
+            setManualPaymentData({ amount: '', date: new Date().toISOString().split('T')[0], concept: '' });
+            openHistory(selectedHistorySub); // Refresh history
+        } catch (error) {
+            alert("Error: " + error.message);
         }
     };
 
@@ -503,20 +602,38 @@ const MembershipSettings = () => {
                                                         </span>
                                                     </div>
                                                 )}
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                <button
-                                                    onClick={() => handleCollectPayment(sub)}
-                                                    className="btn"
-                                                    style={{
-                                                        backgroundColor: sub.status === 'pending_payment' ? 'var(--primary)' : 'var(--success)', 
-                                                        color: 'white', padding: '0.5rem 1rem',
-                                                        borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer',
-                                                        display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
-                                                    }}
-                                                >
-                                                    <DollarSign size={16} /> {sub.status === 'pending_payment' ? 'Activar y Cobrar' : 'Cobrar'}
-                                                </button>
+                                             </td>
+                                             <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <button
+                                                        onClick={() => openHistory(sub)}
+                                                        title="Historial de Pagos y Añadir Pagos"
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8b5cf6', padding: '0.25rem' }}
+                                                    >
+                                                        <History size={18} />
+                                                    </button>
+                                                    
+                                                    <button
+                                                        onClick={() => handleCollectPayment(sub)}
+                                                        className="btn"
+                                                        style={{
+                                                            backgroundColor: sub.status === 'pending_payment' ? 'var(--primary)' : 'var(--success)', 
+                                                            color: 'white', padding: '0.4rem 0.8rem',
+                                                            borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer',
+                                                            display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem'
+                                                        }}
+                                                    >
+                                                        <DollarSign size={14} /> {sub.status === 'pending_payment' ? 'Activar' : 'Cobrar'}
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleDeleteMembership(sub.id)}
+                                                        title="Eliminar Membresía"
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '0.25rem' }}
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -530,6 +647,99 @@ const MembershipSettings = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* PAYMENT HISTORY MODAL */}
+            {isHistoryModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                            <h3 style={{ margin: 0 }}>Historial: {selectedHistorySub?.customers?.name}</h3>
+                            <button 
+                                onClick={() => { setIsAddingPayment(!isAddingPayment); if (!isAddingPayment) setManualPaymentData({ ...manualPaymentData, concept: `PAGO MEMBRESÍA: ${selectedHistorySub?.memberships?.name}`, amount: selectedHistorySub?.manual_price || selectedHistorySub?.memberships?.price || '' }); }} 
+                                className="btn" 
+                                style={{ backgroundColor: isAddingPayment ? 'var(--danger)' : 'var(--primary)', color: 'white', fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                            >
+                                {isAddingPayment ? 'Cancelar' : '+ Añadir Pago'}
+                            </button>
+                        </div>
+
+                        {isAddingPayment && (
+                            <div style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid var(--primary)' }}>
+                                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem' }}>Añadir Pago Manual</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Monto ($)</label>
+                                        <input type="number" className="input" value={manualPaymentData.amount} onChange={e => setManualPaymentData({ ...manualPaymentData, amount: e.target.value })} style={{ padding: '0.4rem' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Fecha</label>
+                                        <input type="date" className="input" value={manualPaymentData.date} onChange={e => setManualPaymentData({ ...manualPaymentData, date: e.target.value })} style={{ padding: '0.4rem' }} />
+                                    </div>
+                                </div>
+                                <div style={{ marginBottom: '0.75rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Concepto</label>
+                                    <input type="text" className="input" value={manualPaymentData.concept} onChange={e => setManualPaymentData({ ...manualPaymentData, concept: e.target.value })} placeholder="Ej. Pago Mes Agosto" style={{ padding: '0.4rem' }} />
+                                </div>
+                                <button onClick={handleAddManualPayment} className="btn btn-primary" style={{ width: '100%', padding: '0.5rem' }}>Guardar Pago</button>
+                            </div>
+                        )}
+
+                        <div style={{ overflowY: 'auto', flex: 1 }}>
+                            {historyLoading ? (
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando historial...</div>
+                            ) : paymentHistory.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>No hay pagos registrados para esta membresía.</div>
+                            ) : (
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            <th style={{ padding: '0.75rem' }}>Fecha</th>
+                                            <th style={{ padding: '0.75rem' }}>Concepto</th>
+                                            <th style={{ padding: '0.75rem' }}>Monto</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'right' }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {paymentHistory.map(tx => (
+                                            <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                <td style={{ padding: '0.75rem' }}>{new Date(tx.date).toLocaleDateString()}</td>
+                                                <td style={{ padding: '0.75rem', fontSize: '0.9rem' }}>
+                                                    {tx.extras && tx.extras[0]?.description}
+                                                </td>
+                                                <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--success)' }}>
+                                                    ${tx.total_price || tx.price}
+                                                </td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                                                    <button
+                                                        onClick={() => handleDeletePayment(tx.id)}
+                                                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', opacity: 0.7 }}
+                                                        title="Borrar Pago"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button 
+                                onClick={() => setIsHistoryModalOpen(false)}
+                                className="btn"
+                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
