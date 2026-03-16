@@ -131,6 +131,32 @@ const Dashboard = () => {
         };
         getUser();
     }, []);
+
+    const handleUpdateSettings = async (updates) => {
+        if (userRole !== 'admin' && userRole !== 'manager') return;
+
+        try {
+            const upserts = Object.entries(updates).map(([key, value]) => ({
+                key,
+                value: value ? value.toString() : ''
+            }));
+
+            const { error } = await supabase
+                .from('settings')
+                .upsert(upserts);
+
+            if (error) throw error;
+
+            if (updates.review_link !== undefined) setReviewLink(updates.review_link);
+            if (updates.stripe_link !== undefined) setStripeLink(updates.stripe_link);
+
+            return { success: true };
+        } catch (error) {
+            console.error("Error updating settings:", error);
+            alert("Error al guardar: " + error.message);
+            return { success: false };
+        }
+    };
     const getTransactionCategory = (t) => {
         if (!t) return 'other';
         const method = (t.payment_method || '').toLowerCase();
@@ -186,6 +212,20 @@ const Dashboard = () => {
             if (error) console.error("Error fetching memberships", error);
         };
         fetchMemberships();
+
+        const fetchSettings = async () => {
+            const { data: settingsData } = await supabase
+                .from('settings')
+                .select('key, value');
+
+            if (settingsData) {
+                const review = settingsData.find(s => s.key === 'review_link');
+                const stripe = settingsData.find(s => s.key === 'stripe_link');
+                if (review) setReviewLink(review.value);
+                if (stripe) setStripeLink(stripe.value);
+            }
+        };
+        fetchSettings();
     }, []);
 
     const { data: servicesData } = useSupabase('services');
@@ -436,8 +476,11 @@ const Dashboard = () => {
     });
 
     // PRODUCTIVITY FEATURES STATE
-
     const [lastService, setLastService] = useState(null);
+
+    const [reviewLink, setReviewLink] = useState(''); // Review link setting
+    const [stripeLink, setStripeLink] = useState(''); // Stripe payment link
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
 
     const [customerMembership, setCustomerMembership] = useState(null);
@@ -1152,33 +1195,6 @@ const Dashboard = () => {
             return fDate >= dateRange.start && fDate <= dateRange.end;
         }
     });
-
-    const handleUpdateSettings = async (updates) => {
-        if (userRole !== 'admin' && userRole !== 'manager') return;
-
-        try {
-            const upserts = Object.entries(updates).map(([key, value]) => ({
-                key,
-                value: value.toString()
-            }));
-
-            const { error } = await supabase
-                .from('settings')
-                .upsert(upserts);
-
-            if (error) throw error;
-
-            if (updates.daily_target !== undefined) setDailyTarget(parseInt(updates.daily_target));
-            if (updates.review_link !== undefined) setReviewLink(updates.review_link);
-            if (updates.stripe_link !== undefined) setStripeLink(updates.stripe_link);
-
-            return { success: true };
-        } catch (error) {
-            console.error('Error updating settings:', error);
-            alert('Error al actualizar: ' + error.message);
-            return { success: false };
-        }
-    };
 
     const handleServiceChange = (e) => {
         const serviceId = e.target.value;
