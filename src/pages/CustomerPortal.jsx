@@ -88,17 +88,16 @@ const CustomerPortal = () => {
     const calculateProgress = (service) => {
         if (!service) return 0;
         if (service.status === 'ready') return 100;
-        if (service.status === 'waiting') return 10;
+        if (service.status === 'waiting') return 0;
 
         if (service.status === 'in_progress') {
-            if (!service.started_at) return 20; // At least started
+            if (!service.started_at) return 10; // Just started
 
             const startTime = new Date(service.started_at).getTime();
             const now = currentTime.getTime();
             const elapsedMinutes = (now - startTime) / (1000 * 60);
 
             // Linear progress from 10% to 75% over 30 minutes
-            // Formula: Start + (Elapsed / Target) * (End - Start)
             const progress = 10 + Math.min(65, (elapsedMinutes / 30) * 65);
             return Math.floor(progress);
         }
