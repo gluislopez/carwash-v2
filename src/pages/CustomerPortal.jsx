@@ -62,6 +62,9 @@ const CustomerPortal = () => {
     const [isUpdatingExtras, setIsUpdatingExtras] = useState(false);
     const [showExtras, setShowExtras] = useState(false);
 
+    // Queue position for waiting services
+    const [queuePosition, setQueuePosition] = useState(null);
+
     // --- SHARED HELPERS ---
     const clean = (val) => (val && val !== 'null' && val !== 'undefined') ? val.toString().trim() : '';
 
@@ -166,6 +169,27 @@ const CustomerPortal = () => {
             }, 60000); // Update every minute
             return () => clearInterval(timer);
         }
+    }, [activeService]);
+
+    // Calculate queue position when activeService is waiting
+    useEffect(() => {
+        const fetchQueuePosition = async () => {
+            if (!activeService || activeService.status !== 'waiting') {
+                setQueuePosition(null);
+                return;
+            }
+            const { count, error } = await supabase
+                .from('transactions')
+                .select('id', { count: 'exact', head: true })
+                .eq('status', 'waiting')
+                .lt('created_at', activeService.created_at);
+            if (!error) {
+                setQueuePosition(count + 1);
+            }
+        };
+        fetchQueuePosition();
+        const interval = setInterval(fetchQueuePosition, 15000);
+        return () => clearInterval(interval);
     }, [activeService]);
 
     // Business Status
@@ -1122,6 +1146,34 @@ const CustomerPortal = () => {
                                             </span>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* QUEUE POSITION BANNER (waiting only) */}
+                            {activeService.status === 'waiting' && queuePosition !== null && (
+                                <div style={{
+                                    backgroundColor: '#fefce8',
+                                    border: '1px solid #fde047',
+                                    borderRadius: '0.75rem',
+                                    padding: '0.75rem 1rem',
+                                    marginBottom: '0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '0.5rem'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#854d0e', fontWeight: '600', marginBottom: '0.1rem' }}>Tu posición en la fila</div>
+                                        <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#92400e', lineHeight: 1 }}>
+                                            {queuePosition === 1 ? '¡Eres el próximo! 🚗💨' : `#${queuePosition}`}
+                                        </div>
+                                        {queuePosition > 1 && (
+                                            <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: '0.1rem' }}>
+                                                {queuePosition - 1} auto{queuePosition - 1 > 1 ? 's' : ''} antes que tú
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ fontSize: '2rem' }}>⏳</div>
                                 </div>
                             )}
 
