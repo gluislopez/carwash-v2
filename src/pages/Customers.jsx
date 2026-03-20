@@ -279,7 +279,6 @@ const Customers = () => {
         vehicle_plate: '',
         vehicle_model: '',
         points: 0,
-        points: 0,
         membership_id: '',
         manual_price: '',
         stripe_subscription_id: ''
@@ -440,12 +439,26 @@ const Customers = () => {
         if (!window.confirm('¿Confirmar transferencia de vehículo?')) return;
 
         try {
-            const { error } = await supabase
+            const { error: vehicleError } = await supabase
                 .from('vehicles')
                 .update({ customer_id: targetCustomerId })
                 .eq('id', vehicleId);
 
-            if (error) throw error;
+            if (vehicleError) throw vehicleError;
+
+            // Move transactions associated with this vehicle to the new customer
+            const { error: txError } = await supabase
+                .from('transactions')
+                .update({ customer_id: targetCustomerId })
+                .eq('vehicle_id', vehicleId);
+
+            if (txError) throw txError;
+
+            // Move memberships associated strictly with this vehicle
+            await supabase
+                .from('customer_memberships')
+                .update({ customer_id: targetCustomerId })
+                .eq('vehicle_id', vehicleId);
 
             // Remove from current customer list
             setCustomerVehicles(customerVehicles.filter(v => v.id !== vehicleId));
@@ -700,8 +713,30 @@ const Customers = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
-            await remove(id);
+        if (window.confirm('¿Estás seguro de eliminar este cliente? ¡Esta acción borrará permanentemente todos sus vehículos, historial de ventas y membresías!')) {
+            try {
+                // 1. Delete memberships
+                await supabase.from('customer_memberships').delete().eq('customer_id', id);
+                // 2. Delete feedbacks
+                await supabase.from('customer_feedback').delete().eq('customer_id', id);
+                
+                // 3. Delete transactions and assignments
+                const { data: txs } = await supabase.from('transactions').select('id').eq('customer_id', id);
+                if (txs && txs.length > 0) {
+                    const txIds = txs.map(t => t.id);
+                    await supabase.from('transaction_assignments').delete().in('transaction_id', txIds);
+                    await supabase.from('transactions').delete().in('id', txIds);
+                }
+
+                // 4. Delete vehicles
+                await supabase.from('vehicles').delete().eq('customer_id', id);
+
+                // 5. Delete customer finally
+                await remove(id);
+            } catch (error) {
+                console.error("Error al eliminar cliente:", error);
+                alert('Error al eliminar el cliente: ' + (error.message || 'Verifica las dependencias en base de datos.'));
+            }
         }
     };
 
@@ -1005,7 +1040,7 @@ const Customers = () => {
                                         <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
                                             <Car size={16} className="text-primary" style={{ flexShrink: 0 }} />
                                             <span style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.9rem' }}>
-                                                {(v.brand || v.model) ? `${v.brand || ''} ${v.model || ''}` : 'Sin Modelo'}
+                                                {`${(v.brand && v.brand !== 'Generico' && v.brand !== 'null') ? v.brand : (customer.vehicle_brand || '')} ${v.model || customer.vehicle_model || 'Vehículo'}`.trim()}
                                                 {activeMemberships[`${customer.id}-${v.id}`] ? (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                         <span title="Membresía Activa">💎</span>
@@ -1146,11 +1181,11 @@ const Customers = () => {
             )}
 
             {isModalOpen && (
-                <div style={{
+                <div className="modal-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
                 }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
+                    <div className="card modal-card" style={{ width: '100%', maxWidth: '500px' }}>
                         <h3 style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</span>
                             {editingCustomer && editingCustomer.customer_number && (
@@ -1314,9 +1349,7 @@ const Customers = () => {
                                                             <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                                 <Car size={16} />
                                                                 <span>
-                                                                    {(v.brand || v.model)
-                                                                        ? `${v.brand || ''} ${v.model || ''}`
-                                                                        : v.plate}
+                                                                    {`${(v.brand && v.brand !== 'Generico' && v.brand !== 'null') ? v.brand : (editingCustomer.vehicle_brand || '')} ${v.model || editingCustomer.vehicle_model || v.plate}`.trim()}
                                                                 </span>
                                                             </div>
                                                             {(v.brand || v.model) && (
@@ -1469,7 +1502,6 @@ const Customers = () => {
                                                         return newFormData;
                                                     });
                                                 }}
-                                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'white', gridColumn: 'span 2' }}
                                                 disabled={!editingCustomer}
                                             >
                                                 <option value="all">Todo el Cliente</option>
@@ -1642,11 +1674,11 @@ const Customers = () => {
             {/* CUSTOMER HISTORY MODAL */}
             {
                 selectedHistoryCustomer && (
-                    <div style={{
+                    <div className="modal-overlay" style={{
                         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                         backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000
                     }} onClick={() => setSelectedHistoryCustomer(null)}>
-                        <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                 <h3 style={{ margin: 0 }}>Historial: {selectedHistoryCustomer.name}</h3>
                                 <button onClick={() => setSelectedHistoryCustomer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>

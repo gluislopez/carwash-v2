@@ -21,6 +21,7 @@ import BusinessSettings from './pages/BusinessSettings';
 import Commissions from './pages/Commissions';
 
 import MembershipSubscribe from './pages/MembershipSubscribe';
+import Ticket from './pages/Ticket';
 
 // Componente para proteger rutas
 const RequireAuth = ({ children }) => {
@@ -159,6 +160,7 @@ const AppRoot = () => {
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
                 <Route path="/subscribe" element={<MembershipSubscribe />} />
+                <Route path="/ticket/:id" element={<Ticket />} />
 
                 {/* SMART ROOT (Decides where to go) */}
                 <Route path="/" element={<SmartRoot />} />
@@ -181,6 +183,7 @@ const AppRoot = () => {
                                     <Route path="/promotions" element={<Promotions />} />
                                     <Route path="/memberships" element={<MembershipSettings />} />
                                     <Route path="/settings" element={<BusinessSettings />} />
+                                    <Route path="/commissions" element={<Commissions />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                             </Layout>

@@ -169,7 +169,10 @@ const Commissions = () => {
         filteredTxs.forEach(t => {
             const comm = (parseFloat(t.commission_amount) || 0);
             const tip = (parseFloat(t.tip) || 0);
-            const count = (t.transaction_assignments?.length) || 1;
+            
+            // Fix: Calculate UNIQUE employees to avoid duplicate assignment bugs
+            const uniqueEmployees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+            const count = uniqueEmployees.size > 0 ? uniqueEmployees.size : 1;
 
             totalCommission += (comm / count);
             totalTips += (tip / count);
@@ -358,7 +361,11 @@ const Commissions = () => {
                     <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No hay registros en este periodo.</p>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {stats.txs.map(t => (
+                        {stats.txs.map(t => {
+                            const uniqueEmployees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+                            const count = uniqueEmployees.size > 0 ? uniqueEmployees.size : 1;
+
+                            return (
                             <div key={t.id} style={{
                                 padding: '1rem',
                                 backgroundColor: 'var(--bg-secondary)',
@@ -382,13 +389,12 @@ const Commissions = () => {
                                             const brand = t.vehicles.brand === 'Generico' ? '' : t.vehicles.brand;
                                             return `${brand || ''} ${t.vehicles.model || ''}`.trim() || 'Modelo No Registrado';
                                         })()}
-                                        {/* Removed plate display as requested, or can keep it if user wants both. User said "instead of plate show name and vehicle". Name is already shown above. So just vehicle here. */}
                                     </div>
                                     <div style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>
                                         {t.services?.name || 'Servicio'}
-                                        {(t.transaction_assignments?.length || 1) > 1 && (
+                                        {count > 1 && (
                                             <span style={{ marginLeft: '0.5rem', color: 'var(--warning)', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                                                (1/{t.transaction_assignments.length})
+                                                (1/{count})
                                             </span>
                                         )}
                                     </div>
@@ -396,14 +402,14 @@ const Commissions = () => {
 
                                 <div style={{ textAlign: 'right', minWidth: '100px' }}>
                                     <div style={{ color: 'var(--success)', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                        +${((parseFloat(t.commission_amount) + parseFloat(t.tip)) / (t.transaction_assignments?.length || 1)).toFixed(2)}
+                                        +${((parseFloat(t.commission_amount) + parseFloat(t.tip)) / count).toFixed(2)}
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                        (Comm: ${((parseFloat(t.commission_amount)) / (t.transaction_assignments?.length || 1)).toFixed(2)} + Tip: ${((parseFloat(t.tip)) / (t.transaction_assignments?.length || 1)).toFixed(2)})
+                                        (Comm: ${((parseFloat(t.commission_amount)) / count).toFixed(2)} + Tip: ${((parseFloat(t.tip)) / count).toFixed(2)})
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 )}
             </div>

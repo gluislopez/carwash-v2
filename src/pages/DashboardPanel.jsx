@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
-import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode, AlertCircle, TrendingUp, AlertTriangle, Phone } from 'lucide-react';
+import { Plus, Car, DollarSign, Users, Trash2, Edit2, Clock, RefreshCw, Loader2, CheckCircle, Play, Send, Droplets, MessageCircle, Settings, MessageSquare, X, Star, QrCode, AlertCircle, TrendingUp, AlertTriangle, Phone, Share2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
@@ -240,7 +240,7 @@ const Dashboard = () => {
     const { data: vehiclesData, create: createVehicle, refresh: refreshVehicles } = useSupabase('vehicles');
     const vehicles = vehiclesData || [];
 
-    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
+    const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone, vehicle_plate, vehicle_model), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
 
     const { data: expensesData } = useSupabase('expenses');
@@ -284,7 +284,8 @@ const Dashboard = () => {
         if (!transaction) return;
 
         // CHECK FOR UNASSIGNED EXTRAS
-        const assignedCount = transaction.transaction_assignments?.length || 0;
+        const uniqueAssignees = new Set((transaction.transaction_assignments || []).map(a => a.employee_id));
+        const assignedCount = uniqueAssignees.size || 0;
         const unassignedExtras = transaction.extras?.filter(e => !e.assignedTo) || [];
 
         if (assignedCount > 1 && unassignedExtras.length > 0) {
@@ -393,6 +394,28 @@ const Dashboard = () => {
         window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
     };
 
+    const handleShareTicket = (txId, phone) => {
+        const ticketUrl = `${window.location.origin}/ticket/${txId}`;
+        
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(ticketUrl)
+                .then(() => {
+                    if (phone && window.confirm('Link del ticket copiado al portapapeles.\\n\\n¿Deseas compartirlo por WhatsApp al cliente?')) {
+                        const cleanPhone = phone.replace(/\\D/g, '');
+                        const message = `Hola, puedes seguir el estado de tu vehículo en tiempo real aquí: ${ticketUrl}`;
+                        window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`, '_blank');
+                    } else if (!phone) {
+                        alert('Link del ticket copiado al portapapeles: ' + ticketUrl);
+                    }
+                })
+                .catch(err => {
+                    alert('Link del ticket: ' + ticketUrl);
+                });
+        } else {
+            alert('Link del ticket: ' + ticketUrl);
+        }
+    };
+
     // ASSIGNMENT MODAL STATE
     const [showAssignmentModal, setShowAssignmentModal] = useState(false);
     const [pendingExtra, setPendingExtra] = useState(null);
@@ -460,6 +483,9 @@ const Dashboard = () => {
     const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
     const [error, setError] = useState(null); // FIX: Restore error state
     const [isSubmitting, setIsSubmitting] = useState(false); // Prevent double clicks
+    const [isRedemption, setIsRedemption] = useState(false); // NEW: Loyalty state
+    const [vipInfo, setVipInfo] = useState(null); // NEW: VIP logic state
+    const [canRedeemPoints, setCanRedeemPoints] = useState(false); // NEW: Points redemption state
 
     // Transaction Form State
     const [formData, setFormData] = useState({
@@ -757,7 +783,11 @@ const Dashboard = () => {
 
     const handleStartService = (txId) => {
         setAssigningTransactionId(txId);
-        setSelectedEmployeesForAssignment([]); // Reset selection
+        if (myEmployeeId && userRole !== 'admin' && userRole !== 'manager') {
+            setSelectedEmployeesForAssignment([myEmployeeId]);
+        } else {
+            setSelectedEmployeesForAssignment([]); // Reset selection
+        }
     };
 
     const handleConfirmAssignment = async () => {
@@ -770,17 +800,25 @@ const Dashboard = () => {
         if (!tx) return;
 
         try {
-            // 1. Create Assignments
+            // 1. Remove existing assignments to prevent duplicates
+            await supabase
+                .from('transaction_assignments')
+                .delete()
+                .eq('transaction_id', tx.id);
+
+            // 2. Create Assignments
             const assignments = selectedEmployeesForAssignment.map(empId => ({
                 transaction_id: tx.id,
                 employee_id: empId
             }));
 
-            const { error: assignError } = await supabase
-                .from('transaction_assignments')
-                .insert(assignments);
+            if (assignments.length > 0) {
+                const { error: assignError } = await supabase
+                    .from('transaction_assignments')
+                    .insert(assignments);
 
-            if (assignError) throw assignError;
+                if (assignError) throw assignError;
+            }
 
             // 2. Calculate Commission
             // Logic: If $35 service & >1 employee => $12 total commission. Else standard.
@@ -828,7 +866,11 @@ const Dashboard = () => {
             // 1. Check if customer exists by phone OR name (if phone empty)
             let existingCustomer = null;
             if (cleanPhone) {
-                existingCustomer = customers.find(c => c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
+                existingCustomer = customers.find(c => {
+                    if (!c.phone) return false;
+                    const cPhone = c.phone.replace(/\D/g, '');
+                    return cPhone === cleanPhone || (cPhone.length >= 10 && cleanPhone.length >= 10 && cPhone.slice(-10) === cleanPhone.slice(-10));
+                });
             }
 
 
@@ -1602,7 +1644,8 @@ const Dashboard = () => {
     const fractionalCount = statsTransactions
         .filter(t => t.status === 'completed' || t.status === 'paid')
         .reduce((sum, t) => {
-            const assignmentCount = t.transaction_assignments?.length || 1;
+            const uniqueAssignees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+            const assignmentCount = uniqueAssignees.size > 0 ? uniqueAssignees.size : 1;
             return sum + (1 / assignmentCount);
         }, 0);
 
@@ -1736,8 +1779,8 @@ const Dashboard = () => {
                                             // Calculate per employee
                                             const empStats = {};
                                             completedTxs.forEach(t => {
-                                                const assignments = t.transaction_assignments?.length > 0 ? t.transaction_assignments : [{ employee_id: t.employee_id }];
-                                                const count = assignments.length;
+                                                const assignments = t.transaction_assignments?.length > 0 ? Array.from(new Set(t.transaction_assignments.map(a => a.employee_id))).map(id => ({employee_id: id})) : [{ employee_id: t.employee_id }];
+                                                const count = assignments.length > 0 ? assignments.length : 1;
                                                 const shareComm = (parseFloat(t.commission_amount) || 0) / count;
                                                 const shareTip = (parseFloat(t.tip) || 0) / count;
 
@@ -2075,7 +2118,11 @@ const Dashboard = () => {
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)', lineHeight: 1 }}>
                                 {userRole === 'admin'
                                     ? statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').length
-                                    : formatToFraction(statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').reduce((sum, t) => sum + (1 / (t.transaction_assignments?.length || 1)), 0))
+                                    : formatToFraction(statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && getTransactionCategory(t) !== 'membership_sale').reduce((sum, t) => {
+                                        const uniqueAssignees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+                                        const assignmentCount = uniqueAssignees.size > 0 ? uniqueAssignees.size : 1;
+                                        return sum + (1 / assignmentCount);
+                                    }, 0))
                                 }
                             </div>
                         </div>
@@ -2196,9 +2243,9 @@ const Dashboard = () => {
                                                 key={emp.id}
                                                 onClick={() => {
                                                     const current = selectedEmployeesForAssignment;
-                                                    const isSelected = current.includes(emp.id);
+                                                    const isSelected = current.some(id => String(id) === String(emp.id));
                                                     if (isSelected) {
-                                                        setSelectedEmployeesForAssignment(current.filter(id => id !== emp.id));
+                                                        setSelectedEmployeesForAssignment(current.filter(id => String(id) !== String(emp.id)));
                                                     } else {
                                                         setSelectedEmployeesForAssignment([...current, emp.id]);
                                                     }
@@ -2207,8 +2254,8 @@ const Dashboard = () => {
                                                     padding: '0.5rem 1rem',
                                                     borderRadius: '20px',
                                                     border: '1px solid var(--primary)',
-                                                    backgroundColor: selectedEmployeesForAssignment.includes(emp.id) ? 'var(--primary)' : 'transparent',
-                                                    color: selectedEmployeesForAssignment.includes(emp.id) ? 'white' : 'var(--text-primary)',
+                                                    backgroundColor: selectedEmployeesForAssignment.some(id => String(id) === String(emp.id)) ? 'var(--primary)' : 'transparent',
+                                                    color: selectedEmployeesForAssignment.some(id => String(id) === String(emp.id)) ? 'white' : 'var(--text-primary)',
                                                     cursor: 'pointer'
                                                 }}
                                             >
@@ -2617,6 +2664,12 @@ const Dashboard = () => {
                                                                             >
                                                                                 <QrCode size={14} /> Ver QR
                                                                             </button>
+                                                                            <button
+                                                                                onClick={() => handleShareTicket(t.id, t.customers?.phone)}
+                                                                                style={{ background: 'none', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
+                                                                            >
+                                                                                <Share2 size={14} /> Ticket
+                                                                            </button>
                                                                         </div>
                                                                     </div>
                                                                 </li>
@@ -2718,6 +2771,12 @@ const Dashboard = () => {
                                                                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                                                                 >
                                                                                     <QrCode size={14} /> Ver QR
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleShareTicket(t.id, t.customers?.phone)}
+                                                                                    style={{ background: 'none', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                                                >
+                                                                                    <Share2 size={14} /> Ticket
                                                                                 </button>
                                                                             </div>
                                                                         </div>
@@ -2914,7 +2973,8 @@ const Dashboard = () => {
                                                                     if (isAssigned || isPrimary) {
                                                                         const txTotalCommission = (parseFloat(t.commission_amount) || 0);
                                                                         const tip = (parseFloat(t.tip) || 0);
-                                                                        const count = (t.transaction_assignments?.length) || 1;
+                                                                        const uniqueAssignees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+                                                                        const count = uniqueAssignees.size > 0 ? uniqueAssignees.size : 1;
 
                                                                         // Calculate Extras assigned to THIS employee
                                                                         const myExtras = t.extras?.filter(e => e.assignedTo === emp.id) || [];
@@ -2951,7 +3011,8 @@ const Dashboard = () => {
                                                                         const isPrimary = t.employee_id === emp.id;
 
                                                                         if (isAssigned || isPrimary) {
-                                                                            const count = t.transaction_assignments?.length || 1;
+                                                                            const uniqueAssignees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+                                                                            const count = uniqueAssignees.size > 0 ? uniqueAssignees.size : 1;
                                                                             return sum + (1 / count);
                                                                         }
                                                                         return sum;
@@ -3009,7 +3070,8 @@ const Dashboard = () => {
                                                                         }
 
                                                                         const sharedCommissionPool = Math.max(0, txTotalCommission - totalAssignedCommission);
-                                                                        const count = (t.transaction_assignments?.length) || 1;
+                                                                        const uniqueAssignees = new Set((t.transaction_assignments || []).map(a => a.employee_id));
+                                                                        const count = uniqueAssignees.size > 0 ? uniqueAssignees.size : 1;
 
                                                                         // 2. Logic: (Shared / Count) + MyAssigned + (Tip / Count)
                                                                         // Usage: This block is inside the 'admin' map OR 'employee' map.

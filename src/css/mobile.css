@@ -155,20 +155,31 @@
     .modal-card {
         width: 100% !important;
         max-width: 100% !important;
-        height: 85vh !important;
-        max-height: 85vh !important;
+        max-height: 90% !important;
+        height: auto !important;
         border-bottom-left-radius: 0 !important;
         border-bottom-right-radius: 0 !important;
         border-top-left-radius: 24px !important;
         border-top-right-radius: 24px !important;
-        margin: 0 !important;
+        margin: auto 0 0 0 !important; /* Force to bottom */
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5) !important;
         animation: sheetUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .modal-card > * {
+        flex-shrink: 0;
     }
 
     .modal-overlay {
         background-color: rgba(0, 0, 0, 0.7) !important;
         backdrop-filter: blur(4px);
+        align-items: flex-end !important;
+        padding: 0 !important;
     }
 
     /* Mobile Card List Styles */
