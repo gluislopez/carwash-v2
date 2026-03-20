@@ -2664,12 +2664,6 @@ const Dashboard = () => {
                                                                             >
                                                                                 <QrCode size={14} /> Ver QR
                                                                             </button>
-                                                                            <button
-                                                                                onClick={() => handleShareTicket(t.id, t.customers?.phone)}
-                                                                                style={{ background: 'none', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}
-                                                                            >
-                                                                                <Share2 size={14} /> Ticket
-                                                                            </button>
                                                                         </div>
                                                                     </div>
                                                                 </li>
@@ -2771,12 +2765,6 @@ const Dashboard = () => {
                                                                                     style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                                                                                 >
                                                                                     <QrCode size={14} /> Ver QR
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleShareTicket(t.id, t.customers?.phone)}
-                                                                                    style={{ background: 'none', border: 'none', color: '#10B981', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                                                >
-                                                                                    <Share2 size={14} /> Ticket
                                                                                 </button>
                                                                             </div>
                                                                         </div>
