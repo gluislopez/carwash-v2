@@ -2923,15 +2923,15 @@ const Dashboard = () => {
                                                     <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                             <span>Efectivo:</span>
-                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                             <span>Tarjeta:</span>
-                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                             <span>Ath Móvil:</span>
-                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0).toFixed(2)}</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
                                                         </div>
                                                         <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
@@ -3986,9 +3986,27 @@ const Dashboard = () => {
                                         {/* TOTAL PRICE DISPLAY */}
                                         <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontWeight: 'bold' }}>Total Estimado:</span>
-                                            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                                                ${formData.price || 0}
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$</span>
+                                                <input
+                                                    type="number"
+                                                    className="input"
+                                                    value={formData.price || 0}
+                                                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                                                    style={{ 
+                                                        width: '100px', 
+                                                        fontSize: '1.5rem', 
+                                                        fontWeight: 'bold', 
+                                                        color: 'var(--primary)',
+                                                        backgroundColor: 'transparent',
+                                                        border: '1px solid var(--primary)',
+                                                        textAlign: 'right',
+                                                        padding: '0.2rem 0.5rem'
+                                                    }}
+                                                    step="0.01"
+                                                    min="0"
+                                                />
+                                            </div>
                                         </div>
 
 
