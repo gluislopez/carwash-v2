@@ -264,28 +264,30 @@ const Reports = () => {
         return 'other';
     };
 
+    const isCountedAsPaid = (t) => t.status === 'completed' || t.status === 'paid' || t.status === 'ready';
+
     const totalCash = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'cash' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'cash' && isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalTransfer = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'transfer' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'transfer' && isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalCard = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'card' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'card' && isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalOthers = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'other' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'other' && isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipsRevenue = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'membership_sale' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'membership_sale' && isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalMembershipExtras = dateFilteredTxs
-        .filter(t => getTransactionCategory(t) === 'membership_usage' && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => getTransactionCategory(t) === 'membership_usage' && isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     // CRITICAL: Panic check for sales that might be outside the date range or status
@@ -297,11 +299,11 @@ const Reports = () => {
     });
 
     const totalPending = dateFilteredTxs
-        .filter(t => t.status === 'waiting' || t.status === 'in_progress' || t.status === 'ready')
+        .filter(t => t.status === 'waiting' || t.status === 'in_progress')
         .reduce((sum, t) => sum + (parseFloat(t.price) || 0) + (parseFloat(t.tip) || 0), 0);
 
     const membershipUsageCount = dateFilteredTxs
-        .filter(t => (getTransactionCategory(t) === 'membership_usage') && (t.status === 'completed' || t.status === 'paid'))
+        .filter(t => (getTransactionCategory(t) === 'membership_usage') && isCountedAsPaid(t))
         .length;
 
     const getFilteredExpenses = () => {
@@ -365,7 +367,7 @@ const Reports = () => {
     }, 0);
 
     const totalIncome = dateFilteredTxs
-        .filter(t => t.status === 'completed' || t.status === 'paid')
+        .filter(t => isCountedAsPaid(t))
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
     const totalCommissions = filteredTransactions.reduce((sum, t) => {
@@ -442,8 +444,8 @@ const Reports = () => {
                 groups[dateKey] = { date: dateKey, count: 0, income: 0, commissions: 0, productExpenses: 0, pending: 0, cashIncome: 0, transferIncome: 0, cardIncome: 0, membershipSaleIncome: 0, otherIncome: 0 };
             }
 
-            const isPaid = t.status === 'completed' || t.status === 'paid';
-            const isPending = t.status === 'ready' || t.status === 'in_progress' || t.status === 'waiting';
+            const isPaid = isCountedAsPaid(t);
+            const isPending = t.status === 'in_progress' || t.status === 'waiting';
 
             const txIncome = isPaid ? calculateTxTotal(t) : 0; // Use the unified calculateTxTotal
             const txPending = isPending ? (parseFloat(t.price) || 0) : 0; // Pending still uses base price

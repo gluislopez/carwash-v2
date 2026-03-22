@@ -1104,10 +1104,10 @@ const Dashboard = () => {
     }, [userRole, statsTransactions, alertedTransactions]);
 
     const totalIncome = filteredTransactions
-        .filter(t => t.status === 'completed' || t.status === 'paid')
+        .filter(t => t.status === 'completed' || t.status === 'paid' || t.status === 'ready')
         .reduce((sum, t) => sum + calculateTxTotal(t), 0);
 
-    const completionCount = filteredTransactions.filter(t => t.status === 'completed' || t.status === 'paid').length;
+    const completionCount = filteredTransactions.filter(t => t.status === 'completed' || t.status === 'paid' || t.status === 'ready').length;
     const averageTicket = completionCount > 0 ? (totalIncome / completionCount) : 0;
 
     const totalCommissions = statsTransactions.reduce((sum, t) => {
