@@ -468,16 +468,23 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
             }
 
             // 4. UPDATE TRANSACTION
+            const tip = parseFloat(formData.tip) || 0;
+            const extrasTotal = extras.reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0);
+            const computedTotalPrice = isMembershipUsage
+                ? extrasTotal  // base is $0 for membership; only extras are charged
+                : currentPrice + tip;
+
             await onUpdate(transaction.id, {
                 service_id: formData.serviceId,
                 price: currentPrice,
                 payment_method: finalPaymentMethod, // Use adapted method
-                tip: parseFloat(formData.tip) || 0,
+                tip: tip,
                 commission_amount: finalCommission,
                 status: newStatus,
                 extras: extras,
                 employee_id: selectedEmployeeIds[0] || null,
-                vehicle_id: finalVehicleId || null
+                vehicle_id: finalVehicleId || null,
+                total_price: computedTotalPrice  // FIX: always sync total_price on checkout
             });
 
         } catch (error) {

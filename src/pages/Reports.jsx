@@ -228,17 +228,26 @@ const Reports = () => {
             return isNaN(extrasSum) ? 0 : extrasSum;
         }
 
-        // PRIORITY 3: Standard Transaction (Discounts/Normal)
+        // PRIORITY 3: Standard Transaction — always recompute from live fields.
+        // total_price can be stale (not updated at checkout), so we recompute from price + tip + extras.
+        // This fixes historical records saved before the total_price checkout fix.
+        if (t.price !== null && t.price !== undefined) {
+            const base = parseFloat(t.price) || 0;
+            const tip = parseFloat(t.tip) || 0;
+            const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+            const val = base + tip + extrasSum;
+            return isNaN(val) ? 0 : val;
+        }
+
+        // FALLBACK: Use total_price if price is null
         if (t.total_price !== null && t.total_price !== undefined) {
             const val = parseFloat(t.total_price) || 0;
             return isNaN(val) ? 0 : val;
         }
 
-        const val = (parseFloat(t.price) || 0) +
-            (parseFloat(t.tip) || 0) +
-            (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
-        return isNaN(val) ? 0 : val;
+        return 0;
     };
+
 
     // DEBUG INFO
     const debugMembTxs = (allTransactions || []).filter(t => {
