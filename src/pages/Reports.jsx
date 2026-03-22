@@ -229,16 +229,13 @@ const Reports = () => {
         }
 
         // PRIORITY 3: Standard Transaction.
-        // `price` in the DB already includes extras (EditTransactionModal useEffect: price = servicePrice + extrasTotal).
-        // So the correct total is price + tip only. Adding extrasSum would double-count them.
-        // If price is missing, fall back to total_price, then reconstruct from extras.
+        // `price` in DB = servicePrice + extrasTotal (set at checkout), excludes tips.
+        // Return price only — tips are shown separately ("Sin propinas").
         if (t.price !== null && t.price !== undefined) {
-            const base = parseFloat(t.price) || 0;
-            const tip = parseFloat(t.tip) || 0;
-            return isNaN(base + tip) ? 0 : base + tip;
+            return parseFloat(t.price) || 0;
         }
 
-        // FALLBACK: price is null — use total_price or reconstruct
+        // FALLBACK: price is null
         if (t.total_price !== null && t.total_price !== undefined) {
             return parseFloat(t.total_price) || 0;
         }
