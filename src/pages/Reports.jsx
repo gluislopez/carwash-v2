@@ -228,24 +228,23 @@ const Reports = () => {
             return isNaN(extrasSum) ? 0 : extrasSum;
         }
 
-        // PRIORITY 3: Standard Transaction — always recompute from live fields.
-        // total_price can be stale (not updated at checkout), so we recompute from price + tip + extras.
-        // This fixes historical records saved before the total_price checkout fix.
+        // PRIORITY 3: Standard Transaction.
+        // `price` in the DB already includes extras (EditTransactionModal useEffect: price = servicePrice + extrasTotal).
+        // So the correct total is price + tip only. Adding extrasSum would double-count them.
+        // If price is missing, fall back to total_price, then reconstruct from extras.
         if (t.price !== null && t.price !== undefined) {
             const base = parseFloat(t.price) || 0;
             const tip = parseFloat(t.tip) || 0;
-            const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
-            const val = base + tip + extrasSum;
-            return isNaN(val) ? 0 : val;
+            return isNaN(base + tip) ? 0 : base + tip;
         }
 
-        // FALLBACK: Use total_price if price is null
+        // FALLBACK: price is null — use total_price or reconstruct
         if (t.total_price !== null && t.total_price !== undefined) {
-            const val = parseFloat(t.total_price) || 0;
-            return isNaN(val) ? 0 : val;
+            return parseFloat(t.total_price) || 0;
         }
 
-        return 0;
+        const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+        return extrasSum;
     };
 
 
