@@ -192,16 +192,22 @@ const Dashboard = () => {
             return isNaN(extrasSum) ? 0 : extrasSum;
         }
 
-        // PRIORITY 3: Standard Transaction (Discounts/Normal)
-        if (t.total_price !== null && t.total_price !== undefined) {
-            const val = parseFloat(t.total_price) || 0;
-            return isNaN(val) ? 0 : val;
+        // PRIORITY 3: Standard Transaction.
+        // `price` in DB already includes extras (EditTransactionModal sets price = servicePrice + extrasTotal).
+        // Use price + tip only. Adding extrasSum again would double-count.
+        if (t.price !== null && t.price !== undefined) {
+            const base = parseFloat(t.price) || 0;
+            const tip = parseFloat(t.tip) || 0;
+            return isNaN(base + tip) ? 0 : base + tip;
         }
 
-        const val = (parseFloat(t.price) || 0) +
-            (parseFloat(t.tip) || 0) +
-            (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
-        return isNaN(val) ? 0 : val;
+        // FALLBACK: price is null
+        if (t.total_price !== null && t.total_price !== undefined) {
+            return parseFloat(t.total_price) || 0;
+        }
+
+        const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+        return extrasSum;
     };
 
 
@@ -2923,15 +2929,15 @@ const Dashboard = () => {
                                                     <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '0.5rem' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                             <span>Efectivo:</span>
-                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'cash').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') && getTransactionCategory(t) === 'cash').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                                             <span>Tarjeta:</span>
-                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'card').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') && getTransactionCategory(t) === 'card').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
                                                         </div>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                             <span>Ath Móvil:</span>
-                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid') && t.payment_method === 'transfer').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
+                                                            <span style={{ fontWeight: 'bold' }}>${statsTransactions.filter(t => (t.status === 'completed' || t.status === 'paid' || t.status === 'ready') && getTransactionCategory(t) === 'transfer').reduce((sum, t) => sum + calculateTxTotal(t), 0).toFixed(2)}</span>
                                                         </div>
                                                         <hr style={{ borderColor: 'var(--border-color)', margin: '1rem 0' }} />
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: 'var(--success)' }}>
