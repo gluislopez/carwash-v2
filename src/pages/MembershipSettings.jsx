@@ -117,8 +117,28 @@ const MembershipSettings = () => {
 
     const handleCollectPayment = async (sub) => {
         const amount = sub.manual_price != null ? sub.manual_price : sub.memberships.price;
-        const nextDate = new Date();
-        nextDate.setMonth(nextDate.getMonth() + 1);
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        let nextDate;
+        let remainingWashes = 0;
+
+        // Check if early payment (not overdue yet)
+        if (sub.status === 'active' && sub.next_billing_date && sub.next_billing_date >= todayStr) {
+            // Extend from the current next_billing_date
+            nextDate = new Date(sub.next_billing_date + 'T12:00:00Z'); // use midday to avoid timezone shift
+            nextDate.setMonth(nextDate.getMonth() + 1);
+
+            // Calculate remaining washes to rollover
+            if (sub.memberships && sub.memberships.type === 'limit') {
+                remainingWashes = Math.max(0, sub.memberships.limit_count - (sub.usage_count || 0));
+            }
+        } else {
+            // If overdue or new, start from today
+            nextDate = new Date();
+            nextDate.setMonth(nextDate.getMonth() + 1);
+        }
+
+        const newUsageCount = -remainingWashes;
 
         // 1. Record in subscription_payments
         const { error: payErr } = await supabase.from('subscription_payments').insert([{
@@ -152,7 +172,7 @@ const MembershipSettings = () => {
             status: 'active',
             last_payment_date: new Date().toISOString().split('T')[0],
             next_billing_date: nextDate.toISOString().split('T')[0],
-            usage_count: 0 // Reset usage for new billing cycle
+            usage_count: newUsageCount // Rollover remaining washes
         }).eq('id', sub.id);
 
         alert(`Pago de $${amount} registrado para ${sub.customers.name}. Suscripción ACTIVADA.`);
@@ -582,24 +602,27 @@ const MembershipSettings = () => {
                                                 {sub.memberships?.type === 'unlimited' ? (
                                                     <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>Ilimitado</span>
                                                 ) : (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <input
-                                                            type="number"
-                                                            value={sub.usage_count}
-                                                            onChange={(e) => handleUpdateUsage(sub.id, e.target.value)}
-                                                            style={{
-                                                                width: '60px',
-                                                                padding: '0.25rem',
-                                                                borderRadius: '0.25rem',
-                                                                border: '1px solid var(--border-color)',
-                                                                backgroundColor: 'var(--bg-secondary)',
-                                                                color: 'var(--text-primary)',
-                                                                textAlign: 'center'
-                                                            }}
-                                                        />
-                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                            / {sub.memberships?.limit_count || 0}
-                                                        </span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Usados:</span>
+                                                            <input
+                                                                type="number"
+                                                                value={sub.usage_count}
+                                                                onChange={(e) => handleUpdateUsage(sub.id, e.target.value)}
+                                                                style={{
+                                                                    width: '50px',
+                                                                    padding: '0.25rem',
+                                                                    borderRadius: '0.25rem',
+                                                                    border: '1px solid var(--border-color)',
+                                                                    backgroundColor: 'var(--bg-secondary)',
+                                                                    color: 'var(--text-primary)',
+                                                                    textAlign: 'center'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)', backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>
+                                                            {Math.max(0, (sub.memberships?.limit_count || 0) - (sub.usage_count || 0))} Libres
+                                                        </div>
                                                     </div>
                                                 )}
                                              </td>
