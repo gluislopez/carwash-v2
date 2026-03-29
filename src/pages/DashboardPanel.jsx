@@ -306,9 +306,9 @@ const Dashboard = () => {
             return;
         }
 
-        const phone = transaction.customers.phone.replace(/\D/g, '');
+        const phone = (transaction.customers?.phone || '').replace(/\D/g, '');
         if (!phone) {
-            alert('Número de teléfono inválido.');
+            alert('Número de teléfono inválido o ausente.');
             return;
         }
 
@@ -358,8 +358,11 @@ const Dashboard = () => {
             return;
         }
 
-        const customerName = transaction.customers.name.split(' ')[0]; // First name
-        const vehicle = `${transaction.vehicles?.plate || transaction.customers?.vehicle_plate || ''} (${transaction.vehicles?.model || transaction.customers?.vehicle_model || ''})`;
+        const rawName = transaction.customers?.name || 'Cliente';
+        const customerName = rawName.split(' ')[0]; // First name
+        const vehPlate = transaction.vehicles?.plate || transaction.customers?.vehicle_plate || '';
+        const vehModel = transaction.vehicles?.model || transaction.customers?.vehicle_model || '';
+        const vehicle = `${vehPlate} (${vehModel})`.trim() || 'Vehículo';
 
         // Calculate Total
         const extrasTotal = transaction.extras?.reduce((sum, e) => sum + e.price, 0) || 0;
@@ -3045,7 +3048,7 @@ const Dashboard = () => {
                 )
             }
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Dashboard v4.70 • {new Date().toLocaleTimeString()}
+                    Dashboard v4.71 • {new Date().toLocaleTimeString()}
                 </div>
 
             {/* FULLSCREEN PHOTO VIEWER MODAL */}
