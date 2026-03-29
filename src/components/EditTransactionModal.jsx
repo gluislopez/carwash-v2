@@ -203,10 +203,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
         const item = { ...extra, assignedTo: empId };
         const updatedExtras = [...extras, item];
         setExtras(updatedExtras);
-
-        // Auto-update total price
-        const currentTotal = parseFloat(formData.price) || 0;
-        setFormData({ ...formData, price: currentTotal + extra.price });
+        // Price is recalculated automatically by useEffect when extras changes
 
         setNewExtra({ description: '', price: '' });
         setPendingExtra(null);
@@ -228,13 +225,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, services, employee
     };
 
     const handleRemoveExtra = (index) => {
-        const extraToRemove = extras[index];
         const updatedExtras = extras.filter((_, i) => i !== index);
         setExtras(updatedExtras);
-
-        // Auto-update total price
-        const currentTotal = parseFloat(formData.price) || 0;
-        setFormData({ ...formData, price: currentTotal - extraToRemove.price });
+        // Price is recalculated automatically by useEffect when extras changes
     };
 
     // Initialize selected employees

@@ -7,6 +7,9 @@ const CustomerFeedback = () => {
     const { transactionId } = useParams();
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
+    const [reviewPhoto, setReviewPhoto] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [viewingPhoto, setViewingPhoto] = useState(null);
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [transaction, setTransaction] = useState(null);
@@ -36,20 +39,44 @@ const CustomerFeedback = () => {
         }
 
         setLoading(true);
-        const { error } = await supabase
-            .from('customer_feedback')
-            .insert([{
-                transaction_id: transactionId,
-                rating,
-                comment
-            }]);
+        setIsUploading(true);
+        try {
+            let photo_url = null;
+            if (reviewPhoto) {
+                const fileExt = reviewPhoto.name.split('.').pop();
+                const fileName = `review_${transactionId}.${fileExt}`;
+                const filePath = `reviews/${fileName}`;
 
-        if (error) {
-            alert("Error al enviar feedback: " + error.message);
-        } else {
-            setSubmitted(true);
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('car_photos')
+                    .upload(filePath, reviewPhoto, { upsert: true });
+
+                if (!uploadError) {
+                    const { data: publicUrlData } = supabase.storage.from('car_photos').getPublicUrl(filePath);
+                    photo_url = publicUrlData.publicUrl;
+                }
+            }
+
+            const { error } = await supabase
+                .from('customer_feedback')
+                .insert([{
+                    transaction_id: transactionId,
+                    rating,
+                    comment,
+                    photo_url
+                }]);
+
+            if (error) {
+                alert("Error al enviar feedback: " + error.message);
+            } else {
+                setSubmitted(true);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+            setIsUploading(false);
         }
-        setLoading(false);
     };
 
     if (submitted) {
@@ -117,12 +144,23 @@ const CustomerFeedback = () => {
                     }}>
                         {config.icon}
                     </div>
+                    
                     <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-primary)' }}>
                         {config.label}
                     </h1>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1.1rem' }}>
                         {config.text}
                     </p>
+
+                    {/* NEW: Show finish photo if ready */}
+                    {transaction.status === 'ready' && transaction.finish_photo_url && (
+                        <div style={{ marginBottom: '2rem', width: '100%', borderRadius: '1rem', overflow: 'hidden', border: '1px solid var(--border-color)', cursor: 'pointer' }} onClick={() => setViewingPhoto(transaction.finish_photo_url)}>
+                            <img src={transaction.finish_photo_url} alt="Vehículo Listo" style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
+                            <div style={{ padding: '0.75rem', backgroundColor: '#f0fdf4', color: '#15803d', fontWeight: 'bold' }}>
+                                ✨ ¡Tu auto ya está listo!
+                            </div>
+                        </div>
+                    )}
 
                     <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', width: '100%' }}>
                         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Vehículo</p>
@@ -134,6 +172,12 @@ const CustomerFeedback = () => {
                         Esta pantalla se actualizará automáticamente... 🔄
                     </p>
                 </div>
+                {/* FULLSCREEN PHOTO VIEWER */}
+                {viewingPhoto && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 10000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }} onClick={() => setViewingPhoto(null)}>
+                        <img src={viewingPhoto} alt="Zoom" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '0.5rem' }} />
+                    </div>
+                )}
                 <style>{`
                     @keyframes pulse {
                         0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
@@ -179,6 +223,13 @@ const CustomerFeedback = () => {
                     </p>
                 </div>
 
+                {transaction.finish_photo_url && (
+                    <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                        <img src={transaction.finish_photo_url} alt="Resultado" style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '1rem', cursor: 'pointer' }} onClick={() => setViewingPhoto(transaction.finish_photo_url)} />
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>👆 Foto del resultado final</p>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="card" style={{ padding: '2rem' }}>
                     <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
                         <p style={{ fontWeight: '600', marginBottom: '1rem' }}>¿Qué tan satisfecho estás?</p>
@@ -217,10 +268,38 @@ const CustomerFeedback = () => {
                         />
                     </div>
 
+                    <div style={{ marginBottom: '2rem' }}>
+                        <label className="label" style={{ marginBottom: '0.75rem', display: 'block' }}>Añadir Foto del Resultado (Opcional)</label>
+                        <label style={{ 
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', 
+                            padding: '1.5rem', border: '2px dashed var(--border-color)', borderRadius: '0.5rem', 
+                            cursor: 'pointer', transition: 'all 0.2s',
+                            backgroundColor: reviewPhoto ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                            borderColor: reviewPhoto ? '#10B981' : 'var(--border-color)'
+                        }}>
+                            <span style={{ fontSize: '2rem' }}>📷</span>
+                            <span style={{ fontWeight: '600', color: reviewPhoto ? '#10B981' : 'var(--text-muted)' }}>
+                                {reviewPhoto ? '¡Foto Seleccionada!' : 'Haz clic para tomar foto o subir'}
+                            </span>
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                capture="environment" 
+                                style={{ display: 'none' }} 
+                                onChange={(e) => setReviewPhoto(e.target.files[0])}
+                            />
+                        </label>
+                        {reviewPhoto && (
+                            <button type="button" onClick={() => setReviewPhoto(null)} style={{ marginTop: '0.5rem', color: '#EF4444', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                Quitar foto
+                            </button>
+                        )}
+                    </div>
+
                     <button
                         type="submit"
                         className="btn btn-primary"
-                        disabled={loading || rating === 0}
+                        disabled={loading || rating === 0 || isUploading}
                         style={{ width: '100%', height: '54px', fontSize: '1.1rem', fontWeight: 'bold' }}
                     >
                         {loading ? 'Enviando...' : (
@@ -236,6 +315,12 @@ const CustomerFeedback = () => {
                     </p>
                 </form>
             </div>
+            {/* FULLSCREEN PHOTO VIEWER */}
+            {viewingPhoto && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 10000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }} onClick={() => setViewingPhoto(null)}>
+                    <img src={viewingPhoto} alt="Zoom" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '0.5rem' }} />
+                </div>
+            )}
         </div>
     );
 };

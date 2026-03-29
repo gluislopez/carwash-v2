@@ -8,6 +8,10 @@ import ServiceAnalyticsChart from '../components/ServiceAnalyticsChart';
 import PeakHoursChart from '../components/PeakHoursChart';
 import TopCustomersReport from '../components/TopCustomersReport';
 import EditTransactionModal from '../components/EditTransactionModal';
+import ConfigModal from '../components/dashboard/ConfigModal';
+import { DashboardProvider } from '../context/DashboardContext';
+import TransactionModal from '../components/dashboard/TransactionModal';
+import { generateDailyReport } from '../utils/dailyReportPdf';
 import { calculateSharedCommission } from '../utils/commissionRules';
 import { playNewServiceSound, playAlertSound, unlockAudio } from '../utils/soundUtils';
 import { formatDuration } from '../utils/formatUtils';
@@ -277,6 +281,9 @@ const Dashboard = () => {
 
     const [verifyingTransaction, setVerifyingTransaction] = useState(null);
     const [hasConsentedVerification, setHasConsentedVerification] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [photoToUpload, setPhotoToUpload] = useState(null);
+    const [viewingPhoto, setViewingPhoto] = useState(null);
 
     const handleOpenVerification = (transaction) => {
         setVerifyingTransaction(transaction);
@@ -311,10 +318,36 @@ const Dashboard = () => {
 
         // Update status to 'ready'
         try {
+            setIsSubmitting(true);
+            let finish_photo_url = null;
+
+            if (photoToUpload) {
+                setIsUploadingPhoto(true);
+                const fileExt = photoToUpload.name.split('.').pop();
+                const fileName = `${transaction.id}_finish.${fileExt}`;
+                const filePath = `finished/${fileName}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('car_photos')
+                    .upload(filePath, photoToUpload, { upsert: true });
+
+                if (!uploadError) {
+                    const { data: publicUrlData } = supabase.storage.from('car_photos').getPublicUrl(filePath);
+                    finish_photo_url = publicUrlData.publicUrl;
+                } else {
+                    console.error("Error al subir foto de acabado:", uploadError);
+                }
+                setIsUploadingPhoto(false);
+            }
+
             await updateTransaction(transaction.id, {
                 status: 'ready',
-                finished_at: new Date().toISOString()
+                finished_at: new Date().toISOString(),
+                finish_photo_url: finish_photo_url || transaction.finish_photo_url
             });
+
+            setPhotoToUpload(null);
+            setIsSubmitting(false);
 
 
 
@@ -517,28 +550,36 @@ const Dashboard = () => {
     const [allCustomerMemberships, setAllCustomerMemberships] = useState([]); // Array of all active memberships for selected customer
     const [isMembershipUsage, setIsMembershipUsage] = useState(false);
 
-    // SYNC PRICE: Recalculate anytime membership usage, service, or extras change
+    // NEW: Extra Wash redemption state
+    const [availableExtraWashes, setAvailableExtraWashes] = useState([]);
+    const [isExtraWashUsage, setIsExtraWashUsage] = useState(false);
+
+    // SYNC PRICE: Recalculate anytime membership usage, service, extra wash usage, or extras change
     useEffect(() => {
         if (!formData.serviceId) return;
         const service = services.find(s => s.id === formData.serviceId);
         if (!service) return;
 
-        const basePrice = isMembershipUsage ? 0 : (parseFloat(service.price) || 0);
+        // Price is 0 if either membership OR extra wash is used
+        const basePrice = (isMembershipUsage || isExtraWashUsage) ? 0 : (parseFloat(service.price) || 0);
         const extrasTotal = (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0);
 
         setFormData(prev => ({
             ...prev,
             price: basePrice + extrasTotal
         }));
-    }, [isMembershipUsage, formData.serviceId, formData.extras, services]);
+    }, [isMembershipUsage, isExtraWashUsage, formData.serviceId, formData.extras, services]);
 
-    const handleCustomerSelect = async (customerId) => {
+    const handleCustomerSelect = async (customerId, overrideVehicleId = null) => {
+        const vehicleId = overrideVehicleId || formData.vehicleId;
         if (!customerId) {
             setVipInfo(null);
             setLastService(null);
             setCanRedeemPoints(false);
             setCustomerMembership(null);
             setIsMembershipUsage(false);
+            setAvailableExtraWashes([]);
+            setIsExtraWashUsage(false);
             return;
         }
 
@@ -575,9 +616,9 @@ const Dashboard = () => {
         setAllCustomerMemberships(memberSubs || []); // We'll need this new state
 
         // Re-calculate membership usage if a vehicle is already selected
-        if (formData.vehicleId && memberSubs) {
+        if (vehicleId && memberSubs) {
             // PRIORITY: Strict match, then fallback to global (null)
-            const vehicleSub = memberSubs.find(m => m.vehicle_id === formData.vehicleId) || memberSubs.find(m => m.vehicle_id === null);
+            const vehicleSub = memberSubs.find(m => m.vehicle_id === vehicleId) || memberSubs.find(m => m.vehicle_id === null);
             if (vehicleSub) {
                 setCustomerMembership(vehicleSub);
                 // AUTO-CHECK: If a service is already selected, check if it's a benefit
@@ -619,15 +660,40 @@ const Dashboard = () => {
 
         if (vehiclesData) {
             setCustomerVehicles(vehiclesData);
-            // Auto-select the first one if none selected
-            if (vehiclesData.length > 0) {
-                // Check if current ID is in list, if not, pick first
-                // (We might have set it via lastService or manually)
-                // Just ensure formData has A valid vehicle
-            }
         } else {
             setCustomerVehicles([]);
         }
+
+        // 6. Extra Wash (Cortesía) Check - Filtered by Vehicle if selected
+        const validExtras = transactions.filter(t => {
+            const isCortesia = t.payment_method === 'cortesia_membresia';
+            const isForCustomer = t.customer_id == customerId;
+            const isForVehicle = !vehicleId || t.vehicle_id == vehicleId;
+            
+            // Parse extras to check expiration and used status
+            let isUsed = false;
+            let isExpired = false;
+            
+            if (t.extras) {
+                const extrasArr = Array.isArray(t.extras) ? t.extras : [t.extras];
+                const cortesiaStr = extrasArr.find(e => typeof e === 'string' && e.includes('CORTESÍA')) || '';
+                
+                // Expiration check
+                const match = cortesiaStr.match(/vence: (\d{4}-\d{2}-\d{2})/);
+                if (match) {
+                    const expiry = new Date(match[1]);
+                    if (expiry < new Date()) isExpired = true;
+                }
+                
+                // Used check
+                isUsed = extrasArr.some(e => e.used === true);
+            }
+            
+            return isCortesia && isForCustomer && isForVehicle && !isUsed && !isExpired;
+        });
+        
+        setAvailableExtraWashes(validExtras);
+        setIsExtraWashUsage(false);
     };
 
     const handleAssignMembership = async (membershipId) => {
@@ -1060,8 +1126,10 @@ const Dashboard = () => {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (payload) => {
                 console.log('Realtime change in transactions:', payload.eventType);
 
-                // Sound only for NEW services and if admin/manager
-                if (payload.eventType === 'INSERT' && (userRole === 'admin' || userRole === 'manager')) {
+                // Sound only for NEW services (not gifts/memberships) and if admin/manager
+                if (payload.eventType === 'INSERT' && 
+                    (userRole === 'admin' || userRole === 'manager') &&
+                    payload.new.service_id && !payload.new.payment_method?.includes('cortesia')) {
                     playNewServiceSound();
                 }
 
@@ -1541,14 +1609,16 @@ const Dashboard = () => {
             vehicle_id: formData.vehicleId || null, // Add vehicle_id
             service_id: formData.serviceId || null,
             employee_id: null, // No assigned yet
-            price: isMembershipUsage ? 0 : basePrice,
+            price: (isMembershipUsage || isExtraWashUsage) ? 0 : basePrice,
             commission_amount: (parseFloat(formData.commissionAmount) || 0) + (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.commission) || 0), 0),
             tip: 0,
-            payment_method: isMembershipUsage ? 'membership' : 'cash',
-            extras: isMembershipUsage ? [...(formData.extras || []), { description: `Membresía: ${customerMembership.memberships.name}`, price: 0 }] : (formData.extras || []),
+            payment_method: (isMembershipUsage || isExtraWashUsage) ? 'membership' : 'cash',
+            extras: isExtraWashUsage 
+                ? [...(formData.extras || []), { description: `CORTESÍA REDIMIDA`, price: 0 }]
+                : (isMembershipUsage ? [...(formData.extras || []), { description: `Membresía: ${customerMembership.memberships.name}`, price: 0 }] : (formData.extras || [])),
 
             status: 'waiting', // Initial Status
-            total_price: isMembershipUsage ? (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0) : basePrice // REQUIRED by DB constraint
+            total_price: (isMembershipUsage || isExtraWashUsage) ? (formData.extras || []).reduce((sum, ex) => sum + (parseFloat(ex.price) || 0), 0) : basePrice // REQUIRED by DB constraint
         };
 
         try {
@@ -1600,6 +1670,20 @@ const Dashboard = () => {
                 }
             }
 
+            // [EXTRA WASH] Mark as Used - USE updateTransaction for Local State Consistency
+            if (isExtraWashUsage && availableExtraWashes.length > 0) {
+                const courtesy = availableExtraWashes[0]; // Take the oldest
+                const currentExtras = Array.isArray(courtesy.extras) ? courtesy.extras : [courtesy.extras];
+                const updatedExtras = [...currentExtras, { used: true, used_at: new Date().toISOString() }];
+                
+                try {
+                    await updateTransaction(courtesy.id, { extras: updatedExtras });
+                    console.log("Cortesía marcada como usada y estado local actualizado.");
+                } catch (courtesyErr) {
+                    console.error("Error al marcar cortesía como usada:", courtesyErr);
+                }
+            }
+
             setIsSubmitting(true); // Disable button
             await createTransaction(newTransaction);
 
@@ -1607,7 +1691,9 @@ const Dashboard = () => {
             setIsSubmitting(false);
             setIsRedemption(false); // Reset Loyalty State
             setIsMembershipUsage(false);
+            setIsExtraWashUsage(false); // Reset Extra Wash state
             setCustomerMembership(null);
+            setAvailableExtraWashes([]);
             setFormData({
                 customerId: '',
                 vehicleId: '',
@@ -1653,8 +1739,91 @@ const Dashboard = () => {
             return sum + (1 / assignmentCount);
         }, 0);
 
+
+    // ────────────────────────────────────────────
+    // CONTEXT VALUE: All state & handlers shared
+    //   with sub-components via DashboardContext
+    // ────────────────────────────────────────────
+    const dashboardContextValue = {
+        // Identity
+        myUserId, myEmployeeId, userRole,
+        // Data
+        services, employees, customers, vehicles, transactions, memberships,
+        expenses,
+        // UI State
+        dateFilter, setDateFilter,
+        dateRange, setDateRange,
+        viewMode, setViewMode,
+        activeDetailModal, setActiveDetailModal,
+        selectedTransaction, setSelectedTransaction,
+        isModalOpen, setIsModalOpen,
+        editingTransactionId, setEditingTransactionId,
+        isRefreshing, setIsRefreshing,
+        isConfigModalOpen, setIsConfigModalOpen,
+        qrTransactionId, setQrTransactionId,
+        verifyingTransaction, setVerifyingTransaction,
+        hasConsentedVerification, setHasConsentedVerification,
+        isUploadingPhoto, setIsUploadingPhoto,
+        photoToUpload, setPhotoToUpload,
+        viewingPhoto, setViewingPhoto,
+        showAssignmentModal, setShowAssignmentModal,
+        assigningTransactionId, setAssigningTransactionId,
+        selectedEmployeesForAssignment, setSelectedEmployeesForAssignment,
+        // Form State
+        formData, setFormData,
+        isSubmitting, setIsSubmitting,
+        error, setError,
+        activeTab, setActiveTab,
+        newExtra, setNewExtra,
+        customerSearch, setCustomerSearch,
+        showCustomerSearch, setShowCustomerSearch,
+        plateSearch, setPlateSearch,
+        isAddingCustomer, setIsAddingCustomer,
+        newCustomer, setNewCustomer,
+        customerVehicles, setCustomerVehicles,
+        referrerSearch, setReferrerSearch,
+        showReferrerSearch, setShowReferrerSearch,
+        pendingExtra, setPendingExtra,
+        // Membership State
+        customerMembership, setCustomerMembership,
+        allCustomerMemberships, setAllCustomerMemberships,
+        isMembershipUsage, setIsMembershipUsage,
+        availableExtraWashes, setAvailableExtraWashes,
+        isExtraWashUsage, setIsExtraWashUsage,
+        // Loyalty State
+        isRedemption, setIsRedemption,
+        vipInfo, setVipInfo,
+        canRedeemPoints, setCanRedeemPoints,
+        lastService, setLastService,
+        // Settings
+        reviewLink, setReviewLink,
+        stripeLink, setStripeLink,
+        // Handlers / helpers
+        getServiceName,
+        getCustomerName,
+        getEmployeeName,
+        calculateTxTotal,
+        getTransactionCategory,
+        handleCustomerSelect,
+        handleSubmit,
+        handleStartService,
+        handleAssignMembership,
+        handleRemoveMembership,
+        applyLastService,
+        refreshTransactions,
+        refreshCustomers,
+        // Report
+        statsTransactions,
+        getPRDateString,
+        // Feedback
+        feedbacks,
+        // Debug
+        debugInfo, setDebugInfo,
+    };
+
     console.log("VERSION 3.7 NUCLEAR LOADED");
     return (
+        <DashboardProvider value={dashboardContextValue}>
         <div>
             {/* HEADER */}
             {/* HEADER HEADER HEADER */}
@@ -1691,170 +1860,13 @@ const Dashboard = () => {
                                     className="btn mobile-hide-text"
                                     onClick={async () => {
                                         try {
-                                            // 1. Gather Data
-                                            const todayDate = new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-                                            const completedTxs = statsTransactions.filter(t => t.status === 'completed' || t.status === 'paid');
-                                            const count = completedTxs.length;
-
-                                            const incomeCash = completedTxs
-                                                .filter(t => t.payment_method === 'cash')
-                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-
-                                            const incomeTransfer = completedTxs
-                                                .filter(t => t.payment_method === 'transfer')
-                                                .reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-
-                                            const totalIncome = incomeCash + incomeTransfer;
-
-                                            const totalTips = completedTxs.reduce((sum, t) => sum + (parseFloat(t.tip) || 0), 0);
-                                            const totalCommissions = statsTransactions
-                                                .filter(t => t.status === 'completed' || t.status === 'paid' || t.status === 'unpaid')
-                                                .reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip) || 0), 0);
-
-                                            const expensesProduct = expenses
-                                                .filter(e => {
-                                                    const eDate = getPRDateString(e.date);
-                                                    const today = getPRDateString(new Date());
-                                                    return eDate === today && e.category === 'product';
-                                                })
-                                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
-                                            const expensesLunch = expenses
-                                                .filter(e => {
-                                                    const eDate = getPRDateString(e.date);
-                                                    const today = getPRDateString(new Date());
-                                                    return eDate === today && e.category === 'lunch';
-                                                })
-                                                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
-                                            const totalExpenses = totalCommissions + totalTips + expensesProduct + expensesLunch;
-                                            const netProfit = totalIncome - totalExpenses; // Note: Tips are expense if excluded from income, but usually income includes tips? Check t.price vs t.tip logic. 
-                                            // Normally price is base price. Tip is extra. 
-                                            // If totalIncome = sum(price), then tips are not in income. 
-                                            // But we pay tips out. So tips are flow-through. 
-                                            // Let's assume Net = Income - (Commissions + Tips + Expenses).
-
-                                            // 2. Generate PDF
-                                            const doc = new jsPDF();
-
-                                            // Header
-                                            doc.setFillColor(37, 99, 235); // Blue
-                                            doc.rect(0, 0, 210, 40, 'F');
-                                            doc.setTextColor(255, 255, 255);
-                                            doc.setFontSize(22);
-                                            doc.text("Reporte Diario Detallado", 105, 20, { align: 'center' });
-                                            doc.setFontSize(12);
-                                            doc.text(todayDate.toUpperCase(), 105, 30, { align: 'center' });
-
-                                            // 2.1 FINANZAS
-                                            autoTable(doc, {
-                                                startY: 50,
-                                                head: [['Concepto', 'Monto']],
-                                                body: [
-                                                    ['Autos Lavados', count.toString()],
-                                                    ['', ''], // Spacer
-                                                    ['Ingresos (Efecivo)', `$${incomeCash.toFixed(2)}`],
-                                                    ['Ingresos (ATH Móvil)', `$${incomeTransfer.toFixed(2)}`],
-                                                    ['INGRESOS TOTALES', `$${totalIncome.toFixed(2)}`],
-                                                    ['', ''], // Spacer
-                                                    ['Comisiones Pagadas', `$${totalCommissions.toFixed(2)}`],
-                                                    ['Propinas Pagadas', `$${totalTips.toFixed(2)}`],
-                                                    ['Almuerzos (Gastos)', `$${expensesLunch.toFixed(2)}`],
-                                                    ['Compras (Gastos)', `$${expensesProduct.toFixed(2)}`],
-                                                    ['GASTOS TOTALES', `$${totalExpenses.toFixed(2)}`],
-                                                    ['', ''], // Spacer
-                                                    ['GANANCIA NETA', `$${netProfit.toFixed(2)}`]
-                                                ],
-                                                theme: 'grid',
-                                                headStyles: { fillColor: [37, 99, 235] },
-                                                columnStyles: {
-                                                    0: { fontStyle: 'bold' },
-                                                    1: { halign: 'right' }
-                                                }
+                                            await generateDailyReport({
+                                                statsTransactions,
+                                                expenses,
+                                                getPRDateString,
+                                                getServiceName,
+                                                employees
                                             });
-
-                                            // 2.2 EMPLEADOS (Comisiones)
-                                            // Fetch employees directly to ensure data is fresh
-                                            const { data: empData, error: empError } = await supabase.from('employees').select('*');
-                                            const employeesList = empData || employees; // Fallback to state if fetch fails
-                                            if (empError) console.error("Error fetching employees for PDF:", empError);
-
-                                            // Calculate per employee
-                                            const empStats = {};
-                                            completedTxs.forEach(t => {
-                                                const assignments = t.transaction_assignments?.length > 0 ? Array.from(new Set(t.transaction_assignments.map(a => a.employee_id))).map(id => ({employee_id: id})) : [{ employee_id: t.employee_id }];
-                                                const count = assignments.length > 0 ? assignments.length : 1;
-                                                const shareComm = (parseFloat(t.commission_amount) || 0) / count;
-                                                const shareTip = (parseFloat(t.tip) || 0) / count;
-
-                                                assignments.forEach(a => {
-                                                    const eid = a.employee_id;
-                                                    if (!eid) return; // Skip if no ID
-                                                    if (!empStats[eid]) empStats[eid] = { comm: 0, tips: 0 };
-                                                    empStats[eid].comm += shareComm;
-                                                    empStats[eid].tips += shareTip;
-                                                });
-                                            });
-
-                                            // Debug matching
-                                            console.log("PDF Stats Keys:", Object.keys(empStats));
-                                            console.log("PDF Employees:", employeesList.map(e => ({ id: e.id, name: e.first_name })));
-
-                                            const empBody = Object.entries(empStats).map(([eid, stats]) => {
-                                                const emp = employeesList.find(e => String(e.id) === String(eid));
-                                                const name = emp ? (emp.name || emp.first_name || `Emple. ${eid}`) : `ID: ${eid}`; // Use 'name' as primary, fallback to old fields
-                                                return [name, `$${stats.comm.toFixed(2)}`, `$${stats.tips.toFixed(2)}`, `$${(stats.comm + stats.tips).toFixed(2)}`];
-                                            });
-
-                                            doc.text("Desglose por Empleado", 14, doc.lastAutoTable.finalY + 15);
-                                            autoTable(doc, {
-                                                startY: doc.lastAutoTable.finalY + 20,
-                                                head: [['Empleado', 'Comisión', 'Propina', 'Total']],
-                                                body: empBody,
-                                                theme: 'striped',
-                                                headStyles: { fillColor: [16, 185, 129] } // Green
-                                            });
-
-                                            // 2.3 DETALLE DE AUTOS
-                                            const txBody = completedTxs.map(t => {
-                                                const time = new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                                const brand = (t.vehicles?.brand && t.vehicles.brand !== 'null' && t.vehicles.brand !== 'Generico') ? t.vehicles.brand : (t.customers?.vehicle_brand || '');
-                                                const model = t.vehicles?.model || t.customers?.vehicle_model || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_model)?.vehicle_model : t.extras?.vehicle_model) || 'Auto';
-                                                const plate = t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || '';
-                                                const vehicleStr = `${brand} ${model} ${plate ? `(${plate})` : ''}`.trim();
-                                                const clientName = t.customers?.name || 'Cliente';
-                                                const price = `$${parseFloat(t.price).toFixed(2)}`;
-                                                const serviceName = getServiceName(t.service_id);
-                                                return [time, clientName, vehicleStr, serviceName, price];
-                                            });
-
-                                            doc.text("Historial de Autos", 14, doc.lastAutoTable.finalY + 15);
-                                            autoTable(doc, {
-                                                startY: doc.lastAutoTable.finalY + 20,
-                                                head: [['Hora', 'Cliente', 'Vehículo', 'Servicio', 'Precio']],
-                                                body: txBody,
-                                                theme: 'striped',
-                                                headStyles: { fillColor: [75, 85, 99] } // Gray
-                                            });
-
-
-
-                                            // 3. Share or Download
-                                            const pdfBlob = doc.output('blob');
-                                            const file = new File([pdfBlob], `Reporte_${getPRDateString(new Date())}.pdf`, { type: 'application/pdf' });
-
-                                            if (navigator.share) {
-                                                await navigator.share({
-                                                    files: [file],
-                                                    title: 'Reporte Diario Completo',
-                                                    text: `Reporte detallado del ${todayDate}`
-                                                });
-                                            } else {
-                                                doc.save(`Reporte_${getPRDateString(new Date())}.pdf`);
-                                                alert("PDF Descargado. Envíalo manualmente por WhatsApp.");
-                                            }
-
                                         } catch (error) {
                                             console.error("Error generating PDF:", error);
                                             alert("Error: " + error.message);
@@ -2290,82 +2302,15 @@ const Dashboard = () => {
                     }
 
                     {/* CONFIGURATION MODAL */}
-                    {
-                        isConfigModalOpen && (
-                            <div style={{
-                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                                backgroundColor: 'rgba(0,0,0,0.8)',
-                                display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
-                            }} onClick={() => setIsConfigModalOpen(false)}>
-                                <div style={{
-                                    backgroundColor: 'var(--bg-card)',
-                                    padding: '2rem',
-                                    borderRadius: '0.5rem',
-                                    width: '90%',
-                                    maxWidth: '450px'
-                                }} onClick={e => e.stopPropagation()}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                        <h2 style={{ margin: 0 }}>Configuración de Recibo</h2>
-                                        <button onClick={() => setIsConfigModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem' }}>&times;</button>
-                                    </div>
-
-                                    <div style={{ marginBottom: '1.5rem' }}>
-                                        <label className="label">Link de Reseña de Google</label>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            placeholder="https://g.page/r/..."
-                                            value={reviewLink}
-                                            onChange={(e) => setReviewLink(e.target.value)}
-                                        />
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                            Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
-                                        </p>
-                                    </div>
-
-                                    <div style={{ marginBottom: '1.5rem' }}>
-                                        <label className="label">Link de Pago Stripe</label>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            placeholder="https://buy.stripe.com/..."
-                                            value={stripeLink}
-                                            onChange={(e) => setStripeLink(e.target.value)}
-                                        />
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                            Link de pago de Stripe para que los clientes paguen desde el portal.
-                                        </p>
-                                    </div>
-
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <button
-                                            className="btn"
-                                            style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white' }}
-                                            onClick={() => setIsConfigModalOpen(false)}
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            className="btn btn-primary"
-                                            style={{ flex: 1 }}
-                                            onClick={async () => {
-                                                const res = await handleUpdateSettings({
-                                                    review_link: reviewLink,
-                                                    stripe_link: stripeLink
-                                                });
-                                                if (res.success) {
-                                                    alert('Configuración guardada');
-                                                    setIsConfigModalOpen(false);
-                                                }
-                                            }}
-                                        >
-                                            Guardar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    }
+                    <ConfigModal
+                        isOpen={isConfigModalOpen}
+                        onClose={() => setIsConfigModalOpen(false)}
+                        reviewLink={reviewLink}
+                        setReviewLink={setReviewLink}
+                        stripeLink={stripeLink}
+                        setStripeLink={setStripeLink}
+                        onSave={handleUpdateSettings}
+                    />
 
                     {/* EDIT TRANSACTION MODAL */}
                     {
@@ -2442,6 +2387,12 @@ const Dashboard = () => {
                                                         <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                                             Servicio: {f.transactions?.services?.name || 'N/A'}
                                                         </div>
+
+                                                        {f.photo_url && (
+                                                            <div style={{ marginTop: '0.75rem', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)', width: '80px', height: '80px', cursor: 'pointer' }} onClick={() => setViewingPhoto(f.photo_url)}>
+                                                                <img src={f.photo_url} alt="Feedback" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -2801,6 +2752,14 @@ const Dashboard = () => {
                                                                                     ({vehicle?.plate || t.vehicles?.plate || t.customers?.vehicle_plate || (Array.isArray(t.extras) ? t.extras.find(e => e.vehicle_plate)?.vehicle_plate : t.extras?.vehicle_plate) || 'Sin Placa'})
                                                                                 </div>
                                                                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.customers?.name}</div>
+
+                                                                                {/* NEW: Show finish photo in ready list */}
+                                                                                {t.finish_photo_url && (
+                                                                                    <div style={{ marginTop: '1.5rem', marginBottom: '1rem', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-color)', width: '120px', height: '120px', cursor: 'pointer' }} onClick={() => setViewingPhoto(t.finish_photo_url)}>
+                                                                                        <img src={t.finish_photo_url} alt="Recoger" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                                    </div>
+                                                                                )}
+
                                                                                 <div style={{ color: 'var(--success)', fontWeight: 'bold', marginTop: '0.2rem' }}>
                                                                                     {getServiceName(t.service_id)} - Total: ${parseFloat(t.price || 0).toFixed(2)}
                                                                                 </div>
@@ -3138,902 +3097,7 @@ const Dashboard = () => {
                         )
                     }
 
-                    {
-                        isModalOpen && (
-                            <div className="modal-overlay" style={{
-                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                                backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-                                overflowY: 'auto'
-                            }}>
-                                <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-                                    <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio</h3>
-                                    <form onSubmit={handleSubmit}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                            <div style={{ marginBottom: '1rem' }}>
-                                                <label className="label">Cliente</label>
-                                                {!isAddingCustomer ? (
-
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                        {/* SEARCH MODE OR SELECT MODE */}
-                                                        {showCustomerSearch ? (
-                                                            <div style={{ position: 'relative' }}>
-                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                    <input
-                                                                        type="text"
-                                                                        className="input"
-                                                                        placeholder="🔍 Escribe nombre, modelo o placa..."
-                                                                        value={customerSearch}
-                                                                        onChange={(e) => setCustomerSearch(e.target.value)}
-                                                                        autoFocus
-                                                                        style={{ flex: 1 }}
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        className="btn"
-                                                                        onClick={() => {
-                                                                            setShowCustomerSearch(false);
-                                                                            setCustomerSearch('');
-                                                                        }}
-                                                                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                                                                    >
-                                                                        ✕
-                                                                    </button>
-                                                                </div>
-
-                                                                {/* RESULTS LIST */}
-                                                                {customerSearch.length > 0 && (
-                                                                    <div style={{
-                                                                        position: 'absolute',
-                                                                        top: '100%',
-                                                                        left: 0,
-                                                                        right: 0,
-                                                                        backgroundColor: 'var(--bg-card)',
-                                                                        border: '1px solid var(--border-color)',
-                                                                        borderRadius: '0.5rem',
-                                                                        maxHeight: '200px',
-                                                                        overflowY: 'auto',
-                                                                        zIndex: 10,
-                                                                        marginTop: '0.25rem',
-                                                                        boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
-                                                                    }}>
-                                                                        {customers
-                                                                            .filter(c =>
-                                                                                (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                                                                                (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                                                                                (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())
-                                                                            )
-                                                                            .map(c => (
-                                                                                <div
-                                                                                    key={c.id}
-                                                                                    onClick={() => {
-                                                                                        // Auto-select vehicle if exists
-                                                                                        const custVehicle = vehicles.find(v => v.customer_id == c.id);
-                                                                                        setFormData({
-                                                                                            ...formData,
-                                                                                            customerId: c.id,
-                                                                                            vehicleId: custVehicle ? custVehicle.id : ''
-                                                                                        });
-                                                                                        handleCustomerSelect(c.id);
-                                                                                        setIsEditingVisits(false);
-                                                                                        setShowCustomerSearch(false);
-                                                                                        setCustomerSearch('');
-                                                                                    }}
-                                                                                    style={{
-                                                                                        padding: '0.75rem',
-                                                                                        borderBottom: '1px solid var(--border-color)',
-                                                                                        cursor: 'pointer',
-                                                                                        display: 'flex',
-                                                                                        justifyContent: 'space-between',
-                                                                                        alignItems: 'center'
-                                                                                    }}
-                                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-                                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                                >
-                                                                                    <span style={{ fontWeight: 'bold' }}>{c.name}</span>
-                                                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                                                                        {c.vehicle_model ? `${c.vehicle_model} ` : ''}
-                                                                                        ({c.vehicle_plate || 'Sin Placa'})
-                                                                                    </span>
-                                                                                </div>
-                                                                            ))}
-                                                                        {customers.filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_model || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.vehicle_plate || '').toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
-                                                                            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                                                                No se encontraron resultados
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                    <select
-                                                                        className="input"
-                                                                        required
-                                                                        value={formData.customerId}
-                                                                        onChange={(e) => {
-                                                                            const cId = e.target.value;
-                                                                            const custVehicle = vehicles.find(v => v.customer_id == cId);
-                                                                            setFormData({
-                                                                                ...formData,
-                                                                                customerId: cId,
-                                                                                vehicleId: custVehicle ? custVehicle.id : ''
-                                                                            });
-                                                                            handleCustomerSelect(cId);
-                                                                        }}
-                                                                        style={{ flex: 1 }}
-                                                                    >
-                                                                        <option value="">Seleccionar Cliente...</option>
-                                                                        {customers.map(c => (
-                                                                            <option key={c.id} value={c.id}>
-                                                                                {c.name} - {c.vehicle_model ? `${c.vehicle_model} ` : ''}({c.vehicle_plate})
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
-
-                                                                    {/* SEARCH TOGGLE BUTTON */}
-                                                                    <button
-                                                                        type="button"
-                                                                        className="btn"
-                                                                        onClick={() => setShowCustomerSearch(true)}
-                                                                        title="Buscar Cliente"
-                                                                        style={{
-                                                                            flexShrink: 0,
-                                                                            width: '48px',
-                                                                            padding: 0,
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                            backgroundColor: 'var(--bg-secondary)',
-                                                                            color: 'white',
-                                                                            fontSize: '1.5rem'
-                                                                        }}
-                                                                    >
-                                                                        🔍
-                                                                    </button>
-
-                                                                    {/* ADD CUSTOMER BUTTON */}
-                                                                    <button
-                                                                        type="button"
-                                                                        className="btn btn-primary"
-                                                                        onClick={() => setIsAddingCustomer(true)}
-                                                                        title="Nuevo Cliente"
-                                                                        style={{
-                                                                            flexShrink: 0,
-                                                                            width: '48px',
-                                                                            padding: 0,
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                            fontSize: '2rem',
-                                                                            lineHeight: '1'
-                                                                        }}
-                                                                    >
-                                                                        +
-                                                                    </button>
-                                                                </div>
-
-                                                                {/* VEHICLE SELECTOR ROW */}
-                                                                {formData.customerId && (
-                                                                    <>
-                                                                        <div style={{
-                                                                            display: 'flex',
-                                                                            justifyContent: 'space-between',
-                                                                            alignItems: 'center',
-                                                                            padding: '0.75rem 1rem',
-                                                                            backgroundColor: 'var(--bg-secondary)',
-                                                                            borderRadius: '0.8rem',
-                                                                            marginBottom: '1rem',
-                                                                            border: '1px solid var(--border-color)'
-                                                                        }}>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                                                <span style={{ fontSize: '1.2rem' }}>📊</span>
-                                                                                <div>
-                                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Estadísticas Totales</div>
-                                                                                    <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                                                                        {(() => {
-                                                                                            const c = customers.find(cust => cust.id == formData.customerId);
-                                                                                            // Count only services, excluding membership sales
-                                                                                            const visits = transactions.filter(tx =>
-                                                                                                tx.customer_id == formData.customerId &&
-                                                                                                tx.status !== 'cancelled' &&
-                                                                                                getTransactionCategory(tx) !== 'membership_sale'
-                                                                                            ).length;
-                                                                                            const manual = c?.manual_visit_count || 0;
-                                                                                            return `${visits + manual} Visitas`;
-                                                                                        })()}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            {(userRole === 'admin' || userRole === 'manager') && (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => {
-                                                                                        const c = customers.find(cust => cust.id == formData.customerId);
-                                                                                        setManualVisits(c?.manual_visit_count || 0);
-                                                                                        setIsEditingVisits(!isEditingVisits);
-                                                                                    }}
-                                                                                    style={{
-                                                                                        padding: '0.4rem 0.8rem',
-                                                                                        fontSize: '0.75rem',
-                                                                                        backgroundColor: isEditingVisits ? 'var(--error-color)' : 'var(--bg-card)',
-                                                                                        color: isEditingVisits ? 'white' : 'var(--text-primary)',
-                                                                                        border: '1px solid var(--border-color)',
-                                                                                        borderRadius: '0.5rem',
-                                                                                        cursor: 'pointer',
-                                                                                        fontWeight: 'bold'
-                                                                                    }}
-                                                                                >
-                                                                                    {isEditingVisits ? 'Cancelar' : 'Editar Visitas'}
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {isEditingVisits && (
-                                                                            <div style={{
-                                                                                padding: '1rem',
-                                                                                backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                                                                                border: '1px solid var(--primary)',
-                                                                                borderRadius: '0.8rem',
-                                                                                marginBottom: '1.5rem',
-                                                                                display: 'flex',
-                                                                                flexDirection: 'column',
-                                                                                gap: '0.75rem'
-                                                                            }}>
-                                                                                <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Ajustar Visitas Manuales:</label>
-                                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        className="input"
-                                                                                        value={manualVisits}
-                                                                                        onChange={(e) => setManualVisits(e.target.value)}
-                                                                                        style={{ flex: 1, backgroundColor: 'var(--bg-card)' }}
-                                                                                        placeholder="Ej: 5"
-                                                                                    />
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        className="btn btn-primary"
-                                                                                        onClick={() => handleUpdateManualVisits(formData.customerId)}
-                                                                                        style={{ padding: '0.5rem 1rem' }}
-                                                                                    >
-                                                                                        Guardar
-                                                                                    </button>
-                                                                                </div>
-                                                                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
-                                                                                    * Este valor se suma a las visitas reales registradas en el sistema.
-                                                                                </p>
-                                                                            </div>
-                                                                        )}
-                                                                    </>
-                                                                )}
-                                                                {formData.customerId && (
-                                                                    <div style={{ marginBottom: '1.5rem' }}>
-                                                                        <label className="label" style={{ fontSize: '0.85rem', marginBottom: '0.75rem', display: 'block' }}>
-                                                                            {customerVehicles.length > 1 ? 'Selecciona el vehículo (Varios detectados):' : 'Vehículo a lavar:'}
-                                                                            <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', opacity: 0.7, fontWeight: 'normal' }}>(Total: {customerVehicles?.length || 0})</span>
-                                                                        </label>
-
-                                                                        {customerVehicles.length > 1 ? (
-                                                                            <div style={{
-                                                                                display: 'grid',
-                                                                                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                                                                                gap: '0.75rem'
-                                                                            }}>
-                                                                                {customerVehicles.map(v => (
-                                                                                    <div
-                                                                                        key={v.id}
-                                                                                        onClick={() => setFormData({ ...formData, vehicleId: v.id })}
-                                                                                        style={{
-                                                                                            padding: '0.75rem',
-                                                                                            borderRadius: '0.8rem',
-                                                                                            border: formData.vehicleId == v.id ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                                                                                            backgroundColor: formData.vehicleId == v.id ? 'var(--primary-light)' : 'var(--bg-card)',
-                                                                                            cursor: 'pointer',
-                                                                                            transition: 'all 0.2s',
-                                                                                            textAlign: 'center',
-                                                                                            position: 'relative',
-                                                                                            display: 'flex',
-                                                                                            flexDirection: 'column',
-                                                                                            gap: '0.25rem'
-                                                                                        }}
-                                                                                    >
-                                                                                        <div style={{ fontSize: '1.1rem' }}>🚗</div>
-                                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: formData.vehicleId == v.id ? 'white' : 'var(--text-primary)' }}>
-                                                                                            {(() => {
-                                                                                                // 1. Try Vehicle Data
-                                                                                                if (v.brand || v.model) return `${v.brand || ''} ${v.model || ''}`;
-                                                                                                // 2. Try Customer Legacy Data (if plate matches)
-                                                                                                const selectedCustomer = customers.find(c => c.id == formData.customerId);
-                                                                                                if (selectedCustomer && (v.plate === selectedCustomer.vehicle_plate)) {
-                                                                                                    if (selectedCustomer.vehicle_brand || selectedCustomer.vehicle_model) {
-                                                                                                        return `${selectedCustomer.vehicle_brand || ''} ${selectedCustomer.vehicle_model || ''}`;
-                                                                                                    }
-                                                                                                }
-                                                                                                // 3. Fallback
-                                                                                                return 'Vehículo';
-                                                                                            })()}
-                                                                                        </div>
-                                                                                        <div style={{ fontSize: '0.75rem', color: formData.vehicleId == v.id ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>{v.plate || 'Sin Placa'}</div>
-                                                                                        <div style={{
-                                                                                            marginTop: '0.25rem',
-                                                                                            padding: '0.2rem 0.5rem',
-                                                                                            borderRadius: '1rem',
-                                                                                            backgroundColor: formData.vehicleId == v.id ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
-                                                                                            fontSize: '0.8rem',
-                                                                                            fontWeight: '800',
-                                                                                            color: formData.vehicleId == v.id ? 'white' : 'var(--success-color)'
-                                                                                        }}>
-                                                                                            {v.points || 0} pts
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ))}
-                                                                                <div
-                                                                                    onClick={() => {
-                                                                                        const customer = customers.find(c => c.id == formData.customerId);
-                                                                                        if (customer) {
-                                                                                            setNewCustomer({
-                                                                                                ...newCustomer,
-                                                                                                name: customer.name,
-                                                                                                phone: customer.phone,
-                                                                                                email: customer.email,
-                                                                                                vehicle_plate: '',
-                                                                                                vehicle_brand: '',
-                                                                                                vehicle_model: ''
-                                                                                            });
-                                                                                            setIsAddingCustomer(true);
-                                                                                        }
-                                                                                    }}
-                                                                                    style={{
-                                                                                        padding: '0.75rem',
-                                                                                        borderRadius: '0.8rem',
-                                                                                        border: '1px dashed var(--border-color)',
-                                                                                        display: 'flex',
-                                                                                        flexDirection: 'column',
-                                                                                        alignItems: 'center',
-                                                                                        justifyContent: 'center',
-                                                                                        cursor: 'pointer',
-                                                                                        color: 'var(--text-muted)',
-                                                                                        fontSize: '0.8rem'
-                                                                                    }}
-                                                                                >
-                                                                                    <span>+ Nuevo</span>
-                                                                                    <span>Auto</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                                <select
-                                                                                    className="input"
-                                                                                    required
-                                                                                    value={formData.vehicleId}
-                                                                                    onChange={(e) => {
-                                                                                        if (e.target.value === 'new_vehicle') {
-                                                                                            const customer = customers.find(c => c.id == formData.customerId);
-                                                                                            if (customer) {
-                                                                                                setNewCustomer({
-                                                                                                    ...newCustomer,
-                                                                                                    name: customer.name,
-                                                                                                    phone: customer.phone,
-                                                                                                    email: customer.email,
-                                                                                                    vehicle_plate: '',
-                                                                                                    vehicle_brand: '',
-                                                                                                    vehicle_model: ''
-                                                                                                });
-                                                                                                setIsAddingCustomer(true);
-                                                                                            }
-                                                                                        } else {
-                                                                                            const vId = e.target.value;
-                                                                                            setFormData(prev => ({ ...prev, vehicleId: vId }));
-
-                                                                                            // RE-CALCULATE MEMBERSHIP FOR THIS VEHICLE
-                                                                                            const vehicleSub = allCustomerMemberships.find(m => m.vehicle_id === vId || m.vehicle_id === null);
-                                                                                            if (vehicleSub) {
-                                                                                                setCustomerMembership(vehicleSub);
-                                                                                                // Re-check if current service is included
-                                                                                                if (formData.serviceId) {
-                                                                                                    const service = services.find(s => s.id === formData.serviceId);
-                                                                                                    if (service) {
-                                                                                                        const included = vehicleSub.memberships.included_services || [];
-                                                                                                        const isIncluded = (included.length === 0) ? true : (included.includes(service.name) || included.includes(service.id));
-                                                                                                        if (isIncluded) {
-                                                                                                            const lastUsed = vehicleSub.last_used ? new Date(vehicleSub.last_used) : null;
-                                                                                                            const isUsedToday = lastUsed && lastUsed.toDateString() === new Date().toDateString();
-                                                                                                            if (vehicleSub.memberships?.type === 'unlimited') {
-                                                                                                                setIsMembershipUsage(!isUsedToday);
-                                                                                                            } else {
-                                                                                                                setIsMembershipUsage((vehicleSub.usage_count || 0) < (vehicleSub.memberships?.limit_count || 0));
-                                                                                                            }
-                                                                                                        } else {
-                                                                                                            setIsMembershipUsage(false);
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            } else {
-                                                                                                setCustomerMembership(null);
-                                                                                                setIsMembershipUsage(false);
-                                                                                            }
-                                                                                        }
-                                                                                    }}
-                                                                                    style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold' }}
-                                                                                >
-                                                                                    {customerVehicles.map(v => (
-                                                                                        <option key={v.id} value={v.id}>
-                                                                                            🚗 {v.brand} {v.model} ({v.plate}) — {v.points || 0} pts
-                                                                                        </option>
-                                                                                    ))}
-                                                                                    <option value="new_vehicle">+ Agregar Otro Vehículo</option>
-                                                                                </select>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-
-                                                                {/* MEMBERSHIP BADGE */}
-                                                                {customerMembership && (
-                                                                    <div style={{
-                                                                        padding: '1rem',
-                                                                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                                                        border: '1px solid #6366f1',
-                                                                        borderRadius: '0.8rem',
-                                                                        marginBottom: '1.5rem'
-                                                                    }}>
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                            <div>
-                                                                                <div style={{ color: '#6366f1', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                                                                                    Membresía Activa
-                                                                                </div>
-                                                                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                                                                    {customerMembership.memberships.name}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div style={{ textAlign: 'right' }}>
-                                                                                {(() => {
-                                                                                    const lastUsed = customerMembership.last_used ? new Date(customerMembership.last_used) : null;
-                                                                                    const now = new Date();
-                                                                                    const isUsedToday = lastUsed && lastUsed.toDateString() === now.toDateString();
-
-                                                                                    if (isUsedToday) {
-                                                                                        return (
-                                                                                            <span style={{
-                                                                                                display: 'inline-block',
-                                                                                                padding: '0.2rem 0.8rem',
-                                                                                                backgroundColor: '#fbbf24',
-                                                                                                color: 'black',
-                                                                                                fontWeight: 'bold',
-                                                                                                borderRadius: '2rem',
-                                                                                                fontSize: '0.8rem'
-                                                                                            }}>
-                                                                                                Usado Hoy ⚠️
-                                                                                            </span>
-                                                                                        );
-                                                                                    } else {
-                                                                                        return (
-                                                                                            <span style={{
-                                                                                                display: 'inline-block',
-                                                                                                padding: '0.2rem 0.8rem',
-                                                                                                backgroundColor: '#10b981',
-                                                                                                color: 'white',
-                                                                                                fontWeight: 'bold',
-                                                                                                borderRadius: '2rem',
-                                                                                                fontSize: '0.8rem'
-                                                                                            }}>
-                                                                                                Disponible ✅
-                                                                                            </span>
-                                                                                        );
-                                                                                    }
-                                                                                })()}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                                                                            Incluye: <strong>{(customerMembership.memberships.included_services || []).join(', ')}</strong>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* REFERRER SEARCH FIELD (Moved to be side-by-side with vehicle or full width) */}
-                                                                <div style={{ flex: 1, position: 'relative' }}>
-                                                                    <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
-                                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="input"
-                                                                            placeholder="🔍 Buscar..."
-                                                                            value={referrerSearch}
-                                                                            onChange={(e) => {
-                                                                                setReferrerSearch(e.target.value);
-                                                                                setShowReferrerSearch(true);
-                                                                            }}
-                                                                            style={{ fontSize: '0.85rem', flex: 1 }}
-                                                                        />
-                                                                        {formData.referrerId && (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    setFormData({ ...formData, referrerId: '' });
-                                                                                    setReferrerSearch('');
-                                                                                }}
-                                                                                className="btn"
-                                                                                style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '0 0.5rem' }}
-                                                                            >
-                                                                                ✕
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                    {showReferrerSearch && referrerSearch.length > 0 && (
-                                                                        <div style={{
-                                                                            position: 'absolute', top: '100%', left: 0, right: 0,
-                                                                            backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                                                            borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
-                                                                            boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
-                                                                        }}>
-                                                                            {customers
-                                                                                .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()) && c.id != formData.customerId)
-                                                                                .slice(0, 10)
-                                                                                .map(c => (
-                                                                                    <div
-                                                                                        key={c.id}
-                                                                                        onClick={() => {
-                                                                                            setFormData({ ...formData, referrerId: c.id });
-                                                                                            setReferrerSearch(c.name);
-                                                                                            setShowReferrerSearch(false);
-                                                                                        }}
-                                                                                        style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-                                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                                    >
-                                                                                        {c.name}
-                                                                                    </div>
-                                                                                ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <div style={{ padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
-                                                        <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Nuevo Cliente Rápido</h4>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem' }}>
-                                                            <input
-                                                                type="text"
-                                                                className="input"
-                                                                placeholder="Nombre"
-                                                                value={newCustomer.name}
-                                                                onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                className="input"
-                                                                placeholder="Teléfono"
-                                                                value={newCustomer.phone}
-                                                                onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                className="input"
-                                                                placeholder="Placa"
-                                                                value={newCustomer.vehicle_plate}
-                                                                onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_plate: e.target.value })}
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                className="input"
-                                                                placeholder="Marca"
-                                                                value={newCustomer.vehicle_brand}
-                                                                onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_brand: e.target.value })}
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                className="input"
-                                                                placeholder="Modelo"
-                                                                value={newCustomer.vehicle_model}
-                                                                onChange={(e) => setNewCustomer({ ...newCustomer, vehicle_model: e.target.value })}
-                                                            />
-                                                        </div>
-
-                                                        {/* REFERRER SEARCH FIELD */}
-                                                        <div style={{ marginTop: '0.75rem', position: 'relative' }}>
-                                                            <label className="label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>¿Quién lo refirió? (Opcional)</label>
-                                                            <input
-                                                                type="text"
-                                                                className="input"
-                                                                placeholder="🔍 Buscar cliente referente..."
-                                                                value={referrerSearch}
-                                                                onChange={(e) => {
-                                                                    setReferrerSearch(e.target.value);
-                                                                    setShowReferrerSearch(true);
-                                                                }}
-                                                                style={{ fontSize: '0.85rem', height: '36px' }}
-                                                            />
-                                                            {showReferrerSearch && referrerSearch.length > 0 && (
-                                                                <div style={{
-                                                                    position: 'absolute', bottom: '100%', left: 0, right: 0,
-                                                                    backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                                                                    borderRadius: '0.5rem', maxHeight: '150px', overflowY: 'auto', zIndex: 100,
-                                                                    boxShadow: '0 -4px 6px rgba(0,0,0,0.2)'
-                                                                }}>
-                                                                    {customers
-                                                                        .filter(c => c.name.toLowerCase().includes(referrerSearch.toLowerCase()))
-                                                                        .slice(0, 10)
-                                                                        .map(c => (
-                                                                            <div
-                                                                                key={c.id}
-                                                                                onClick={() => {
-                                                                                    setNewCustomer({ ...newCustomer, referrer_id: c.id });
-                                                                                    setReferrerSearch(c.name);
-                                                                                    setShowReferrerSearch(false);
-                                                                                }}
-                                                                                style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                            >
-                                                                                {c.name}
-                                                                            </div>
-                                                                        ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                            <button
-                                                                type="button"
-                                                                className="btn"
-                                                                onClick={() => setIsAddingCustomer(false)}
-                                                                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                                                            >
-                                                                Cancelar
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-primary"
-                                                                onClick={handleCreateCustomer}
-                                                                disabled={!newCustomer.name || !newCustomer.vehicle_plate}
-                                                                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                                                            >
-                                                                Guardar Cliente
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-
-                                                {/* MEMBERSHIP INDICATOR / MANAGER */}
-                                                {formData.customerId && !customerMembership && (
-                                                    <div style={{
-                                                        backgroundColor: 'var(--bg-secondary)',
-                                                        border: '1px dashed var(--border-color)',
-                                                        padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem'
-                                                    }}>
-                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                                                            💎 Añadir Membresía
-                                                        </div>
-                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                            <select id="new-membership-select" className="input" style={{ flex: 1, padding: '0.5rem' }}>
-                                                                <option value="">Seleccionar plan...</option>
-                                                                {memberships.map(m => (
-                                                                    <option key={m.id} value={m.id}>{m.name} - ${m.price}</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
-                                                        {formData.vehicleId && (
-                                                            <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#1e40af', backgroundColor: '#eff6ff', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                                                                🔗 Vincular a: {customerVehicles.find(v => v.id === formData.vehicleId) ? getVehicleDisplayName(customerVehicles.find(v => v.id === formData.vehicleId), customers.find(c => c.id === formData.customerId)) : 'Vehículo'} ({customerVehicles.find(v => v.id === formData.vehicleId)?.plate || 'Sin Placa'})
-                                                            </div>
-                                                        )}
-                                                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-primary"
-                                                                onClick={() => {
-                                                                    const sel = document.getElementById('new-membership-select');
-                                                                    if (sel && sel.value) handleAssignMembership(sel.value);
-                                                                }}
-                                                            >
-                                                                Asignar
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {customerMembership && (
-                                                    <div style={{
-                                                        gridColumn: 'span 2',
-                                                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                                                        border: '1px solid #22C55E',
-                                                        padding: '0.75rem',
-                                                        borderRadius: '0.5rem',
-                                                        marginBottom: '1rem',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: '0.75rem'
-                                                    }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                            <div>
-                                                                <div style={{ color: '#22C55E', fontWeight: 'bold' }}>💎 Membresía Activa: {customerMembership.memberships?.name || 'Cargando...'}</div>
-                                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                                    {customerMembership.memberships?.type === 'unlimited'
-                                                                        ? 'Lavados Ilimitados'
-                                                                        : `Lavados: ${customerMembership.usage_count} / ${customerMembership.memberships?.limit_count || 0}`}
-                                                                </div>
-                                                            </div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={handleRemoveMembership}
-                                                                    style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                                                                >
-                                                                    Cancelar Plan
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(34, 197, 94, 0.2)', paddingTop: '0.5rem' }}>
-                                                            {(customerMembership.memberships?.type === 'unlimited' || customerMembership.usage_count < (customerMembership.memberships?.limit_count || 0)) ? (
-                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isMembershipUsage}
-                                                                        onChange={(e) => setIsMembershipUsage(e.target.checked)}
-                                                                        style={{ width: '20px', height: '20px' }}
-                                                                    />
-                                                                    <span style={{ fontWeight: 'bold' }}>Saldar con Membresía</span>
-                                                                </label>
-                                                            ) : (
-                                                                <span style={{ fontSize: '0.8rem', color: '#EF4444' }}>Límite de lavados alcanzado</span>
-                                                            )}
-
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <select
-                                                                    className="input"
-                                                                    style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', width: 'auto' }}
-                                                                    onChange={(e) => {
-                                                                        if (e.target.value) {
-                                                                            if (window.confirm("¿Cambiar el plan de membresía?")) {
-                                                                                handleAssignMembership(e.target.value);
-                                                                            }
-                                                                            e.target.value = "";
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <option value="">Cambiar Plan...</option>
-                                                                    {memberships.map(m => (
-                                                                        <option key={m.id} value={m.id}>{m.name}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label className="label">Servicio Principal</label>
-                                                    <select
-                                                        className="input"
-                                                        required
-                                                        value={formData.serviceId}
-                                                        onChange={handleServiceChange}
-                                                    >
-                                                        <option value="">Seleccionar Servicio...</option>
-                                                        {sortedServices.map(s => (
-                                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* SECONDARY SERVICES (EXTRAS) */}
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label className="label">Servicios Secundarios</label>
-                                                    <select
-                                                        className="input"
-                                                        value=""
-                                                        onChange={(e) => {
-                                                            const sId = e.target.value;
-                                                            if (!sId) return;
-                                                            const s = services.find(srv => srv.id == sId);
-                                                            if (s) {
-                                                                // CHECK FOR MULTI-EMPLOYEE ASSIGNMENT
-                                                                if (formData.selectedEmployees && formData.selectedEmployees.length > 1) {
-                                                                    setPendingExtra(s);
-                                                                    setShowAssignmentModal(true);
-                                                                } else {
-                                                                    // Single employee or none: Add directly
-                                                                    addExtra(s, null);
-                                                                }
-                                                            }
-                                                        }}
-                                                    >
-                                                        <option value="">Seleccionar Servicio Secundario...</option>
-                                                        {sortedServices.map(s => (
-                                                            <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* LIST OF ADDED EXTRAS */}
-                                                {formData.extras && formData.extras.length > 0 && (
-                                                    <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
-                                                        <label className="label" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>Servicios Agregados:</label>
-                                                        {formData.extras.map((extra, index) => (
-                                                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', fontSize: '0.9rem', padding: '0.25rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '0.25rem' }}>
-                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                    <span>{extra.description} (${extra.price})</span>
-                                                                    {extra.assignedTo && (
-                                                                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
-                                                                            Hecho por: {employees.find(e => e.id === extra.assignedTo)?.name || 'Desconocido'}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <label className="label">Hora del Servicio</label>
-                                                    <input
-                                                        type="time"
-                                                        className="input"
-                                                        required
-                                                        value={formData.serviceTime}
-                                                        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-
-                                        {/* TOTAL PRICE DISPLAY */}
-                                        <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontWeight: 'bold' }}>Total Estimado:</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>$</span>
-                                                <input
-                                                    type="number"
-                                                    className="input"
-                                                    value={formData.price || 0}
-                                                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                                                    style={{ 
-                                                        width: '100px', 
-                                                        fontSize: '1.5rem', 
-                                                        fontWeight: 'bold', 
-                                                        color: 'var(--primary)',
-                                                        backgroundColor: 'transparent',
-                                                        border: '1px solid var(--primary)',
-                                                        textAlign: 'right',
-                                                        padding: '0.2rem 0.5rem'
-                                                    }}
-                                                    step="0.01"
-                                                    min="0"
-                                                />
-                                            </div>
-                                        </div>
-
-
-
-                                        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                            <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
-                                                Cancelar
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary"
-                                                onClick={handleSubmit}
-                                                disabled={isSubmitting}
-                                                style={{ opacity: isSubmitting ? 0.7 : 1 }}
-                                            >
-                                                {isSubmitting ? 'Registrando...' : 'Registrar Venta'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div >
-                        )
-                    }
+                    <TransactionModal />
 
 
                     {/* ERROR ALERT */}
@@ -4506,7 +3570,7 @@ const Dashboard = () => {
                                     ✓ {getServiceName(verifyingTransaction.service_id)}
                                 </div>
                                 {verifyingTransaction.extras && verifyingTransaction.extras.length > 0 && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1rem' }}>
                                         {verifyingTransaction.extras.map((extra, idx) => (
                                             <div key={idx} style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <span style={{ color: 'var(--success)' }}>✓</span> {extra.description}
@@ -4514,6 +3578,37 @@ const Dashboard = () => {
                                         ))}
                                     </div>
                                 )}
+
+                                {/* PHOTO UPLOAD (OPTIONAL) */}
+                                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                        Foto del Resultado (Opcional)
+                                    </label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem 1rem', fontSize: '0.85rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '0.4rem' }}>
+                                            <Droplets size={16} color={photoToUpload ? 'var(--primary)' : 'currentColor'} />
+                                            {photoToUpload ? 'Foto Cargada ✓' : 'Subir Foto'}
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                capture="environment" 
+                                                style={{ display: 'none' }} 
+                                                onChange={(e) => setPhotoToUpload(e.target.files[0])}
+                                            />
+                                        </label>
+                                        {photoToUpload && (
+                                            <button 
+                                                onClick={() => setPhotoToUpload(null)}
+                                                style={{ color: '#ef4444', background: 'none', border: 'none', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer' }}
+                                            >
+                                                Quitar
+                                            </button>
+                                        )}
+                                    </div>
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                        El cliente podrá ver esto al entrar a su portal.
+                                    </p>
+                                </div>
                             </div>
 
                             <div style={{
@@ -4693,7 +3788,37 @@ const Dashboard = () => {
                     </div>
                 )
             }
+                <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
+                    Dashboard v4.26 • {new Date().toLocaleTimeString()}
+                </div>
+
+            {/* FULLSCREEN PHOTO VIEWER MODAL */}
+            {viewingPhoto && (
+                <div 
+                    style={{ 
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+                        backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 10000, 
+                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        padding: '1rem' 
+                    }}
+                    onClick={() => setViewingPhoto(null)}
+                >
+                    <button 
+                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer', zIndex: 10001 }}
+                        onClick={() => setViewingPhoto(null)}
+                    >
+                        ✕
+                    </button>
+                    <img 
+                        src={viewingPhoto} 
+                        alt="Vista Ampliada" 
+                        style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '0.5rem', boxShadow: '0 0 20px rgba(255,255,255,0.1)' }} 
+                        onClick={e => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div >
+        </DashboardProvider>
     );
 };
 

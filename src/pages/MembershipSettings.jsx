@@ -32,6 +32,23 @@ const MembershipSettings = () => {
         concept: ''
     });
 
+    const [isAddWashModalOpen, setIsAddWashModalOpen] = useState(false);
+    const [selectedWashSub, setSelectedWashSub] = useState(null);
+    const [extraWashData, setExtraWashData] = useState({
+        amount: 1,
+        expiration: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0]
+    });
+
+    // MEMBERSHIP EDIT MODAL STATE
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedEditSub, setSelectedEditSub] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        start_date: '',
+        next_billing_date: '',
+        last_reset_at: '',
+        manual_price: ''
+    });
+
     useEffect(() => {
         fetchMemberships();
         fetchSubscriptions();
@@ -58,6 +75,11 @@ const MembershipSettings = () => {
     };
 
     const fetchSubscriptions = async () => {
+        // TRIGGER AUTO-RENEWAL FOR ALL ACTIVE MEMBERSHIPS
+        try {
+            await supabase.rpc('check_and_renew_all_active_memberships');
+        } catch (e) { console.warn("Error calling global renewal during fetch:", e); }
+
         const { data, error } = await supabase
             .from('customer_memberships')
             .select('*, customers(name, phone), memberships(name, price), vehicles(brand, model, plate)')
@@ -168,12 +190,19 @@ const MembershipSettings = () => {
         if (txErr) console.error("Error creating transaction record:", txErr);
 
         // 3. Update active subscription
-        await supabase.from('customer_memberships').update({
+        const updates = {
             status: 'active',
             last_payment_date: new Date().toISOString().split('T')[0],
             next_billing_date: nextDate.toISOString().split('T')[0],
             usage_count: newUsageCount // Rollover remaining washes
-        }).eq('id', sub.id);
+        };
+
+        // If overdue or new, reset the cycle date to today to align next renewal
+        if (sub.status !== 'active' || !sub.last_reset_at) {
+            updates.last_reset_at = new Date().toISOString();
+        }
+
+        await supabase.from('customer_memberships').update(updates).eq('id', sub.id);
 
         alert(`Pago de $${amount} registrado para ${sub.customers.name}. Suscripción ACTIVADA.`);
         fetchSubscriptions();
@@ -248,6 +277,75 @@ const MembershipSettings = () => {
             openHistory(selectedHistorySub); // Refresh history
         } catch (error) {
             alert("Error: " + error.message);
+        }
+    };
+
+    const handleAddExtraWash = async () => {
+        try {
+            // BACK TO SEPARATE: Do NOT affect usage_count so they remain as separate line items in the portal
+            // This ensures a clean "2 de 2" + "+1 extra" view.
+
+            const { error: txErr } = await supabase.from('transactions').insert([{
+                customer_id: selectedWashSub.customer_id,
+                vehicle_id: selectedWashSub.vehicle_id,
+                price: 0,
+                total_price: 0,
+                commission_amount: 0,
+                payment_method: 'cortesia_membresia',
+                status: 'completed', 
+                created_at: new Date().toISOString(),
+                finished_at: new Date().toISOString(),
+                extras: [{ 
+                    description: `CORTESÍA: +${extraWashData.amount} Lavada(s) (Válido hasta: ${extraWashData.expiration})`, 
+                    price: 0 
+                }]
+            }]);
+            
+            if (txErr) {
+                console.error("DEBUG: txErr", txErr);
+                throw new Error("Transacción no guardada: " + (txErr.message || txErr.details || "Error desconocido"));
+            }
+            
+            alert(`¡Se ha agregado ${extraWashData.amount} lavada(s) extas con éxito!`);
+            setIsAddWashModalOpen(false);
+            fetchSubscriptions();
+        } catch (error) {
+            alert("Error: " + error.message);
+        }
+    };
+
+    const handleOpenEditModal = (sub) => {
+        setSelectedEditSub(sub);
+        setEditFormData({
+            start_date: (sub.start_date || '').split('T')[0],
+            next_billing_date: sub.next_billing_date || '',
+            last_reset_at: (sub.last_reset_at || '').split('T')[0],
+            manual_price: sub.manual_price != null ? sub.manual_price.toString() : ''
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveMembershipEdits = async () => {
+        try {
+            const updates = {
+                start_date: editFormData.start_date ? new Date(editFormData.start_date + 'T12:00:00Z').toISOString() : null,
+                next_billing_date: editFormData.next_billing_date || null,
+                last_reset_at: editFormData.last_reset_at ? new Date(editFormData.last_reset_at + 'T12:00:00Z').toISOString() : (selectedEditSub?.last_reset_at),
+                manual_price: editFormData.manual_price !== '' ? parseFloat(editFormData.manual_price) : null
+            };
+
+            const { error } = await supabase
+                .from('customer_memberships')
+                .update(updates)
+                .eq('id', selectedEditSub.id);
+
+            if (error) throw error;
+            
+            alert("Membresía actualizada correctamente.");
+            setIsEditModalOpen(false);
+            fetchSubscriptions();
+        } catch (e) {
+            alert("Error al actualizar: " + e.message);
         }
     };
 
@@ -629,6 +727,14 @@ const MembershipSettings = () => {
                                              <td style={{ padding: '1rem', textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem' }}>
                                                     <button
+                                                        onClick={() => { setSelectedWashSub(sub); setIsAddWashModalOpen(true); }}
+                                                        title="+1 Lavada Extra"
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--success)', padding: '0.25rem' }}
+                                                    >
+                                                        <Plus size={18} />
+                                                    </button>
+
+                                                    <button
                                                         onClick={() => openHistory(sub)}
                                                         title="Historial de Pagos y Añadir Pagos"
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8b5cf6', padding: '0.25rem' }}
@@ -647,6 +753,22 @@ const MembershipSettings = () => {
                                                         }}
                                                     >
                                                         <DollarSign size={14} /> {sub.status === 'pending_payment' ? 'Activar' : 'Cobrar'}
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(sub)}
+                                                        title="Editar fechas y precios"
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '0.25rem' }}
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(sub)}
+                                                        title="Editar fechas y precios"
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '0.25rem' }}
+                                                    >
+                                                        <Edit2 size={18} />
                                                     </button>
 
                                                     <button
@@ -762,6 +884,105 @@ const MembershipSettings = () => {
                             >
                                 Cerrar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD WASH MODAL */}
+            {isAddWashModalOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '400px', backgroundColor: 'var(--bg-card)', padding: '2rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                        <h3 style={{ marginTop: 0 }}>Añadir Lavadas Extras</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Añade lavadas adicionales para {selectedWashSub?.customers?.name}.</p>
+                        
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>Cantidad de Lavadas</label>
+                            <input type="number" min="1" value={extraWashData.amount} onChange={e => setExtraWashData({ ...extraWashData, amount: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>Válidas hasta (Expiración)</label>
+                            <input type="date" value={extraWashData.expiration} onChange={e => setExtraWashData({ ...extraWashData, expiration: e.target.value })} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                            <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem' }}>Se agregará un registro en su historial con esta fecha para tu control visual y administrativo.</small>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setIsAddWashModalOpen(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>Cancelar</button>
+                            <button onClick={handleAddExtraWash} style={{ padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', backgroundColor: 'var(--success)', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FULL EDIT MODAL */}
+            {isEditModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100
+                }}>
+                    <div className="card" style={{ width: '100%', maxWidth: '450px', padding: '1.5rem', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+                        <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Edit2 size={20} /> Editar Membresía
+                        </h3>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Cliente / Vehículo</label>
+                                <div style={{ fontWeight: 'bold' }}>{selectedEditSub?.customers?.name}</div>
+                                <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>{selectedEditSub?.vehicles?.brand} {selectedEditSub?.vehicles?.model}</div>
+                            </div>
+
+                            <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0.5rem 0' }} />
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Fecha de Comienzo (Inscripción)</label>
+                                <input 
+                                    type="date" 
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                    value={editFormData.start_date}
+                                    onChange={(e) => setEditFormData({...editFormData, start_date: e.target.value})}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Próxima Facturación (Vencimiento Admin)</label>
+                                <input 
+                                    type="date" 
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                    value={editFormData.next_billing_date}
+                                    onChange={(e) => setEditFormData({...editFormData, next_billing_date: e.target.value})}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Última Renovación Saldo (Reset de Lavados)</label>
+                                <input 
+                                    type="date" 
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                    value={editFormData.last_reset_at}
+                                    onChange={(e) => setEditFormData({...editFormData, last_reset_at: e.target.value})}
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                                    Tip: El cliente ve su "Vencimiento de Lavados" un mes después de esta fecha.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Precio Personalizado ($)</label>
+                                <input 
+                                    type="number" 
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                    placeholder="Dejar vacío para usar precio base"
+                                    value={editFormData.manual_price}
+                                    onChange={(e) => setEditFormData({...editFormData, manual_price: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+                            <button onClick={() => setIsEditModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+                            <button onClick={handleSaveMembershipEdits} className="btn" style={{ flex: 1, backgroundColor: 'var(--primary)', color: 'white' }}>Guardar Cambios</button>
                         </div>
                     </div>
                 </div>

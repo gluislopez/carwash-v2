@@ -9,12 +9,48 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const centerX = pageWidth / 2;
     let y = 10; // Start Y position
 
+    // Helper to check and handle page breaks
+    const checkPageBreak = (currentY, neededHeight = 10) => {
+        if (currentY + neededHeight > pageHeight - 10) {
+            doc.addPage();
+            return 10; // Reset to top
+        }
+        return currentY;
+    };
+
+    // Helper for centering text
+    const centerText = (text, yPos, size = 10, bold = false, font = 'courier') => {
+        doc.setFontSize(size);
+        doc.setFont(font, bold ? 'bold' : 'normal');
+        doc.text(text, centerX, yPos, { align: 'center' });
+    };
+
+    // Helper for left/right aligned text with wrapping
+    const row = (label, value, yPos, size = 9, bold = false) => {
+        doc.setFontSize(size);
+        doc.setFont('courier', bold ? 'bold' : 'normal');
+        
+        const maxWidth = pageWidth - 25; // Space for price on the right
+        const splitLabel = doc.splitTextToSize(label, maxWidth);
+        
+        // Ensure price is aligned to the first line of the label if label wraps
+        doc.text(splitLabel, 5, yPos);
+        doc.text(value, pageWidth - 5, yPos, { align: 'right' });
+        
+        return yPos + (splitLabel.length * 4); // Returns next Y
+    };
+
+    const line = (yPos) => {
+        doc.setLineWidth(0.1);
+        doc.line(2, yPos, pageWidth - 2, yPos);
+    };
+
     // --- LOGO TOP ---
     try {
-        // Load logo from public folder
         const logoUrl = '/logo.jpg';
         const img = new Image();
         img.src = logoUrl;
@@ -24,63 +60,35 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
             img.onerror = reject;
         });
 
-        // Calculate dimensions to fit/center
-        const logoWidth = 40; // 40mm wide
-        const logoHeight = logoWidth; // Force square for circle
+        const logoWidth = 40;
+        const logoHeight = logoWidth;
         const logoX = (pageWidth - logoWidth) / 2;
 
-        // Create a canvas to crop the image to a circle
         const canvas = document.createElement('canvas');
         const size = Math.min(img.width, img.height);
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
 
-        // Draw circle clip
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
 
-        // Draw image centered
         const xOffset = (img.width - size) / 2;
         const yOffset = (img.height - size) / 2;
         ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, size, size);
 
         const roundLogoData = canvas.toDataURL('image/png');
-
-        // Draw Round Logo
         doc.addImage(roundLogoData, 'PNG', logoX, y, logoWidth, logoHeight);
-
-        // Move Y down
         y += logoHeight + 5;
 
     } catch (e) {
         console.warn('Could not load logo for receipt:', e);
     }
-    // ----------------------
-
-    // Helper for centering text
-    const centerText = (text, yPos, size = 10, bold = false, font = 'courier') => {
-        doc.setFontSize(size);
-        doc.setFont(font, bold ? 'bold' : 'normal');
-        doc.text(text, centerX, yPos, { align: 'center' });
-    };
-
-    // Helper for left/right aligned text
-    const row = (label, value, yPos, size = 9) => {
-        doc.setFontSize(size);
-        doc.setFont('courier', 'normal');
-        doc.text(label, 5, yPos);
-        doc.text(value, pageWidth - 5, yPos, { align: 'right' });
-    };
-
-    const line = (yPos) => {
-        doc.setLineWidth(0.1);
-        doc.line(2, yPos, pageWidth - 2, yPos);
-    };
 
     // HEADER
+    y = checkPageBreak(y, 20);
     centerText('RECIBO DE PAGO', y, 12, true);
     y += 5;
     centerText('Express CarWash', y, 10);
@@ -99,6 +107,7 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     const model = (transaction.vehicles?.model || transaction.customers?.vehicle_model || (Array.isArray(transaction.extras) ? transaction.extras.find(e => e.vehicle_model)?.vehicle_model : transaction.extras?.vehicle_model) || ' VEHICULO');
     const plate = (transaction.vehicles?.plate || transaction.customers?.vehicle_plate || (Array.isArray(transaction.extras) ? transaction.extras.find(e => e.vehicle_plate)?.vehicle_plate : transaction.extras?.vehicle_plate) || ' SIN PLACA');
 
+    y = checkPageBreak(y, 25);
     doc.setFontSize(9);
     doc.text(`FECHA: ${dateStr} ${timeStr}`, 5, y);
     y += 5;
@@ -110,9 +119,9 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     y += 5;
 
     if (employeeNames) {
+        y = checkPageBreak(y, 10);
         doc.text(`ATENDIDO POR:`, 5, y);
         y += 4;
-        // Split long names if needed
         const splitNames = doc.splitTextToSize(employeeNames.toUpperCase(), pageWidth - 10);
         doc.text(splitNames, 10, y);
         y += (splitNames.length * 4) + 1;
@@ -122,77 +131,66 @@ export const generateReceiptPDF = async (transaction, serviceName, extras, total
     y += 5;
 
     // ITEMS
-    row('DESCRIPCION', 'PRECIO', y, 9);
-    y += 2;
+    y = checkPageBreak(y, 10);
+    y = row('DESCRIPCION', 'PRECIO', y, 9, true); 
     line(y);
     y += 5;
 
     // Base Service
-    // Calculate base price (Total - Extras - Tip is not quite right if total includes tip, 
-    // but here 'total' passed is usually price. Let's assume passed total is the form price (service + extras))
-    // We need to recalculate base service price from the passed total.
-
     const extrasTotal = extras.reduce((sum, e) => sum + parseFloat(e.price), 0);
     const basePrice = parseFloat(total) - extrasTotal;
 
-    row((serviceName || 'Servicio').toUpperCase(), `$${basePrice.toFixed(2)}`, y);
-    y += 5;
+    y = checkPageBreak(y, 8);
+    y = row((serviceName || 'Servicio').toUpperCase(), `$${basePrice.toFixed(2)}`, y);
 
     // Extras
     extras.forEach(ex => {
-        row(ex.description.toUpperCase(), `$${parseFloat(ex.price).toFixed(2)}`, y);
-        y += 5;
+        y = checkPageBreak(y, 8);
+        y = row(ex.description.toUpperCase(), `$${parseFloat(ex.price).toFixed(2)}`, y);
     });
 
+    y = checkPageBreak(y, 5);
     line(y);
     y += 5;
 
     // TOTALS
-    row('SUBTOTAL', `$${parseFloat(total).toFixed(2)}`, y);
-    y += 5;
+    y = checkPageBreak(y, 20);
+    y = row('SUBTOTAL', `$${parseFloat(total).toFixed(2)}`, y);
 
     if (tip > 0) {
-        row('PROPINA', `$${parseFloat(tip).toFixed(2)}`, y);
-        y += 5;
+        y = row('PROPINA', `$${parseFloat(tip).toFixed(2)}`, y);
     }
 
-    doc.setFont('courier', 'bold');
-    row('TOTAL', `$${(parseFloat(total) + parseFloat(tip)).toFixed(2)}`, y, 12);
+    y = row('TOTAL', `$${(parseFloat(total) + parseFloat(tip)).toFixed(2)}`, y, 12, true);
     y += 10;
 
-    doc.setFontSize(10);
+    y = checkPageBreak(y, 15);
     centerText('¡GRACIAS POR SU VISITA!', y);
     y += 5;
     centerText('Vuelva Pronto', y);
     y += 8;
 
-    // Review Link (Prioritize internal private feedback)
+    // Review Link
     const feedbackUrl = transaction.id ? `${window.location.origin}/feedback/${transaction.id}` : reviewLink;
-
     if (feedbackUrl) {
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
+        y = checkPageBreak(y, 25);
         centerText('¡Tu opinión nos importa!', y, 10, true, 'helvetica');
         y += 5;
-
         centerText('¡Califícanos aquí!', y, 9, false, 'helvetica');
         y += 5;
 
-        doc.setTextColor(0, 0, 255); // Blue color for link
+        doc.setTextColor(0, 0, 255);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         const splitLink = doc.splitTextToSize(feedbackUrl, pageWidth - 10);
         doc.text(splitLink, pageWidth / 2, y, { align: 'center' });
-
-        // Add a clickable link area (approximate for the block)
         doc.link(5, y - 2, pageWidth - 10, splitLink.length * 4, { url: feedbackUrl });
-
-        doc.setTextColor(0, 0, 0); // Reset color
+        doc.setTextColor(0, 0, 0);
         y += (splitLink.length * 4) + 4;
     }
 
-
     // Footer Note
+    y = checkPageBreak(y, 15);
     doc.setFontSize(8);
     const footerNote = "* Si tiene alguna reclamación sobre el servicio, comuníquese al 787-857-8983.";
     const splitFooter = doc.splitTextToSize(footerNote, pageWidth - 10);

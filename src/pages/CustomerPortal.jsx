@@ -1,9 +1,10 @@
-// Customer Portal - Last Updated: 2026-01-20
+// Customer Portal - Last Updated: 2026-03-25 v4.89
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { MapPin, Phone, Calendar, Clock, CheckCircle, Gift, X, DollarSign, Share, CreditCard, List, Award, FileText, Download, Check } from 'lucide-react';
 import QRCode from 'react-qr-code';
+import SubscriptionPaymentModal from '../components/portal/SubscriptionPaymentModal';
 
 const CustomerPortal = () => {
     // Add shimmer animation style
@@ -43,12 +44,16 @@ const CustomerPortal = () => {
     const [showCouponModal, setShowCouponModal] = useState(false);
     const [showVehiclesModal, setShowVehiclesModal] = useState(false); // NEW MODAL STATE
     const [showFeedbackModal, setShowFeedbackModal] = useState(false); // NEW MODAL FOR FEEDBACK
+    const [reviewPhoto, setReviewPhoto] = useState(null);
+    const [isUploadingReviewPhoto, setIsUploadingReviewPhoto] = useState(false);
+    const [viewingPhoto, setViewingPhoto] = useState(null);
     const [showMembershipModal, setShowMembershipModal] = useState(false); // NEW MODAL FOR MEMBERSHIPS
     const [availablePlans, setAvailablePlans] = useState([]); // Store all plans
     const [portalMessage, setPortalMessage] = useState(''); // Global announcement
     const [submittingSubscription, setSubmittingSubscription] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [selectedPlanId, setSelectedPlanId] = useState(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [branding, setBranding] = useState({ name: 'Express CarWash', logo: '/logo.jpg' });
 
     // PWA State
@@ -159,6 +164,59 @@ const CustomerPortal = () => {
         const earned = Math.floor(visitsCount / 10);
         return Math.max(0, earned - vehicleRedeemed);
     }, [visitsCount, vehicleRedeemed]);
+
+    // NEW: EXTRA WASHES LOGIC
+    const extraWashes = useMemo(() => {
+        if (!history || history.length === 0) return [];
+        
+        const today = new Date().toISOString().split('T')[0];
+        const activeExtras = [];
+
+        history.forEach(tx => {
+            const method = (tx.payment_method || '').toLowerCase();
+            if (method === 'cortesia_membresia' && tx.status !== 'cancelled' && tx.extras && tx.extras.length > 0) {
+                // FIXED MATCHING: Only show if it matches the selected vehicle OR if it's a global extra (null vehicle_id)
+                if (selectedVehicleId && tx.vehicle_id && tx.vehicle_id !== selectedVehicleId) return;
+
+                // NEW: CHECK IF ALREADY USED
+                const extrasArr = Array.isArray(tx.extras) ? tx.extras : [tx.extras];
+                const isAlreadyUsed = extrasArr.some(e => e && e.used === true);
+                if (isAlreadyUsed) return;
+
+                const desc = tx.extras[0]?.description || '';
+                // Expected format: "CORTESÍA: +1 Lavada(s) (Válido hasta: 2026-04-01)"
+                const amountMatch = desc.match(/\+(\d+)/); // More flexible
+                const dateMatch = desc.match(/Válido hasta:?\s*([\d-]+)/i); // Handle missing colon or spaces
+
+                if (amountMatch && dateMatch) {
+                    const amount = parseInt(amountMatch[1]);
+                    const expiration = dateMatch[1];
+                    
+                    // Solo si no ha expirado
+                    if (expiration >= today && amount > 0) {
+                        activeExtras.push({
+                            id: tx.id,
+                            amount: amount,
+                            expiration: expiration,
+                            desc: desc
+                        });
+                    }
+                }
+            }
+        });
+        
+        // Sum total available
+        const totalAmount = activeExtras.reduce((sum, e) => sum + e.amount, 0);
+        
+        // Find nearest expiration date
+        const nearestExp = activeExtras.map(e => e.expiration).sort()[0];
+
+        return {
+            items: activeExtras,
+            totalAmount: totalAmount,
+            nearestExpiration: nearestExp
+        };
+    }, [history, selectedVehicleId]);
 
     // Timer to update progress bar every minute
     useEffect(() => {
@@ -325,8 +383,8 @@ const CustomerPortal = () => {
 
                 if (vData) {
                     setVehicles(vData);
-                    // Default to Global View (null) to show ALL visits/points
-                    setSelectedVehicleId(null);
+                    // Auto-select the first vehicle to show personalized info immediately
+                    setSelectedVehicleId(vData.length > 0 ? vData[0].id : null);
                 }
 
                 // 3. Fetch History & Check Feedback
@@ -334,9 +392,10 @@ const CustomerPortal = () => {
                     .from('transactions')
                     .select(`
                         *,
+                        finish_photo_url,
                         services (name),
                         vehicles (model, brand, plate),
-                        customer_feedback (id, rating),
+                        customer_feedback (id, rating, photo_url),
                         transaction_assignments (
                             employees (name)
                         )
@@ -475,6 +534,21 @@ const CustomerPortal = () => {
         setMembership(match || null);
     }, [selectedVehicleId, allMemberships]);
 
+    // AUTO-HEAL: Fix negative usage_count in database if encountered
+    // This restores "2 de 2" if it was "3 de 2" due to the previous -1 logic
+    useEffect(() => {
+        if (membership && membership.usage_count < 0) {
+            console.log("Auto-healing membership usage_count...");
+            const heal = async () => {
+                await supabase
+                    .from('customer_memberships')
+                    .update({ usage_count: 0 })
+                    .eq('id', membership.id);
+            };
+            heal();
+        }
+    }, [membership]);
+
     const channelMemberships = useEffect(() => {
         if (!customerId) return;
         const channel = supabase
@@ -499,23 +573,50 @@ const CustomerPortal = () => {
     const submitFeedback = async () => {
         if (rating === 0) return alert("Por favor selecciona las estrellas.");
         setSubmittingFeedback(true);
+        setIsUploadingReviewPhoto(true);
 
-        const { error } = await supabase.from('customer_feedback').insert([
-            {
-                transaction_id: latestTx.id,
-                rating: rating,
-                comment: comment
+        try {
+            let photo_url = null;
+            if (reviewPhoto) {
+                const fileExt = reviewPhoto.name.split('.').pop();
+                const fileName = `review_${latestTx.id}.${fileExt}`;
+                const filePath = `reviews/${fileName}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('car_photos')
+                    .upload(filePath, reviewPhoto, { upsert: true });
+
+                if (!uploadError) {
+                    const { data: publicUrlData } = supabase.storage.from('car_photos').getPublicUrl(filePath);
+                    photo_url = publicUrlData.publicUrl;
+                } else {
+                    console.error("Error al subir foto de reseña:", uploadError);
+                }
             }
-        ]);
 
-        setSubmittingFeedback(false);
+            const { error } = await supabase.from('customer_feedback').insert([
+                {
+                    transaction_id: latestTx.id,
+                    rating: rating,
+                    comment: comment,
+                    photo_url: photo_url
+                }
+            ]);
 
-        if (error) {
-            console.error("Feedback error:", error);
-            alert("Error al enviar: " + (error.message || "Intente nuevamente."));
-        } else {
-            setShowPromo(true);
-            setHasRated(true);
+            if (error) {
+                console.error("Feedback error:", error);
+                alert("Error al enviar: " + (error.message || "Intente nuevamente."));
+            } else {
+                setShowPromo(true);
+                setHasRated(true);
+                setReviewPhoto(null); // Clear photo
+            }
+        } catch (err) {
+            console.error("Feedback error:", err);
+            alert("Error al enviar reseña.");
+        } finally {
+            setSubmittingFeedback(false);
+            setIsUploadingReviewPhoto(false);
         }
     };
 
@@ -562,18 +663,21 @@ const CustomerPortal = () => {
         if (!selectedPlanId) return alert("Por favor selecciona un plan.");
         if (!acceptedTerms) return alert("Debes aceptar los Términos y Condiciones para continuar.");
         
+        setShowPaymentModal(true);
+    };
+
+    const handlePaymentSuccess = async () => {
         setSubmittingSubscription(true);
         try {
             const plan = availablePlans.find(p => p.id === selectedPlanId);
             
-            // 1. Create the pending membership
             const { data: subData, error } = await supabase
                 .from('customer_memberships')
                 .insert([{
                     customer_id: customerId,
                     membership_id: selectedPlanId,
                     vehicle_id: selectedVehicleId,
-                    status: 'pending_payment',
+                    status: 'active',
                     start_date: new Date().toISOString().split('T')[0],
                     usage_count: 0
                 }])
@@ -581,12 +685,11 @@ const CustomerPortal = () => {
 
             if (error) throw error;
 
-            alert("¡Solicitud enviada! Tu membresía está en estado 'Pendiente de Pago'. Por favor, realiza el pago en el carwash para activarla.");
+            setShowPaymentModal(false);
             setShowMembershipModal(false);
             setAcceptedTerms(false);
             setSelectedPlanId(null);
             
-            // Refresh memberships locally
             const { data: refreshData } = await supabase
                 .from('customer_memberships')
                 .select('*, memberships(*)')
@@ -1005,83 +1108,7 @@ const CustomerPortal = () => {
                         </div>
                     )}
 
-                    {/* MEMBERSHIP STATUS BANNER */}
-                    {membership && (
-                        <div style={{
-                            marginTop: '1.25rem',
-                            padding: '1rem',
-                            backgroundColor: 'rgba(34, 197, 94, 0.05)',
-                            border: '1px solid rgba(34, 197, 94, 0.2)',
-                            borderRadius: '0.75rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.5rem'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.25rem' }}>💎</span>
-                                    <span style={{ fontWeight: 'bold', color: '#166534', fontSize: '1.1rem' }}>
-                                        {membership.memberships?.name}
-                                        {membership.vehicle_id && vehicles.find(v => v.id === membership.vehicle_id) && (
-                                            <span style={{ fontSize: '0.7rem', opacity: 0.7, display: 'block' }}>
-                                                Vinculado a: {getVehicleDisplayName(vehicles.find(v => v.id === membership.vehicle_id), customer)}
-                                            </span>
-                                        )}
-                                    </span>
-                                </div>
-
-                                <div style={{
-                                    fontSize: '0.75rem',
-                                    backgroundColor: membership.status === 'pending_payment' ? '#f59e0b' : '#22c55e',
-                                    color: 'white',
-                                    padding: '0.2rem 0.6rem',
-                                    borderRadius: '1rem',
-                                    fontWeight: 'bold',
-                                    alignSelf: 'flex-start'
-                                }}>
-                                    {membership.status === 'pending_payment' ? 'PENDIENTE DE PAGO' : 'ACTIVO'}
-                                </div>
-                            </div>
-
-                            {membership.status === 'pending_payment' && (
-                                <p style={{ fontSize: '0.8rem', color: '#b45309', margin: 0, fontWeight: '500' }}>
-                                    Tu solicitud ha sido recibida. Visítanos para pagar y activar tus beneficios.
-                                </p>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#166534', marginTop: '0.25rem' }}>
-                                <span style={{ fontWeight: '500' }}>
-                                    {membership.memberships?.type === 'unlimited'
-                                        ? 'Lavados Ilimitados'
-                                        : `Lavados disponibles: ${Math.max(0, (membership.memberships?.limit_count || 0) - (membership.usage_count || 0))} de ${membership.memberships?.limit_count || 0}`}
-                                </span>
-                                {membership.last_reset_at && (
-                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                        <Calendar size={16} />
-                                        Renovación: {(() => {
-                                            try {
-                                                const d = new Date(membership.last_reset_at);
-                                                d.setMonth(d.getMonth() + 1);
-                                                return d.toLocaleDateString();
-                                            } catch (e) { return 'N/A'; }
-                                        })()}
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Membership Progress Bar (for limited plans) */}
-                            {membership.memberships?.type !== 'unlimited' && membership.memberships?.limit_count > 0 && (
-                                <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(34, 197, 94, 0.2)', borderRadius: '3px', overflow: 'hidden', marginTop: '0.5rem' }}>
-                                    <div style={{
-                                        height: '100%',
-                                        backgroundColor: '#22c55e',
-                                        width: `${Math.max(0, 100 - ((membership.usage_count || 0) / membership.memberships.limit_count) * 100)}%`,
-                                        transition: 'width 0.5s ease-out'
-                                    }}></div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {/* MEMBERSHIP STATUS BANNER REMOVED - INTEGRATED IN MAIN CARD BELOW */}
                 </div>
 
 
@@ -1457,14 +1484,14 @@ const CustomerPortal = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                             <div>
                                 <div style={{ fontSize: '0.8rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Membresía Activa</div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
                                     {membership.memberships.name}
-                                    {membership.vehicle_id && (
-                                        <span style={{ fontSize: '0.8rem', opacity: 0.8, display: 'block' }}>
-                                            🚗 {getVehicleDisplayName(vehicles.find(v => v.id === membership.vehicle_id), customer)}
-                                        </span>
-                                    )}
                                 </div>
+                                {membership.vehicle_id && (
+                                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#fbbf24', marginTop: '0.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                                        🚗 {getVehicleDisplayName(vehicles.find(v => v.id === membership.vehicle_id), customer).split('(')[0]}
+                                    </div>
+                                )}
                             </div>
                             <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
                                 ACTIVO
@@ -1476,15 +1503,37 @@ const CustomerPortal = () => {
                             <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
                                 {membership.memberships.type === 'unlimited'
                                     ? '✨ Lavados Ilimitados'
-                                    : `📦 ${membership.memberships.limit_count} Lavados Premium`}
+                                    : `📦 ${Math.max(0, (membership.memberships?.limit_count || 0) - (membership.usage_count || 0))} de ${membership.memberships.limit_count} Lavados Premium`}
                             </div>
+                            {/* INTEGRATED EXTRA WASHES */}
+                            {extraWashes.items && extraWashes.items.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.6rem' }}>
+                                    {extraWashes.items.map((item, idx) => (
+                                        <div key={idx} style={{ 
+                                            fontSize: '0.8rem', 
+                                            fontWeight: 'bold', 
+                                            color: '#fbbf24', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            gap: '0.4rem', 
+                                            backgroundColor: 'rgba(251, 191, 36, 0.1)', 
+                                            padding: '0.3rem 0.6rem', 
+                                            borderRadius: '0.5rem', 
+                                            border: '1px solid rgba(251, 191, 36, 0.2)',
+                                            width: 'fit-content'
+                                        }}>
+                                            ✨ +{item.amount} Lavada Extra (Vence: {new Date(item.expiration + 'T12:00:00Z').toLocaleDateString()})
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {membership.memberships.type === 'limited' && (
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
-                                    <span>Uso del Plan</span>
-                                    <span>{membership.usage_count} / {membership.memberships.limit_count}</span>
+                                    <span>Lavados Disponibles</span>
+                                    <span>{Math.max(0, (membership.memberships?.limit_count || 0) - (membership.usage_count || 0))} de {membership.memberships?.limit_count}</span>
                                 </div>
                                 <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
                                     <div style={{
@@ -1503,9 +1552,50 @@ const CustomerPortal = () => {
                             </div>
                         )}
 
-                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
-                            <div>
-                                <div style={{ opacity: 0.7 }}>Próximo Pago</div>
+                        {/* --- NEW: CYCLE RANGE & EXPIRATION WARNING --- */}
+                        <div style={{ 
+                            marginTop: '1.25rem',
+                            backgroundColor: 'rgba(255,255,255,0.05)', 
+                            borderRadius: '0.75rem', 
+                            padding: '0.85rem', 
+                            marginBottom: '1rem', 
+                            border: '1px dashed rgba(255,255,255,0.15)' 
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', opacity: 0.8, marginBottom: '0.5rem' }}>
+                                <span style={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ciclo de Uso Actual</span>
+                                <span style={{ color: '#f87171' }}>⚠ No Acumulable</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Comienzo</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{new Date(membership.last_reset_at || membership.start_date).toLocaleDateString()}</div>
+                                </div>
+                                <div style={{ fontSize: '1.2rem', opacity: 0.3 }}>→</div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Vencimiento</div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1rem', color: '#fbbf24' }}>
+                                        {(() => {
+                                            const d = new Date(membership.last_reset_at || membership.start_date);
+                                            d.setMonth(d.getMonth() + 1);
+                                            return d.toLocaleDateString();
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ fontSize: '0.7rem', opacity: 0.7, fontStyle: 'italic', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.4rem' }}>
+                                Los lavados no utilizados se pierden al finalizar este periodo.
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ opacity: 0.7, fontSize: '0.75rem' }}>Próximo Pago</div>
+                                <div style={{ fontWeight: 'bold' }}>
+                                    {membership.next_billing_date ? new Date(membership.next_billing_date + 'T12:00:00Z').toLocaleDateString() : 'Activa'}
+                                </div>
+                            </div>
+                            <div style={{ flex: 1, textAlign: 'center' }}>
+                                <div style={{ opacity: 0.7, fontSize: '0.75rem' }}>Renovación Saldo</div>
                                 <div style={{ fontWeight: 'bold' }}>
                                     {(() => {
                                         try {
@@ -1516,9 +1606,9 @@ const CustomerPortal = () => {
                                     })()}
                                 </div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ opacity: 0.7 }}>Costo Mensual</div>
-                                <div style={{ fontWeight: 'bold' }}>${membership.memberships.price}</div>
+                            <div style={{ flex: 1, textAlign: 'right' }}>
+                                <div style={{ opacity: 0.7, fontSize: '0.75rem' }}>Costo</div>
+                                <div style={{ fontWeight: 'bold' }}>${(membership.manual_price != null ? membership.manual_price : (membership.memberships?.price || 0))}</div>
                             </div>
                         </div>
 
@@ -1660,12 +1750,42 @@ const CustomerPortal = () => {
                                         style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb', marginBottom: '1rem', fontFamily: 'inherit' }}
                                         rows="3"
                                     />
+
+                                    {/* PHOTO UPLOAD FOR CUSTOMER REVIEW */}
+                                    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                                        <label style={{ 
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', 
+                                            padding: '1rem', border: '2px dashed #e2e8f0', borderRadius: '0.75rem', 
+                                            cursor: 'pointer', transition: 'background 0.2s',
+                                            backgroundColor: reviewPhoto ? '#f0fdf4' : 'white'
+                                        }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '1.5rem' }}>📷</span>
+                                                <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: reviewPhoto ? '#22c55e' : '#475569' }}>
+                                                    {reviewPhoto ? '¡Foto Cargada!' : 'Añadir Foto'}
+                                                </span>
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                capture="environment" 
+                                                style={{ display: 'none' }} 
+                                                onChange={e => setReviewPhoto(e.target.files[0])}
+                                            />
+                                        </label>
+                                        {reviewPhoto && (
+                                            <button 
+                                                onClick={() => setReviewPhoto(null)} 
+                                                style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                            >
+                                                Quitar foto
+                                            </button>
+                                        )}
+                                    </div>
+
                                     <button
-                                        onClick={() => {
-                                            submitFeedback();
-                                            setShowFeedbackModal(false);
-                                        }}
-                                        disabled={submittingFeedback}
+                                        onClick={() => submitFeedback()}
+                                        disabled={submittingFeedback || isUploadingReviewPhoto}
                                         style={{ width: '100%', padding: '0.8rem', backgroundColor: '#EAB308', color: 'white', fontWeight: 'bold', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
                                     >
                                         {submittingFeedback ? 'Enviando...' : 'Enviar Calificación'}
@@ -1683,6 +1803,14 @@ const CustomerPortal = () => {
                     </div>
                 )}
 
+
+                <SubscriptionPaymentModal
+                    isOpen={showPaymentModal}
+                    onClose={() => setShowPaymentModal(false)}
+                    amount={availablePlans.find(p => p.id === selectedPlanId)?.price || 0}
+                    planName={availablePlans.find(p => p.id === selectedPlanId)?.name || ''}
+                    onPaymentSuccess={handlePaymentSuccess}
+                />
 
                 {/* MEMBERSHIP SELECTION MODAL */}
                 {showMembershipModal && (
@@ -1872,7 +2000,7 @@ const CustomerPortal = () => {
                             <>
                                 <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0' }} />
                                 <a
-                                    href={`${stripeLink}${stripeLink.includes('?') ? '&' : '?'}__prefilled_amount=${Math.round((parseFloat(activeService?.price || 0) * 1.03) * 100)}`}
+                                    href={`${stripeLink}${stripeLink.includes('?') ? '&' : '?'}client_reference_id=${customerId}&__prefilled_amount=${Math.round((parseFloat(activeService?.price || 0) * 1.03) * 100)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{
@@ -1967,8 +2095,31 @@ const CustomerPortal = () => {
                                     return 'Vehículo no especificado';
                                 })()}
                             </div>
-                            <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b' }}>
-                                {tx.status === 'completed' || tx.status === 'paid' ? 'Completado' : 'En Proceso'}
+                            {/* NEW: FINISH PHOTO (IF EXISTS) AT TOP OF CARD */}
+                            {tx.finish_photo_url && (
+                                <div style={{ marginBottom: '1rem', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid #e2e8f0', width: '100%' }}>
+                                    <img 
+                                        src={tx.finish_photo_url} 
+                                        alt="Vehículo Terminado" 
+                                        style={{ width: '100%', height: '140px', objectFit: 'cover', cursor: 'pointer' }}
+                                        onClick={() => setViewingPhoto(tx.finish_photo_url)}
+                                    />
+                                    <div style={{ padding: '0.4rem 0.75rem', backgroundColor: '#f8fafc', fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
+                                        🤳 Foto de Entrega (Equipo Express)
+                                    </div>
+                                </div>
+                            )}
+
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: tx.status === 'completed' || tx.status === 'paid' ? '#10b981' : '#f59e0b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{tx.status === 'completed' || tx.status === 'paid' ? 'Completado' : 'En Proceso'}</span>
+                                {tx.customer_feedback && tx.customer_feedback.length > 0 && tx.customer_feedback[0].photo_url && (
+                                    <span 
+                                        style={{ fontSize: '0.7rem', color: '#3b82f6', cursor: 'pointer', textDecoration: 'underline' }}
+                                        onClick={() => setViewingPhoto(tx.customer_feedback[0].photo_url)}
+                                    >
+                                        🖼️ Ver Foto Reseña
+                                    </span>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -2006,6 +2157,20 @@ const CustomerPortal = () => {
                                     {clean(selectedTransaction.vehicles?.plate) || clean(selectedTransaction.plate) || clean(customer?.vehicle_plate) || 'Sin Placa'}
                                 </div>
                             </div>
+
+                            {/* NEW: FINISH PHOTO IN MODAL */}
+                            {selectedTransaction.finish_photo_url && (
+                                <div style={{ marginBottom: '1.5rem', borderRadius: '1rem', overflow: 'hidden', border: '1px solid #e2e8f0', cursor: 'pointer' }} onClick={() => setViewingPhoto(selectedTransaction.finish_photo_url)}>
+                                    <img 
+                                        src={selectedTransaction.finish_photo_url} 
+                                        alt="Vehículo Terminado" 
+                                        style={{ width: '100%', height: '180px', objectFit: 'cover' }}
+                                    />
+                                    <div style={{ padding: '0.5rem', textAlign: 'center', backgroundColor: '#f0fdf4', color: '#15803d', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                        ✅ Foto del Trabajo Terminado
+                                    </div>
+                                </div>
+                            )}
 
                             <div style={{ marginBottom: '1rem' }}>
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Servicios Realizados</div>
@@ -2101,6 +2266,32 @@ const CustomerPortal = () => {
                     <p>Express CarWash System v4.80</p>
                 </div>
             </div>
+
+            {/* FULLSCREEN PHOTO VIEWER MODAL */}
+            {viewingPhoto && (
+                <div 
+                    style={{ 
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+                        backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 10000, 
+                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        padding: '1rem' 
+                    }}
+                    onClick={() => setViewingPhoto(null)}
+                >
+                    <button 
+                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer', zIndex: 10001 }}
+                        onClick={() => setViewingPhoto(null)}
+                    >
+                        ✕
+                    </button>
+                    <img 
+                        src={viewingPhoto} 
+                        alt="Vista Ampliada" 
+                        style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '0.5rem', boxShadow: '0 0 20px rgba(255,255,255,0.1)' }} 
+                        onClick={e => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div >
     );
 };
