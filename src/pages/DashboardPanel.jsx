@@ -1827,44 +1827,45 @@ const Dashboard = () => {
         <DashboardProvider value={dashboardContextValue}>
         <div>
             {/* HEADER */}
-            <header className="p-6 mb-4 space-y-4 bg-zinc-900/50 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
+            <header className="p-3 md:p-6 mb-4 space-y-4 bg-zinc-900/50 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
                 {/* ROW 1: BRANDING & UTILITIES */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-2 overflow-hidden">
                     {/* LEFT: Branding */}
-                    <div className="flex items-center gap-4 group">
+                    <div className="flex items-center gap-3 shrink-0 group">
                         <div className="relative">
                             <img 
                                 src="/logo.jpg" 
                                 alt="Logo" 
-                                className="w-12 h-12 rounded-xl object-cover ring-2 ring-indigo-500/20 shadow-lg shadow-indigo-500/10 group-hover:scale-105 transition-transform" 
+                                className="w-9 h-9 md:w-10 md:h-10 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-black/50 group-hover:scale-105 transition-all" 
                             />
-                            <div className="absolute inset-0 rounded-xl bg-indigo-500/10 animate-pulse"></div>
                         </div>
                         <div className="leading-tight">
-                            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                                Dashboard
+                            <h1 className="text-lg md:text-xl font-black tracking-tight text-white flex items-center gap-2">
+                                <span className="hidden xs:inline">Dashboard</span>
                                 <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-widest font-bold border border-indigo-500/30">
-                                    Pro • v4.8
+                                    Pro
                                 </span>
                             </h1>
-                            <p className="text-xs text-zinc-500 font-medium">Gestionando Express CarWash</p>
+                            <p className="text-[9px] md:text-[10px] text-zinc-500 font-bold uppercase tracking-widest opacity-60 truncate max-w-[100px] md:max-w-none">
+                                CarWash
+                            </p>
                         </div>
                     </div>
 
                     {/* RIGHT: Top Utilities */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         {(userRole === 'admin' || userRole === 'manager') && (
                             <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-white/5">
                                 <button
                                     onClick={async () => { await unlockAudio(); alert("🔊 Audio activado."); }}
-                                    className="p-2.5 text-zinc-400 hover:text-white transition-colors"
+                                    className="p-2 text-zinc-400 hover:text-white transition-colors"
                                     title="Notificaciones Sonoras"
                                 >
-                                    <span className="text-xl">🔔</span>
+                                    <span className="text-lg">🔔</span>
                                 </button>
                                 <div className="w-px h-4 bg-white/10 mx-1"></div>
                                 <button
-                                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                                    className="px-3 md:px-5 py-2 text-[10px] md:text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 uppercase tracking-widest"
                                     onClick={async () => {
                                         try {
                                             await generateDailyReport({
@@ -1880,8 +1881,9 @@ const Dashboard = () => {
                                         }
                                     }}
                                 >
-                                    <MessageCircle size={16} />
-                                    <span>PDF DIARIO</span>
+                                    <MessageCircle size={14} />
+                                    <span className="hidden sm:inline">PDF DIARIO</span>
+                                    <span className="sm:hidden">PDF</span>
                                 </button>
                             </div>
                         )}
@@ -1889,99 +1891,107 @@ const Dashboard = () => {
                 </div>
 
                 {/* ROW 2 & 3: CONTROLS & SEARCH */}
-                <div className="flex flex-wrap items-center gap-4 bg-zinc-800/30 p-2 rounded-2xl border border-white/5">
-                    {/* View Switcher */}
-                    {userRole === 'admin' && (
-                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                            <button 
-                                onClick={() => setViewMode('ops')} 
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'ops' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                                OPERACIONES
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('reports')} 
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                                ESTADÍSTICAS
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Date Filters */}
-                    <div className="flex items-center gap-2">
-                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                            {['today', 'month', 'manual'].map((filter) => (
-                                <button
-                                    key={filter}
-                                    onClick={() => setDateFilter(filter)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${dateFilter === filter ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 bg-zinc-800/30 p-2 md:p-2.5 rounded-2xl border border-white/5">
+                    
+                    {/* View Switcher & Date Filters Group */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* View Switcher */}
+                        {userRole === 'admin' && (
+                            <div className="flex flex-1 sm:flex-none bg-black/40 p-1 rounded-xl border border-white/5">
+                                <button 
+                                    onClick={() => setViewMode('ops')} 
+                                    className={`flex-1 sm:flex-none px-3 md:px-6 py-2 md:py-2.5 rounded-lg text-[9px] md:text-[10px] font-black tracking-widest transition-all ${viewMode === 'ops' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
                                 >
-                                    {filter === 'today' ? 'Hoy' : filter === 'month' ? 'Mes' : 'Rango'}
+                                    OPS
                                 </button>
-                            ))}
-                        </div>
+                                <button 
+                                    onClick={() => setViewMode('reports')} 
+                                    className={`flex-1 sm:flex-none px-3 md:px-6 py-2 md:py-2.5 rounded-lg text-[9px] md:text-[10px] font-black tracking-widest transition-all ${viewMode === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    STATS
+                                </button>
+                            </div>
+                        )}
 
+                        {/* Date Filters */}
+                        <div className="flex flex-1 sm:flex-none items-center gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest">
+                            <div className="flex w-full bg-black/40 p-1 rounded-xl border border-white/5">
+                                {['today', 'month', 'manual'].map((filter) => (
+                                    <button
+                                        key={filter}
+                                        onClick={() => setDateFilter(filter)}
+                                        className={`flex-1 px-2 md:px-4 py-2 md:py-2.5 rounded-lg transition-all ${dateFilter === filter ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        {filter === 'today' ? 'Hoy' : filter === 'month' ? 'Mes' : '🕒'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Manual Date Inputs Wrapper */}
                         {dateFilter === 'manual' && (
-                            <div className="flex items-center gap-1 animate-fade-in">
-                                <input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} className="bg-zinc-800 border-white/5 text-zinc-300 rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-indigo-500" />
+                            <div className="flex w-full sm:w-auto items-center gap-1 animate-fade-in bg-black/20 p-1 rounded-lg">
+                                <input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} className="flex-1 bg-transparent border-none text-zinc-300 text-[9px] font-bold p-1 focus:ring-0 min-w-0" />
                                 <span className="text-zinc-600">-</span>
-                                <input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} className="bg-zinc-800 border-white/5 text-zinc-300 rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-indigo-500" />
+                                <input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} className="flex-1 bg-transparent border-none text-zinc-300 text-[9px] font-bold p-1 focus:ring-0 min-w-0" />
                             </div>
                         )}
                     </div>
 
                     {/* Primary Actions */}
-                    <div className="flex flex-1 items-center gap-2 min-w-[300px]">
+                    <div className="flex items-center gap-2 md:gap-3 flex-1">
                         <button 
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 h-10 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95" 
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 md:px-8 h-10 md:h-12 rounded-xl font-black text-[10px] md:text-xs tracking-widest transition-all flex items-center justify-center gap-2 md:gap-3 shadow-lg shadow-indigo-500/20 active:scale-95 uppercase shrink-0 min-w-[100px] md:min-w-none" 
                             onClick={() => setIsModalOpen(true)}
                         >
-                            <Plus size={18} />
-                            <span>REGISTRAR</span>
+                            <Plus size={18} className="md:w-[20px] md:h-[20px]" />
+                            <span>NUEVO</span>
                         </button>
 
-                        <div className="relative flex-1 group">
-                            <Car size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                        <div className="relative flex-1 group min-w-0">
+                            <Car size={16} className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="BUSCAR TABLILLA... (ENTER)"
-                                className="w-full h-10 bg-black/40 border border-white/5 rounded-xl pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all font-mono tracking-wider"
+                                placeholder="TABLILLA..."
+                                className="w-full h-10 md:h-12 bg-black/40 border border-white/5 rounded-xl pl-10 md:pl-12 pr-3 text-xs md:text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono tracking-widest min-w-0"
                                 value={plateSearch}
                                 onChange={(e) => setPlateSearch(e.target.value.toUpperCase())}
                                 onKeyDown={handlePlateSearch}
                             />
                         </div>
 
-                        <button 
-                            onClick={async () => {
-                                if (isRefreshing) return;
-                                setIsRefreshing(true);
-                                await refreshTransactions();
-                                await refreshCustomers();
-                                setTimeout(() => setIsRefreshing(false), 500);
-                            }} 
-                            className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-700 rounded-xl border border-white/5 transition-all group"
-                        >
-                            <RefreshCw size={16} className={`text-zinc-400 group-hover:text-white ${isRefreshing ? 'animate-spin' : ''}`} />
-                        </button>
-
-                        {(userRole === 'admin' || userRole === 'manager') && (
-                            <button onClick={() => setIsConfigModalOpen(true)} className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-700 rounded-xl border border-white/5 transition-all text-zinc-400 hover:text-white">
-                                <Settings size={18} />
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <button 
+                                onClick={async () => {
+                                    if (isRefreshing) return;
+                                    setIsRefreshing(true);
+                                    await refreshTransactions();
+                                    await refreshCustomers();
+                                    setTimeout(() => setIsRefreshing(false), 500);
+                                }} 
+                                className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-700 rounded-xl border border-white/5 transition-all group"
+                            >
+                                <RefreshCw size={16} className={`text-zinc-400 group-hover:text-white ${isRefreshing ? 'animate-spin' : ''}`} />
                             </button>
-                        )}
+
+                            {(userRole === 'admin' || userRole === 'manager') && (
+                                <button onClick={() => setIsConfigModalOpen(true)} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-700 rounded-xl border border-white/5 transition-all text-zinc-400 hover:text-white">
+                                    <Settings size={18} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
+                    {/* Cancelled Button */}
                     <button 
                         onClick={() => setActiveDetailModal('cancelled')} 
-                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/20 transition-all flex items-center gap-2"
+                        className="w-full lg:w-auto px-4 md:px-5 py-2 md:py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-red-500/10 transition-all flex items-center justify-center gap-3 shadow-lg shadow-red-500/5"
                     >
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                         </span>
-                        Cancelaciones
+                        <span>Cancelaciones</span>
                     </button>
                 </div>
             </header>
