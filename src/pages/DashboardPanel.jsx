@@ -162,56 +162,9 @@ const Dashboard = () => {
             return { success: false };
         }
     };
-    const getTransactionCategory = (t) => {
-        if (!t) return 'other';
-        const method = (t.payment_method || '').toLowerCase();
-        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
 
-        // Priority 1: Use of Plan Benefits (Explicit method check)
-        if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
 
-        // Priority 2: Sale of a Plan (Keywords or explicit sale method)
-        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
 
-        // Standard methods
-        if (method === 'transfer') return 'transfer';
-        if (method === 'card') return 'card';
-        if (method === 'cash' || !method) return 'cash';
-        return 'other';
-    };
-
-    const calculateTxTotal = (t) => {
-        if (!t) return 0;
-        // PRIORITY 1: If it's a SALE (Money coming in), we count the full price.
-        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
-        const isSale = t.payment_method === 'membership_sale' || desc.includes('VENTA');
-
-        if (isSale) {
-            const val = parseFloat(t.total_price || t.price || 0);
-            return isNaN(val) ? 0 : val;
-        }
-
-        // PRIORITY 2: If it's a USE of membership (Benefit), income is 0 + extras.
-        if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
-            const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
-            return isNaN(extrasSum) ? 0 : extrasSum;
-        }
-
-        // PRIORITY 3: Standard Transaction.
-        // `price` in DB = servicePrice + extrasTotal (set at checkout), excludes tips.
-        // Return price only — tips are shown separately ("Sin propinas").
-        if (t.price !== null && t.price !== undefined) {
-            return parseFloat(t.price) || 0;
-        }
-
-        // FALLBACK: price is null
-        if (t.total_price !== null && t.total_price !== undefined) {
-            return parseFloat(t.total_price) || 0;
-        }
-
-        const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
-        return extrasSum;
-    };
 
 
     useEffect(() => {
@@ -251,6 +204,41 @@ const Dashboard = () => {
 
     const { data: transactionsData, create: createTransaction, update: updateTransaction, remove: removeTransaction, refresh: refreshTransactions } = useSupabase('transactions', `*, customers(name, phone, vehicle_plate, vehicle_model), vehicles(plate, model, brand), transaction_assignments(employee_id)`, { orderBy: { column: 'date', ascending: false } });
     const transactions = transactionsData || [];
+
+    // [MOVED HELPERS START]
+    const getTransactionCategory = (t) => {
+        if (!t) return 'other';
+        const method = (t.payment_method || '').toLowerCase();
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+        if (method === 'membership' || method === 'membership_usage') return 'membership_usage';
+        if (method === 'membership_sale' || method === 'sale' || desc.includes('VENTA') || desc.includes('PLAN') || desc.includes('MEMBRE')) return 'membership_sale';
+        if (method === 'transfer') return 'transfer';
+        if (method === 'card') return 'card';
+        if (method === 'cash' || !method) return 'cash';
+        return 'other';
+    };
+
+    const calculateTxTotal = (t) => {
+        if (!t) return 0;
+        const desc = (t.extras || []).map(ex => (ex.description || '').toUpperCase()).join(' ');
+        const isSale = t.payment_method === 'membership_sale' || desc.includes('VENTA');
+        if (isSale) {
+            const val = parseFloat(t.total_price || t.price || 0);
+            return isNaN(val) ? 0 : val;
+        }
+        if (t.payment_method === 'membership' || t.payment_method === 'membership_usage') {
+            const extrasSum = (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+            return isNaN(extrasSum) ? 0 : extrasSum;
+        }
+        if (t.price !== null && t.price !== undefined) return parseFloat(t.price) || 0;
+        if (t.total_price !== null && t.total_price !== undefined) return parseFloat(t.total_price) || 0;
+        return (t.extras || []).reduce((s, ex) => s + (parseFloat(ex.price) || 0), 0);
+    };
+
+    const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
+    const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Sin Asignar';
+    const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Desconocido';
+    // [MOVED HELPERS END]
 
     const { data: expensesData } = useSupabase('expenses');
     const expenses = expensesData || [];
@@ -295,6 +283,13 @@ const Dashboard = () => {
         const transaction = verifyingTransaction;
         if (!transaction) return;
 
+        // CRITICAL DEFENSIVE CHECK: Customers being null
+        if (!transaction.customers) {
+            console.error("DEBUG: Transaction details", transaction);
+            alert("Error: El registro del cliente no está disponible temporalmente. Intente refrescar el dashboard.");
+            return;
+        }
+
         // CHECK FOR UNASSIGNED EXTRAS
         const uniqueAssignees = new Set((transaction.transaction_assignments || []).map(a => a.employee_id));
         const assignedCount = uniqueAssignees.size || 0;
@@ -306,7 +301,7 @@ const Dashboard = () => {
             return;
         }
 
-        if (!transaction.customers?.phone) {
+        if (!transaction.customers.phone) {
             alert('Este cliente no tiene número de teléfono registrado.');
             return;
         }
@@ -316,6 +311,9 @@ const Dashboard = () => {
             alert('Número de teléfono inválido.');
             return;
         }
+
+        // ... REST OF THE FUNCTION ...
+
 
         // Update status to 'ready'
         try {
@@ -512,10 +510,7 @@ const Dashboard = () => {
         setShowAssignmentModal(false);
     };
 
-    // HELPER FUNCTIONS (Moved to top to avoid ReferenceError)
-    const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
-    const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
-    const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Desconocido';
+
     const [activeDetailModal, setActiveDetailModal] = useState(null); // 'cars', 'income', 'commissions'
     const [selectedTransaction, setSelectedTransaction] = useState(null); // For detailed view of a specific transaction
     const [debugInfo, setDebugInfo] = useState(""); // DEBUG STATE
@@ -3050,7 +3045,7 @@ const Dashboard = () => {
                 )
             }
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Dashboard v4.69 • {new Date().toLocaleTimeString()}
+                    Dashboard v4.70 • {new Date().toLocaleTimeString()}
                 </div>
 
             {/* FULLSCREEN PHOTO VIEWER MODAL */}
