@@ -438,8 +438,8 @@ const Dashboard = () => {
         if (navigator.clipboard) {
             navigator.clipboard.writeText(ticketUrl)
                 .then(() => {
-                    if (phone && window.confirm('Link del ticket copiado al portapapeles.\\n\\n¿Deseas compartirlo por WhatsApp al cliente?')) {
-                        const cleanPhone = phone.replace(/\\D/g, '');
+                    if (phone && window.confirm('Link del ticket copiado al portapapeles.\n\n¿Deseas compartirlo por WhatsApp al cliente?')) {
+                        const cleanPhone = phone.replace(/\D/g, '');
                         const message = `Hola, puedes seguir el estado de tu vehículo en tiempo real aquí: ${ticketUrl}`;
                         window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`, '_blank');
                     } else if (!phone) {
@@ -1822,7 +1822,7 @@ const Dashboard = () => {
         debugInfo, setDebugInfo,
     };
 
-    console.log("VERSION 3.7 NUCLEAR LOADED");
+    console.log("VERSION 4.66 NUCLEAR LOADED");
     return (
         <DashboardProvider value={dashboardContextValue}>
         <div>
@@ -1836,7 +1836,8 @@ const Dashboard = () => {
                             <img 
                                 src="/logo.jpg" 
                                 alt="Logo" 
-                                className="w-9 h-9 md:w-10 md:h-10 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-black/50 group-hover:scale-105 transition-all" 
+                                style={{ width: '28px', height: '28px', borderRadius: '0.5rem', objectFit: 'contain' }}
+                                className="ring-1 ring-white/10 shadow-lg" 
                             />
                         </div>
                         <div className="leading-tight">
@@ -1853,20 +1854,21 @@ const Dashboard = () => {
                     </div>
 
                     {/* RIGHT: Top Utilities */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 relative z-50">
                         {(userRole === 'admin' || userRole === 'manager') && (
-                            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-white/5">
+                            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-white/5 shadow-inner">
                                 <button
                                     onClick={async () => { await unlockAudio(); alert("🔊 Audio activado."); }}
-                                    className="p-2 text-zinc-400 hover:text-white transition-colors"
+                                    className="p-2 text-zinc-400 hover:text-white transition-colors active:scale-95"
                                     title="Notificaciones Sonoras"
                                 >
                                     <span className="text-lg">🔔</span>
                                 </button>
                                 <div className="w-px h-4 bg-white/10 mx-1"></div>
                                 <button
-                                    className="px-3 md:px-5 py-2 text-[10px] md:text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 uppercase tracking-widest"
-                                    onClick={async () => {
+                                    className="px-3 md:px-5 py-2 text-[10px] md:text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 uppercase tracking-widest active:scale-95"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
                                         try {
                                             await generateDailyReport({
                                                 statsTransactions,
@@ -1939,10 +1941,10 @@ const Dashboard = () => {
                     </div>
 
                     {/* Primary Actions */}
-                    <div className="flex items-center gap-2 md:gap-3 flex-1">
+                    <div className="flex items-center gap-2 md:gap-3 flex-1 relative z-50">
                         <button 
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 md:px-8 h-10 md:h-12 rounded-xl font-black text-[10px] md:text-xs tracking-widest transition-all flex items-center justify-center gap-2 md:gap-3 shadow-lg shadow-indigo-500/20 active:scale-95 uppercase shrink-0 min-w-[100px] md:min-w-none" 
-                            onClick={() => setIsModalOpen(true)}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 md:px-8 h-10 md:h-12 rounded-xl font-black text-[10px] md:text-xs tracking-widest transition-all flex items-center justify-center gap-2 md:gap-3 shadow-lg shadow-indigo-500/20 active:scale-95 uppercase shrink-0 min-w-[100px] md:min-w-none border border-white/10" 
+                            onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}
                         >
                             <Plus size={18} className="md:w-[20px] md:h-[20px]" />
                             <span>NUEVO</span>
@@ -3049,7 +3051,7 @@ const Dashboard = () => {
                 )
             }
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Dashboard v4.26 • {new Date().toLocaleTimeString()}
+                    Dashboard v4.67 • {new Date().toLocaleTimeString()}
                 </div>
 
             {/* FULLSCREEN PHOTO VIEWER MODAL */}

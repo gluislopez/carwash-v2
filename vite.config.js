@@ -35,7 +35,7 @@ export default defineConfig({
             }
         })
     ],
-    // FORCE BUILD UPDATE: v4.02
+    // FORCE BUILD UPDATE: v4.67
     build: {
         sourcemap: true,
         rollupOptions: {

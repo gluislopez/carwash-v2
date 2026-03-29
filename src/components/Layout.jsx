@@ -179,7 +179,7 @@ const Layout = ({ children }) => {
 
                 <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={branding.logo} alt="Logo" style={{ width: '120px', height: '120px', borderRadius: '1rem', objectFit: 'contain', backgroundColor: 'transparent' }} />
+                        <img src={branding.logo} alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '0.75rem', objectFit: 'contain', backgroundColor: 'transparent' }} />
                     </div>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>{branding.name}</h2>
                     {/* Close button for mobile - moved to absolute position */}
