@@ -1827,38 +1827,44 @@ const Dashboard = () => {
         <DashboardProvider value={dashboardContextValue}>
         <div>
             {/* HEADER */}
-            {/* HEADER HEADER HEADER */}
-            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
-
+            <header className="p-6 mb-4 space-y-4 bg-zinc-900/50 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
                 {/* ROW 1: BRANDING & UTILITIES */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-
+                <div className="flex flex-wrap items-center justify-between gap-4">
                     {/* LEFT: Branding */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <img src="/logo.jpg" alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover', border: '2px solid white' }} />
-                        <div style={{ lineHeight: '1' }}>
-                            <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Dashboard</h1>
-                            <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 'bold', letterSpacing: '0.5px' }}>v4.80 • BETA</span>
+                    <div className="flex items-center gap-4 group">
+                        <div className="relative">
+                            <img 
+                                src="/logo.jpg" 
+                                alt="Logo" 
+                                className="w-12 h-12 rounded-xl object-cover ring-2 ring-indigo-500/20 shadow-lg shadow-indigo-500/10 group-hover:scale-105 transition-transform" 
+                            />
+                            <div className="absolute inset-0 rounded-xl bg-indigo-500/10 animate-pulse"></div>
+                        </div>
+                        <div className="leading-tight">
+                            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                                Dashboard
+                                <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full uppercase tracking-widest font-bold border border-indigo-500/30">
+                                    Pro • v4.8
+                                </span>
+                            </h1>
+                            <p className="text-xs text-zinc-500 font-medium">Gestionando Express CarWash</p>
                         </div>
                     </div>
 
                     {/* RIGHT: Top Utilities */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div className="flex items-center gap-3">
                         {(userRole === 'admin' || userRole === 'manager') && (
-                            <>
-                                {/* SOUND TOGGLE */}
+                            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-white/5">
                                 <button
                                     onClick={async () => { await unlockAudio(); alert("🔊 Audio activado."); }}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.4rem', color: 'var(--text-muted)' }}
-                                    title="Activar Sonido"
+                                    className="p-2.5 text-zinc-400 hover:text-white transition-colors"
+                                    title="Notificaciones Sonoras"
                                 >
-                                    <span role="img" aria-label="sound">🔔</span>
+                                    <span className="text-xl">🔔</span>
                                 </button>
-
-
-
+                                <div className="w-px h-4 bg-white/10 mx-1"></div>
                                 <button
-                                    className="btn mobile-hide-text"
+                                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                                     onClick={async () => {
                                         try {
                                             await generateDailyReport({
@@ -1873,104 +1879,112 @@ const Dashboard = () => {
                                             alert("Error: " + error.message);
                                         }
                                     }}
-                                    style={{
-                                        backgroundColor: '#10b981', color: 'white', border: 'none',
-                                        display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                        padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '0.5rem', cursor: 'pointer'
-                                    }}
                                 >
-                                    <MessageCircle size={16} /> <span className="desktop-text">PDF Diario</span>
+                                    <MessageCircle size={16} />
+                                    <span>PDF DIARIO</span>
                                 </button>
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>
 
-
-
-                {/* ROW 2: CONTROLS & FILTERS */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', backgroundColor: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '0.8rem' }}>
-
+                {/* ROW 2 & 3: CONTROLS & SEARCH */}
+                <div className="flex flex-wrap items-center gap-4 bg-zinc-800/30 p-2 rounded-2xl border border-white/5">
                     {/* View Switcher */}
                     {userRole === 'admin' && (
-                        <div style={{ display: 'flex', backgroundColor: 'var(--bg-card)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <button onClick={() => setViewMode('ops')} style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === 'ops' ? 'var(--primary)' : 'transparent', color: viewMode === 'ops' ? 'white' : 'var(--text-muted)' }}>Operaciones</button>
-                            <button onClick={() => setViewMode('reports')} style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === 'reports' ? 'var(--primary)' : 'transparent', color: viewMode === 'reports' ? 'white' : 'var(--text-muted)' }}>Reportes</button>
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                            <button 
+                                onClick={() => setViewMode('ops')} 
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'ops' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                OPERACIONES
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('reports')} 
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                ESTADÍSTICAS
+                            </button>
                         </div>
                     )}
 
                     {/* Date Filters */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--bg-card)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <button onClick={() => setDateFilter('today')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'today' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'today' ? 'white' : 'var(--text-muted)' }}>Hoy</button>
-                            <button onClick={() => setDateFilter('month')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'month' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'month' ? 'white' : 'var(--text-muted)' }}>Mes</button>
-                            <button onClick={() => setDateFilter('manual')} style={{ padding: '6px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', backgroundColor: dateFilter === 'manual' ? 'var(--text-muted)' : 'transparent', color: dateFilter === 'manual' ? 'white' : 'var(--text-muted)' }}>Fechas</button>
+                    <div className="flex items-center gap-2">
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                            {['today', 'month', 'manual'].map((filter) => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setDateFilter(filter)}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${dateFilter === filter ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    {filter === 'today' ? 'Hoy' : filter === 'month' ? 'Mes' : 'Rango'}
+                                </button>
+                            ))}
                         </div>
 
                         {dateFilter === 'manual' && (
-                            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-                                <input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} className="input-compact" />
-                                <span style={{ color: 'var(--text-muted)' }}>-</span>
-                                <input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} className="input-compact" />
+                            <div className="flex items-center gap-1 animate-fade-in">
+                                <input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))} className="bg-zinc-800 border-white/5 text-zinc-300 rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-indigo-500" />
+                                <span className="text-zinc-600">-</span>
+                                <input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))} className="bg-zinc-800 border-white/5 text-zinc-300 rounded-lg text-xs p-1.5 focus:ring-1 focus:ring-indigo-500" />
                             </div>
                         )}
-
-                        <button onClick={async () => {
-                            if (isRefreshing) return;
-                            setIsRefreshing(true);
-                            await refreshTransactions();
-                            await refreshCustomers();
-                            setTimeout(() => setIsRefreshing(false), 500); // Visual delay
-                        }} className="btn-icon" style={{ padding: '0.5rem' }} title="Actualizar">
-                            <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
-                            <style>{`
-                                @keyframes spin { 100% { transform: rotate(360deg); } }
-                            `}</style>
-                        </button>
                     </div>
 
-                    {/* Cancelled Warning Link */}
-                    <div style={{ marginLeft: 'auto' }}>
-                        <button onClick={() => setActiveDetailModal('cancelled')} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <span style={{ fontSize: '1rem' }}>⚠️</span> Cancelaciones
+                    {/* Primary Actions */}
+                    <div className="flex flex-1 items-center gap-2 min-w-[300px]">
+                        <button 
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 h-10 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95" 
+                            onClick={() => setIsModalOpen(true)}
+                        >
+                            <Plus size={18} />
+                            <span>REGISTRAR</span>
                         </button>
-                    </div>
-                </div>
 
-                {/* ROW 3: PRIMARY ACTIONS */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0.8rem', alignItems: 'center' }}>
-                    {/* Register Button */}
-                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)} style={{ height: '44px', padding: '0 1.5rem', fontSize: '0.95rem', borderRadius: '0.8rem', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)' }}>
-                        <Plus size={20} /> <span className="mobile-hide-text" style={{ marginLeft: '0.3rem' }}>Registrar</span>
+                        <div className="relative flex-1 group">
+                            <Car size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="BUSCAR TABLILLA... (ENTER)"
+                                className="w-full h-10 bg-black/40 border border-white/5 rounded-xl pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all font-mono tracking-wider"
+                                value={plateSearch}
+                                onChange={(e) => setPlateSearch(e.target.value.toUpperCase())}
+                                onKeyDown={handlePlateSearch}
+                            />
+                        </div>
+
+                        <button 
+                            onClick={async () => {
+                                if (isRefreshing) return;
+                                setIsRefreshing(true);
+                                await refreshTransactions();
+                                await refreshCustomers();
+                                setTimeout(() => setIsRefreshing(false), 500);
+                            }} 
+                            className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-700 rounded-xl border border-white/5 transition-all group"
+                        >
+                            <RefreshCw size={16} className={`text-zinc-400 group-hover:text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </button>
+
+                        {(userRole === 'admin' || userRole === 'manager') && (
+                            <button onClick={() => setIsConfigModalOpen(true)} className="w-10 h-10 flex items-center justify-center bg-zinc-800/50 hover:bg-zinc-700 rounded-xl border border-white/5 transition-all text-zinc-400 hover:text-white">
+                                <Settings size={18} />
+                            </button>
+                        )}
+                    </div>
+
+                    <button 
+                        onClick={() => setActiveDetailModal('cancelled')} 
+                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/20 transition-all flex items-center gap-2"
+                    >
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                        Cancelaciones
                     </button>
-
-                    {/* Search Bar */}
-                    <div style={{ position: 'relative', height: '44px' }}>
-                        <Car size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input
-                            type="text"
-                            placeholder="Buscar Tablilla... (Enter)"
-                            className="input"
-                            value={plateSearch}
-                            onChange={(e) => setPlateSearch(e.target.value)}
-                            onKeyDown={handlePlateSearch}
-                            style={{
-                                width: '100%', height: '100%', paddingLeft: '2.8rem',
-                                border: '1px solid var(--border-color)', borderRadius: '0.8rem',
-                                backgroundColor: 'var(--bg-card)', fontSize: '1rem'
-                            }}
-                        />
-                    </div>
-
-                    {/* System Config */}
-                    {(userRole === 'admin' || userRole === 'manager') && (
-                        <button onClick={() => setIsConfigModalOpen(true)} className="btn" style={{ height: '44px', width: '44px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '0.8rem' }}>
-                            <Settings size={20} color="var(--text-muted)" />
-                        </button>
-                    )}
                 </div>
-
-            </div>
+            </header>
 
             {/* MULTI-STAGE FLOW SECTIONS (Compacted) */}
             {viewMode === 'reports' ? (

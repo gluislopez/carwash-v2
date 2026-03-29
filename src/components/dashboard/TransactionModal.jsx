@@ -1,8 +1,9 @@
-// TransactionModal.jsx - Extracted from DashboardPanel.jsx
 import React from 'react';
 import { useDashboard } from '../../context/DashboardContext';
+import { X, Trash2, Car, Plus, RefreshCw, Settings, MessageCircle } from 'lucide-react';
 
 const TransactionModal = () => {
+    // ... rest of the code remains same
     const {
         isModalOpen, setIsModalOpen,
         formData, setFormData,
@@ -45,17 +46,56 @@ const TransactionModal = () => {
 
     if (!isModalOpen) return null;
 
+    const sortedServices = [...services].sort((a, b) => a.name.localeCompare(b.name));
+
+    const handleServiceChange = (e) => {
+        const sId = e.target.value;
+        const s = services.find(srv => srv.id == sId);
+        if (s) {
+            setFormData({ ...formData, serviceId: sId, price: s.price });
+        }
+    };
+
+    const addExtra = (service, employeeId) => {
+        const newExtras = [...(formData.extras || []), {
+            serviceId: service.id,
+            description: service.name,
+            price: service.price,
+            assignedTo: employeeId
+        }];
+        
+        let newTotalPrice = (services.find(s => s.id == formData.serviceId)?.price || 0) + 
+                           newExtras.reduce((sum, current) => sum + current.price, 0);
+
+        setFormData({
+            ...formData,
+            extras: newExtras,
+            price: newTotalPrice
+        });
+    };
+
     return (
-                        isModalOpen && (
-                            <div className="modal-overlay" style={{
-                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                                backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-                                overflowY: 'auto'
-                            }}>
-                                <div className="card modal-card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-                                    <h3 style={{ marginBottom: '1.5rem' }}>Registrar Nuevo Servicio</h3>
-                                    <form onSubmit={handleSubmit}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-[1000] p-4 animate-fade-in overflow-y-auto">
+            <div 
+                className="bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col max-h-[90vh]" 
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-xl font-black text-white tracking-tight">REGISTRAR NUEVO SERVICIO</h3>
+                        <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mt-1">Ingresa los detalles del cliente y servicio</p>
+                    </div>
+                    <button 
+                        onClick={() => setIsModalOpen(false)}
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div style={{ marginBottom: '1rem' }}>
                                                 <label className="label">Cliente</label>
                                                 {!isAddingCustomer ? (
@@ -1012,10 +1052,9 @@ const TransactionModal = () => {
                                                 {isSubmitting ? 'Registrando...' : 'Registrar Venta'}
                                             </button>
                                         </div>
-                                    </form>
-                                </div>
-                            </div >
-                        )
+                </form>
+            </div>
+        </div>
     );
 };
 

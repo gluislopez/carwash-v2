@@ -1,4 +1,5 @@
 import React from 'react';
+import { X, Save } from 'lucide-react';
 
 const ConfigModal = ({ 
     isOpen, 
@@ -12,76 +13,88 @@ const ConfigModal = ({
     if (!isOpen) return null;
 
     return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000
-        }} onClick={onClose}>
-            <div style={{
-                backgroundColor: 'var(--bg-card)',
-                padding: '2rem',
-                borderRadius: '0.8rem',
-                width: '90%',
-                maxWidth: '450px',
-                border: '1px solid var(--border-color)',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-            }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Configuración de Recibo</h2>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Link de Reseña de Google</label>
-                    <input
-                        type="text"
-                        className="input"
-                        placeholder="https://g.page/r/..."
-                        value={reviewLink}
-                        onChange={(e) => setReviewLink(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.05)', color: 'white' }}
-                    />
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                        Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
-                    </p>
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label className="label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Link de Pago Stripe</label>
-                    <input
-                        type="text"
-                        className="input"
-                        placeholder="https://buy.stripe.com/..."
-                        value={stripeLink}
-                        onChange={(e) => setStripeLink(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.05)', color: 'white' }}
-                    />
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                        Link de pago de Stripe antiguo (Opcional si usas el nuevo panel nativo).
-                    </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button
-                        className="btn"
-                        style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', color: 'white', padding: '0.75rem', borderRadius: '0.5rem', cursor: 'pointer', border: 'none' }}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-[3000] p-4 animate-fade-in" onClick={onClose}>
+            <div 
+                className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-3xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col" 
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-xl font-black text-white tracking-tight">AJUSTES DEL SISTEMA</h3>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-1">Configuración Global de Enlaces</p>
+                    </div>
+                    <button 
                         onClick={onClose}
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
                     >
-                        Cancelar
+                        <X size={20} />
                     </button>
-                    <button
-                        className="btn btn-primary"
-                        style={{ flex: 1, backgroundColor: 'var(--primary)', color: 'white', padding: '0.75rem', borderRadius: '0.5rem', cursor: 'pointer', border: 'none', fontWeight: 'bold' }}
-                        onClick={async () => {
-                            const success = await onSave({ review_link: reviewLink, stripe_link: stripeLink });
-                            if (success) {
-                                alert('Configuración guardada');
-                                onClose();
-                            }
-                        }}
-                    >
-                        Guardar
-                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Review Link Section */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                            <span>Google Review Link</span>
+                            <span className="w-1 h-1 rounded-full bg-indigo-500"></span>
+                        </label>
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                placeholder="https://g.page/r/..."
+                                value={reviewLink}
+                                onChange={(e) => setReviewLink(e.target.value)}
+                                className="w-full h-12 bg-black/40 border border-white/5 rounded-xl px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                            />
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-medium italic">
+                            * Este link aparecerá en el PDF del recibo para que los clientes dejen su reseña.
+                        </p>
+                    </div>
+
+                    {/* Stripe Link Section */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                            <span>Stripe Checkout (Legacy)</span>
+                            <span className="w-1 h-1 rounded-full bg-indigo-500"></span>
+                        </label>
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                placeholder="https://buy.stripe.com/..."
+                                value={stripeLink}
+                                onChange={(e) => setStripeLink(e.target.value)}
+                                className="w-full h-12 bg-black/40 border border-white/5 rounded-xl px-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                            />
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-medium italic">
+                            * Opcional si utiliza el panel nativo de pagos.
+                        </p>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 h-12 text-sm font-bold text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                        >
+                            CANCELAR
+                        </button>
+                        <button
+                            onClick={async () => {
+                                const success = await onSave({ review_link: reviewLink, stripe_link: stripeLink });
+                                if (success) {
+                                    alert('✅ Configuración guardada correctamente.');
+                                    onClose();
+                                }
+                            }}
+                            className="flex-1 h-12 text-sm font-black text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95"
+                        >
+                            <Save size={18} />
+                            GUARDAR
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
