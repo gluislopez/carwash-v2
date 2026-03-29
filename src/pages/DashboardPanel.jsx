@@ -11,6 +11,7 @@ import EditTransactionModal from '../components/EditTransactionModal';
 import ConfigModal from '../components/dashboard/ConfigModal';
 import { DashboardProvider } from '../context/DashboardContext';
 import TransactionModal from '../components/dashboard/TransactionModal';
+import CustomerDetailView from '../components/dashboard/CustomerDetailView';
 import { generateDailyReport } from '../utils/dailyReportPdf';
 import { calculateSharedCommission } from '../utils/commissionRules';
 import { playNewServiceSound, playAlertSound, unlockAudio } from '../utils/soundUtils';
@@ -2331,10 +2332,7 @@ const Dashboard = () => {
                         )
                     }
 
-                    {/* DETAIL MODAL */}
-                    {
                     <CustomerDetailView />
-
                     <TransactionModal />
 
 
