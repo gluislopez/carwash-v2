@@ -4,7 +4,7 @@ import App from './AppRoot.jsx'
 import './css/global.css' // Import global styles
 import { BrowserRouter } from 'react-router-dom'
 
-console.log('🚀 APP RELOADED v4.68 ' + new Date().toISOString());
+console.log('🚀 APP RELOADED v4.69 ' + new Date().toISOString());
 // alert('SYSTEM CHECK: PIPELINE RESTORED (v3.83)'); // Removed alert for production
 
 // Manual PWA update check

@@ -1822,7 +1822,7 @@ const Dashboard = () => {
         debugInfo, setDebugInfo,
     };
 
-    console.log("VERSION 4.68 NUCLEAR LOADED");
+    console.log("VERSION 4.69 NUCLEAR LOADED");
     return (
         <DashboardProvider value={dashboardContextValue}>
         <div>
@@ -3050,7 +3050,7 @@ const Dashboard = () => {
                 )
             }
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Dashboard v4.68 • {new Date().toLocaleTimeString()}
+                    Dashboard v4.69 • {new Date().toLocaleTimeString()}
                 </div>
 
             {/* FULLSCREEN PHOTO VIEWER MODAL */}
