@@ -1,47 +1,23 @@
 import React from 'react';
 import { useDashboard } from '../../context/DashboardContext';
-import { X, Trash2, Car, Plus, RefreshCw, Settings, MessageCircle } from 'lucide-react';
+import { X, Trash2, Car, Plus, RefreshCw, Smartphone, Mail, UserPlus, Search, ChevronRight } from 'lucide-react';
 
 const TransactionModal = () => {
     const {
         isModalOpen, setIsModalOpen,
         formData, setFormData,
         services, employees, customers, vehicles,
-        plateSearch, setPlateSearch,
         isSubmitting, setIsSubmitting,
         error, setError,
-        isRedemption, setIsRedemption,
-        vipInfo, setVipInfo,
-        canRedeemPoints, setCanRedeemPoints,
         handleCustomerSelect,
-        handlePlateSearch,
-        customerMembership, setCustomerMembership,
-        isMembershipUsage, setIsMembershipUsage,
-        isExtraWashUsage, setIsExtraWashUsage,
-        availableExtraWashes, setAvailableExtraWashes,
-        allCustomerMemberships, setAllCustomerMemberships,
         customerSearch, setCustomerSearch,
         showCustomerSearch, setShowCustomerSearch,
-        customerVehicles, setCustomerVehicles,
         isAddingCustomer, setIsAddingCustomer,
         newCustomer, setNewCustomer,
         handleCreateCustomer,
-        pendingExtra, setPendingExtra,
-        showAssignmentModal, setShowAssignmentModal,
-        memberships,
         handleSubmit,
-        handleAddMembership,
-        handleAutoMembershipAssign,
-        handleExtraAdded,
         handleRemoveExtra,
-        activeTab, setActiveTab,
-        newExtra, setNewExtra,
-        userRole,
         myEmployeeId,
-        referrerSearch, setReferrerSearch,
-        showReferrerSearch, setShowReferrerSearch,
-        getServiceName,
-        getTransactionCategory,
     } = useDashboard();
 
     if (!isModalOpen) return null;
@@ -56,8 +32,10 @@ const TransactionModal = () => {
             assignedTo: employeeId
         }];
         
-        let newTotalPrice = (services.find(s => s.id == formData.serviceId)?.price || 0) + 
-                           newExtras.reduce((sum, current) => sum + current.price, 0);
+        const mainService = services.find(s => String(s.id) === String(formData.serviceId));
+        const mainPrice = mainService ? (parseFloat(mainService.price) || 0) : 0;
+        const extrasTotal = newExtras.reduce((sum, current) => sum + (parseFloat(current.price) || 0), 0);
+        const newTotalPrice = mainPrice + extrasTotal;
 
         setFormData({
             ...formData,
@@ -67,59 +45,79 @@ const TransactionModal = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-[1000] p-4 animate-fade-in overflow-y-auto">
+        <div 
+            style={{ 
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+                backgroundColor: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)',
+                zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+                padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+            }}
+            onClick={() => setIsModalOpen(false)}
+        >
             <div 
-                className="bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col max-h-[90vh]" 
+                style={{ 
+                    backgroundColor: '#111111', width: '100%', maxWidth: '600px', 
+                    borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', 
+                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                    marginTop: '20px', marginBottom: '20px'
+                }} 
                 onClick={e => e.stopPropagation()}
+                className="animate-in fade-in zoom-in duration-300"
             >
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
                     <div>
-                        <h3 className="text-xl font-black text-white tracking-tight uppercase">Registrar Nuevo Servicio</h3>
-                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Sigue los pasos para completar el registro</p>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '-0.025em' }}>Registrar Servicio</h3>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: '#666', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>V4.68 • Paso a paso</p>
                     </div>
                     <button 
                         onClick={() => setIsModalOpen(false)}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                        style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(255,255,255,0.05)', color: '#999', cursor: 'pointer' }}
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+                <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
                     {/* PASO 1: CLIENTE */}
-                    <div className="bg-zinc-800/20 p-6 rounded-3xl border border-white/5 space-y-4">
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block mb-2">Paso 1: Identificar Cliente</label>
+                    <div style={{ marginBottom: '24px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 900, color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                             <div style={{ width: '20px', height: '1px', backgroundColor: '#333' }}></div>
+                             PASO 1: CLIENTE
+                             <div style={{ flex: 1, height: '1px', backgroundColor: '#333' }}></div>
+                        </div>
                         
                         {!formData.customerId && !isAddingCustomer && !showCustomerSearch ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                 <button
                                     type="button"
                                     onClick={() => setShowCustomerSearch(true)}
-                                    className="h-32 rounded-2xl bg-black/40 border border-indigo-500/20 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all flex flex-col items-center justify-center gap-3 group active:scale-95"
+                                    style={{ height: '120px', borderRadius: '16px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(99,102,241,0.2)', color: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', transition: 'all 0.2s' }}
+                                    className="hover:border-indigo-500/50 hover:bg-indigo-500/5 active:scale-95"
                                 >
-                                    <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                                        <RefreshCw size={24} />
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+                                        <Search size={24} />
                                     </div>
-                                    <span className="text-sm font-black text-white tracking-widest uppercase">BUSCAR CLIENTE</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.05em' }}>BUSCAR CLIENTE</span>
                                 </button>
                                 
                                 <button
                                     type="button"
                                     onClick={() => setIsAddingCustomer(true)}
-                                    className="h-32 rounded-2xl bg-black/40 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all flex flex-col items-center justify-center gap-3 group active:scale-95"
+                                    style={{ height: '120px', borderRadius: '16px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(16,185,129,0.2)', color: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', transition: 'all 0.2s' }}
+                                    className="hover:border-emerald-500/50 hover:bg-emerald-500/5 active:scale-95"
                                 >
-                                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-                                        <Plus size={24} />
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
+                                        <UserPlus size={24} />
                                     </div>
-                                    <span className="text-sm font-black text-white tracking-widest uppercase">NUEVO CLIENTE</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '0.05em' }}>NUEVO CLIENTE</span>
                                 </button>
                             </div>
                         ) : (
-                            <div className="space-y-4 animate-fade-in">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider">
-                                        {isAddingCustomer ? '📝 Detalles del Nuevo Cliente' : showCustomerSearch ? '🔍 Buscar en Base de Datos' : '✅ Cliente Seleccionado'}
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 900, color: 'white', textTransform: 'uppercase' }}>
+                                        {isAddingCustomer ? 'Detalles del Nuevo Cliente' : showCustomerSearch ? 'Buscar en Base de Datos' : 'Cliente Seleccionado'}
                                     </span>
                                     <button 
                                         type="button"
@@ -128,25 +126,25 @@ const TransactionModal = () => {
                                             setIsAddingCustomer(false);
                                             setShowCustomerSearch(false);
                                         }}
-                                        className="text-[9px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest underline decoration-indigo-500/30 underline-offset-4"
+                                        style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '10px', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline' }}
                                     >
-                                        [Cambiar / Cancelar]
+                                        CAMBIAR
                                     </button>
                                 </div>
 
-                                {/* SEARCH INTERFACE */}
+                                {/* SEARCH */}
                                 {showCustomerSearch && !formData.customerId && (
-                                    <div className="relative">
+                                    <div style={{ position: 'relative' }}>
                                         <input
                                             type="text"
-                                            className="w-full h-12 bg-black/60 border border-white/10 rounded-xl px-4 text-white focus:ring-2 focus:ring-indigo-500/50 outline-none"
-                                            placeholder="Escribe nombre, modelo o placa..."
+                                            style={{ width: '100%', height: '48px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0 16px', color: 'white', outline: 'none' }}
+                                            placeholder="Nombre o placa..."
                                             value={customerSearch}
                                             onChange={(e) => setCustomerSearch(e.target.value)}
                                             autoFocus
                                         />
                                         {customerSearch.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden z-50 max-h-60 overflow-y-auto shadow-2xl">
+                                            <div style={{ position: 'absolute', top: '52px', left: 0, right: 0, backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden', zIndex: 100, maxHeight: '200px', overflowY: 'auto' }}>
                                                 {customers.filter(c => {
                                                     const term = customerSearch.toLowerCase();
                                                     return (c.name || '').toLowerCase().includes(term) || (c.vehicle_plate || '').toLowerCase().includes(term);
@@ -159,14 +157,15 @@ const TransactionModal = () => {
                                                             handleCustomerSelect(c.id, vId);
                                                             setShowCustomerSearch(false);
                                                         }}
-                                                        className="p-4 border-b border-white/5 hover:bg-indigo-500/5 cursor-pointer flex justify-between items-center transition-colors"
+                                                        style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                        className="hover:bg-indigo-500/10"
                                                     >
                                                         <div>
-                                                            <div className="text-sm font-bold text-white uppercase">{c.name}</div>
-                                                            <div className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">{c.vehicle_model || 'Info Incompleta'}</div>
+                                                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'white' }}>{c.name}</div>
+                                                            <div style={{ fontSize: '10px', color: '#666' }}>{c.vehicle_model}</div>
                                                         </div>
-                                                        <div className="text-xs px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-md font-black ring-1 ring-indigo-500/30">
-                                                            {c.vehicle_plate || 'S.P.'}
+                                                        <div style={{ fontSize: '10px', fontWeight: 900, color: '#818cf8', backgroundColor: 'rgba(99,102,241,0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                                                            {c.vehicle_plate}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -177,39 +176,30 @@ const TransactionModal = () => {
 
                                 {/* NEW CUSTOMER FORM */}
                                 {isAddingCustomer && (
-                                    <div className="grid grid-cols-2 gap-3 animate-fade-in">
-                                        <input type="text" className="h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-indigo-500/50" placeholder="Nombre completo" value={newCustomer.name} onChange={e => setNewCustomer({...newCustomer, name: e.target.value})} />
-                                        <input type="text" className="h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-indigo-500/50" placeholder="Placa" value={newCustomer.vehicle_plate} onChange={e => setNewCustomer({...newCustomer, vehicle_plate: e.target.value})} />
-                                        <input type="text" className="h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-indigo-500/50" placeholder="Marca" value={newCustomer.vehicle_brand} onChange={e => setNewCustomer({...newCustomer, vehicle_brand: e.target.value})} />
-                                        <input type="text" className="h-10 bg-black/40 border border-white/10 rounded-lg px-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-indigo-500/50" placeholder="Modelo" value={newCustomer.vehicle_model} onChange={e => setNewCustomer({...newCustomer, vehicle_model: e.target.value})} />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        <input type="text" style={{ height: '40px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0 12px', color: 'white', fontSize: '13px' }} placeholder="Nombre" value={newCustomer.name} onChange={e => setNewCustomer({...newCustomer, name: e.target.value})} />
+                                        <input type="text" style={{ height: '40px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0 12px', color: 'white', fontSize: '13px' }} placeholder="Placa" value={newCustomer.vehicle_plate} onChange={e => setNewCustomer({...newCustomer, vehicle_plate: e.target.value})} />
+                                        <input type="text" style={{ height: '40px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0 12px', color: 'white', fontSize: '13px' }} placeholder="Marca" value={newCustomer.vehicle_brand} onChange={e => setNewCustomer({...newCustomer, vehicle_brand: e.target.value})} />
+                                        <input type="text" style={{ height: '40px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0 12px', color: 'white', fontSize: '13px' }} placeholder="Modelo" value={newCustomer.vehicle_model} onChange={e => setNewCustomer({...newCustomer, vehicle_model: e.target.value})} />
                                         <button 
                                             type="button" 
                                             onClick={handleCreateCustomer}
-                                            className="col-span-2 h-10 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-[0.2em] rounded-lg hover:bg-emerald-400 transition-colors active:scale-[0.98]"
+                                            style={{ gridColumn: 'span 2', height: '44px', backgroundColor: '#10b981', border: 'none', borderRadius: '8px', color: 'black', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', marginTop: '8px' }}
                                         >
-                                            Guardar Cliente y Vehículo
+                                            Confirmar Nuevo Cliente
                                         </button>
                                     </div>
                                 )}
 
-                                {/* SELECTED CUSTOMER INFO CARD */}
+                                {/* SELECTED CARD */}
                                 {formData.customerId && (
-                                    <div className="flex items-center gap-4 bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/20 animate-fade-in shadow-inner">
-                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 ring-1 ring-indigo-500/30">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'rgba(99,102,241,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
                                             <Car size={24} />
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="text-[10px] font-black text-indigo-400/60 uppercase tracking-widest mb-1">Cliente Activo</div>
-                                            <div className="text-sm font-black text-white uppercase tracking-tight leading-none mb-1">
-                                                {customers.find(c => c.id == formData.customerId)?.name}
-                                            </div>
-                                            <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                                                Placa: <span className="text-zinc-300 font-black">{vehicles.find(v => v.id == formData.vehicleId)?.plate || 'SIN PLACA'}</span> • {vehicles.find(v => v.id == formData.vehicleId)?.model || ''}
-                                            </div>
-                                        </div>
-                                        <div className="text-right px-3 py-1 bg-black/40 rounded-lg border border-white/5">
-                                             <div className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Puntos</div>
-                                             <div className="text-xs font-black text-indigo-400">{customers.find(c => c.id == formData.customerId)?.points || 0} pts</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: 'white' }}>{customers.find(c => String(c.id) === String(formData.customerId))?.name}</div>
+                                            <div style={{ fontSize: '10px', color: '#666', textTransform: 'uppercase', fontWeight: 700 }}>{vehicles.find(v => String(v.id) === String(formData.vehicleId))?.plate || 'SIN PLACA'} • {vehicles.find(v => String(v.id) === String(formData.vehicleId))?.model}</div>
                                         </div>
                                     </div>
                                 )}
@@ -219,59 +209,59 @@ const TransactionModal = () => {
 
                     {/* PASO 2: SERVICIOS */}
                     {(formData.customerId || isAddingCustomer) && (
-                        <div className="bg-zinc-800/20 p-6 rounded-3xl border border-white/5 space-y-6 animate-scale-in">
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block mb-2">Paso 2: Seleccionar Servicios</label>
+                        <div className="animate-in slide-in-from-bottom-4 duration-300">
+                            <div style={{ fontSize: '10px', fontWeight: 900, color: '#444', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                 <div style={{ width: '20px', height: '1px', backgroundColor: '#333' }}></div>
+                                 PASO 2: SERVICIOS
+                                 <div style={{ flex: 1, height: '1px', backgroundColor: '#333' }}></div>
+                            </div>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px', marginBottom: '24px' }}>
                                 {sortedServices.filter(s => !s.is_extra).map(s => (
                                     <button
                                         key={s.id}
                                         type="button"
                                         onClick={() => setFormData({...formData, serviceId: s.id, price: s.price})}
-                                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 text-center group active:scale-95 ${
-                                            formData.serviceId == s.id 
-                                            ? 'bg-indigo-500 border-indigo-400 shadow-lg shadow-indigo-500/20' 
-                                            : 'bg-black/40 border-white/5 hover:border-indigo-500/30 hover:bg-indigo-500/5'
-                                        }`}
+                                        style={{ 
+                                            padding: '16px', borderRadius: '16px', border: '1px solid',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                                            cursor: 'pointer', transition: 'all 0.2s',
+                                            backgroundColor: String(formData.serviceId) === String(s.id) ? '#6366f1' : 'rgba(0,0,0,0.3)',
+                                            borderColor: String(formData.serviceId) === String(s.id) ? '#818cf8' : 'rgba(255,255,255,0.05)',
+                                            color: 'white'
+                                        }}
+                                        className="active:scale-95"
                                     >
-                                        <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${formData.serviceId == s.id ? 'text-white' : 'text-zinc-500'}`}>
-                                            {s.name}
-                                        </span>
-                                        <div className="h-[1px] w-4 bg-white/20"></div>
-                                        <span className={`text-base font-black ${formData.serviceId == s.id ? 'text-white' : 'text-indigo-400'}`}>
-                                            ${s.price}
-                                        </span>
+                                        <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', opacity: String(formData.serviceId) === String(s.id) ? 1 : 0.5 }}>{s.name}</span>
+                                        <div style={{ fontSize: '16px', fontWeight: 900 }}>${s.price}</div>
                                     </button>
                                 ))}
                             </div>
 
                             {/* EXTRAS */}
-                            <div className="pt-4 border-t border-white/5 space-y-3">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block">Extras (Opcional)</label>
-                                <div className="flex flex-wrap gap-2">
+                            <div style={{ marginTop: '20px', padding: '16px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.01)' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 900, color: '#666', textTransform: 'uppercase', marginBottom: '12px' }}>Extras Opcionales</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {services.filter(s => s.is_extra).map(extra => (
                                         <button
                                             key={extra.id}
                                             type="button"
                                             onClick={() => addExtra(extra, myEmployeeId)}
-                                            className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-indigo-500/30 hover:bg-indigo-500/5 text-[9px] font-black text-zinc-400 hover:text-indigo-400 uppercase tracking-widest transition-all active:scale-[0.98]"
+                                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.05)', color: '#999', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', cursor: 'pointer' }}
+                                            className="hover:bg-white/10 hover:text-white"
                                         >
-                                            + {extra.name} <span className="text-zinc-600 ml-1">(${extra.price})</span>
+                                            + {extra.name} (${extra.price})
                                         </button>
                                     ))}
                                 </div>
                                 
                                 {formData.extras?.length > 0 && (
-                                    <div className="grid grid-cols-1 gap-2 mt-4">
+                                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         {formData.extras.map((ex, idx) => (
-                                            <div key={idx} className="flex justify-between items-center bg-black/40 px-3 py-2 rounded-xl border border-white/5 animate-fade-in">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                                                    <span className="text-[9px] font-black text-white uppercase tracking-widest">{ex.description}</span>
-                                                    <span className="text-[9px] font-bold text-indigo-400">${ex.price}</span>
-                                                </div>
-                                                <button type="button" onClick={() => handleRemoveExtra(idx)} className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all">
-                                                    <Trash2 size={12} />
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'black', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', textTransform: 'uppercase' }}>{ex.description} <span style={{ color: '#6366f1' }}>${ex.price}</span></span>
+                                                <button type="button" onClick={() => handleRemoveExtra(idx)} style={{ background: 'none', border: 'none', color: '#ef4444', padding: '4px', cursor: 'pointer' }}>
+                                                    <Trash2 size={14} />
                                                 </button>
                                             </div>
                                         ))}
@@ -279,25 +269,25 @@ const TransactionModal = () => {
                                 )}
                             </div>
 
-                            {/* TOTAL Y REGISTRAR */}
-                            <div className="pt-6 border-t border-white/10 flex flex-col gap-6">
-                                <div className="grid grid-cols-2 gap-4">
+                            {/* TOTAL & FOOTER */}
+                            <div style={{ marginTop: '32px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '24px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
                                     <div>
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Empleado</label>
+                                        <label style={{ fontSize: '9px', fontWeight: 900, color: '#666', display: 'block', marginBottom: '8px' }}>LAVADOR</label>
                                         <select
-                                            className="w-full h-10 bg-black/40 border border-white/10 rounded-xl px-3 text-[10px] font-bold text-white uppercase tracking-widest outline-none focus:ring-1 focus:ring-indigo-500/50"
+                                            style={{ width: '100%', height: '40px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0 12px', color: 'white', fontSize: '11px', fontWeight: 700 }}
                                             required
                                             value={formData.employeeId}
                                             onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                                         >
-                                            <option value="">LAVADOR...</option>
+                                            <option value="">SELECCIONAR...</option>
                                             {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 block">Pago</label>
+                                        <label style={{ fontSize: '9px', fontWeight: 900, color: '#666', display: 'block', marginBottom: '8px' }}>MÉTODO DE PAGO</label>
                                         <select
-                                            className="w-full h-10 bg-black/40 border border-white/10 rounded-xl px-3 text-[10px] font-bold text-white uppercase tracking-widest outline-none focus:ring-1 focus:ring-indigo-500/50"
+                                            style={{ width: '100%', height: '40px', backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0 12px', color: 'white', fontSize: '11px', fontWeight: 700 }}
                                             required
                                             value={formData.paymentMethod}
                                             onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
@@ -309,20 +299,17 @@ const TransactionModal = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between items-end gap-6">
-                                    <div className="flex-1 h-20 bg-black/40 rounded-2xl border border-white/5 p-4 flex flex-col justify-center">
-                                        <div className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Total del Servicio</div>
-                                        <div className="text-3xl font-black text-white tracking-tighter flex items-center gap-1 leading-none">
-                                            <span className="text-indigo-500 text-xl font-normal opacity-70">$</span>
-                                            {formData.price || 0}
-                                        </div>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch' }}>
+                                    <div style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: 900, color: '#444' }}>TOTAL</div>
+                                        <div style={{ fontSize: '24px', fontWeight: 900, color: 'white' }}>${formData.price || 0}</div>
                                     </div>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || !formData.customerId || !formData.serviceId}
-                                        className="h-20 flex-1 rounded-2xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-30 disabled:grayscale text-white font-black text-[10px] uppercase tracking-[0.25em] shadow-2xl shadow-indigo-500/30 active:scale-95 transition-all outline-none ring-offset-zinc-900 ring-offset-2 focus:ring-2 focus:ring-indigo-500"
+                                        style={{ flex: 2, borderRadius: '16px', backgroundColor: '#6366f1', border: 'none', color: 'white', fontWeight: 900, fontSize: '12px', textTransform: 'uppercase', cursor: 'pointer', opacity: (isSubmitting || !formData.customerId || !formData.serviceId) ? 0.3 : 1 }}
                                     >
-                                        {isSubmitting ? '. . .' : 'Finalizar Registro'}
+                                        {isSubmitting ? 'REGISTRANDO...' : 'FINALIZAR REGISTRO'}
                                     </button>
                                 </div>
                             </div>

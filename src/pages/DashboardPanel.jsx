@@ -1822,7 +1822,7 @@ const Dashboard = () => {
         debugInfo, setDebugInfo,
     };
 
-    console.log("VERSION 4.66 NUCLEAR LOADED");
+    console.log("VERSION 4.68 NUCLEAR LOADED");
     return (
         <DashboardProvider value={dashboardContextValue}>
         <div>
@@ -2358,8 +2358,7 @@ const Dashboard = () => {
                         )
                     }
 
-                    <CustomerDetailView />
-                    <TransactionModal />
+
 
 
                     {/* ERROR ALERT */}
@@ -3051,7 +3050,7 @@ const Dashboard = () => {
                 )
             }
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Dashboard v4.67 • {new Date().toLocaleTimeString()}
+                    Dashboard v4.68 • {new Date().toLocaleTimeString()}
                 </div>
 
             {/* FULLSCREEN PHOTO VIEWER MODAL */}
@@ -3079,6 +3078,8 @@ const Dashboard = () => {
                     />
                 </div>
             )}
+            <CustomerDetailView />
+            <TransactionModal />
         </div >
         </DashboardProvider>
     );
