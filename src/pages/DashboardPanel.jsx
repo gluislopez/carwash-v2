@@ -275,6 +275,7 @@ const Dashboard = () => {
     const [viewingPhoto, setViewingPhoto] = useState(null);
 
     const handleOpenVerification = (transaction) => {
+        console.log('Opening verification for transaction:', transaction?.id);
         setVerifyingTransaction(transaction);
         setHasConsentedVerification(false);
     };
@@ -794,7 +795,7 @@ const Dashboard = () => {
 
             if (txs && txs.length > 0) {
                 await supabase.from('transactions').delete().eq('id', txs[0].id);
-                console.log("Transacción de venta borrada.");
+                console.log("Dashboard v4.72 LOADING...");
             }
         }
 
@@ -938,7 +939,7 @@ const Dashboard = () => {
                 existingCustomer = customers.find(c => {
                     if (!c.phone) return false;
                     const cPhone = c.phone.replace(/\D/g, '');
-                    return cPhone === cleanPhone || (cPhone.length >= 10 && cleanPhone.length >= 10 && cPhone.slice(-10) === cleanPhone.slice(-10));
+                    return cPhone === cleanPlate || (cPhone.length >= 10 && cleanPlate.length >= 10 && cPhone.slice(-10) === cleanPhone.slice(-10));
                 });
             }
 
@@ -1809,18 +1810,33 @@ const Dashboard = () => {
         handleAssignMembership,
         handleRemoveMembership,
         applyLastService,
+        handleDeleteTransactionV2,
+        handleOpenVerification,
+        handleMarkAsUnpaid,
+        handleRevertToInProgress,
+        handleRevertToReady,
+        handlePayment,
+        handleSendDebtReminder,
         refreshTransactions,
         refreshCustomers,
+        formatToFraction,
         // Report
         statsTransactions,
         getPRDateString,
+        totalIncome,
+        filteredExpenses,
+        totalLunches,
+        netCommissions,
+        fractionalCount,
         // Feedback
         feedbacks,
+        filteredFeedbacks,
+        todayStr,
         // Debug
         debugInfo, setDebugInfo,
     };
 
-    console.log("VERSION 4.69 NUCLEAR LOADED");
+    console.log("VERSION 4.72 NUCLEAR LOADED");
     return (
         <DashboardProvider value={dashboardContextValue}>
         <div>
@@ -3048,7 +3064,7 @@ const Dashboard = () => {
                 )
             }
                 <div style={{ textAlign: 'center', marginTop: '2rem', padding: '1rem', opacity: 0.3, fontSize: '0.7rem' }}>
-                    Dashboard v4.71 • {new Date().toLocaleTimeString()}
+                    Dashboard v4.72 • {new Date().toLocaleTimeString()}
                 </div>
 
             {/* FULLSCREEN PHOTO VIEWER MODAL */}
