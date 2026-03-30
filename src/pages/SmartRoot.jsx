@@ -4,18 +4,36 @@ import { supabase } from '../supabase';
 
 const SmartRoot = () => {
     const navigate = useNavigate();
-    const [checking, setChecking] = useState(true);
 
     useEffect(() => {
         const checkRouting = async () => {
-            // Give storage/cookies a moment to "settle" in PWA mode
+            // Give storage/cookies a moment to settle in PWA mode
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            // 1. Check for Active Session (Admin/Employee)
+            // 1. Check for Active Session (Admin/Employee/Owner)
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
-                // User is logged in, go to Dashboard
-                navigate('/dashboard', { replace: true });
+                const userId = session.user.id;
+
+                // Check if this user has a profile (multi-tenant) or is a legacy employee
+                const { data: profile } = await supabase
+                    .from('user_profiles')
+                    .select('role, organization_id, organizations(onboarding_completed, name)')
+                    .eq('id', userId)
+                    .single();
+
+                if (profile && (profile.role === 'owner' || profile.role === 'superadmin')) {
+                    // Owner: check if onboarding is done
+                    const org = profile.organizations;
+                    if (org && !org.onboarding_completed) {
+                        navigate('/onboarding', { replace: true });
+                    } else {
+                        navigate('/dashboard', { replace: true });
+                    }
+                } else {
+                    // Legacy employee or no profile → go to dashboard
+                    navigate('/dashboard', { replace: true });
+                }
                 return;
             }
 
@@ -30,13 +48,11 @@ const SmartRoot = () => {
                     ?.split('=')[1];
                 if (cookieValue) {
                     savedClientId = cookieValue;
-                    // Restore to localStorage for consistency
                     localStorage.setItem('my_carwash_id', savedClientId);
                 }
             }
 
             if (savedClientId && savedClientId !== 'null' && savedClientId !== 'undefined') {
-                // Client has "installed" the app, go to their portal
                 navigate(`/portal/${savedClientId}`, { replace: true });
                 return;
             }
@@ -56,10 +72,10 @@ const SmartRoot = () => {
         }}>
             <div style={{
                 width: '50px', height: '50px',
-                border: '4px solid #3b82f6', borderTopColor: 'transparent',
+                border: '4px solid #6366f1', borderTopColor: 'transparent',
                 borderRadius: '50%', animation: 'spin 1s linear infinite'
             }} />
-            <h2 style={{ marginTop: '1rem', fontFamily: 'sans-serif' }}>Cargando App...</h2>
+            <h2 style={{ marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>Cargando...</h2>
             <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
         </div>
     );

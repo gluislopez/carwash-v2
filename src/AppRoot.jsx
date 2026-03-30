@@ -18,13 +18,58 @@ import SmartRoot from './pages/SmartRoot';
 import MembershipSettings from './pages/MembershipSettings';
 import BusinessSettings from './pages/BusinessSettings';
 import RegisterBusiness from './pages/RegisterBusiness';
+import OnboardingWizard from './pages/OnboardingWizard';
 
 import Commissions from './pages/Commissions';
 
 import MembershipSubscribe from './pages/MembershipSubscribe';
 import Ticket from './pages/Ticket';
 
+// Gate: loads the current user's org info and renders the OnboardingWizard
+const OnboardingGate = () => {
+    const navigate = useNavigate();
+    const [org, setOrg] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) { navigate('/login', { replace: true }); return; }
+
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('organization_id, organizations(id, name, onboarding_completed)')
+                .eq('id', session.user.id)
+                .single();
+
+            if (!profile) { navigate('/dashboard', { replace: true }); return; }
+
+            const orgData = profile.organizations;
+            if (orgData?.onboarding_completed) {
+                navigate('/dashboard', { replace: true }); return;
+            }
+            setOrg(orgData);
+            setLoading(false);
+        };
+        load();
+    }, [navigate]);
+
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a' }}>
+            <div style={{ width: '40px', height: '40px', border: '4px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <style>{`@keyframes spin{100%{transform:rotate(360deg)}}`}</style>
+        </div>
+    );
+
+    return <OnboardingWizard
+        organizationId={org?.id}
+        businessName={org?.name}
+        onComplete={() => navigate('/dashboard', { replace: true })}
+    />;
+};
+
 // Componente para proteger rutas
+
 const RequireAuth = ({ children }) => {
     const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -158,6 +203,7 @@ const AppRoot = () => {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<RegisterBusiness />} />
+                <Route path="/onboarding" element={<OnboardingGate />} />
 
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
