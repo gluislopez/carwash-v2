@@ -933,14 +933,29 @@ const Dashboard = () => {
         const cleanPhone = newCustomer.phone.replace(/\D/g, '');
 
         try {
-            // 1. Check if customer exists by phone OR name (if phone empty)
+            // 1. Check if customer exists by phone, plate, or name
             let existingCustomer = null;
+
+            // A) Match by phone (if provided)
             if (cleanPhone) {
                 existingCustomer = customers.find(c => {
                     if (!c.phone) return false;
                     const cPhone = c.phone.replace(/\D/g, '');
-                    return cPhone === cleanPlate || (cPhone.length >= 10 && cleanPlate.length >= 10 && cPhone.slice(-10) === cleanPhone.slice(-10));
+                    return cPhone === cleanPhone || (cPhone.length >= 10 && cleanPhone.length >= 10 && cPhone.slice(-10) === cleanPhone.slice(-10));
                 });
+            }
+
+            // B) Match by exact vehicle plate
+            if (!existingCustomer && cleanPlate) {
+                const existingVehicle = vehicles.find(v => v.plate.trim().toUpperCase() === cleanPlate);
+                if (existingVehicle) {
+                    existingCustomer = customers.find(c => c.id == existingVehicle.customer_id);
+                }
+            }
+
+            // C) Match by exact name (case insensitive)
+            if (!existingCustomer && newCustomer.name) {
+                existingCustomer = customers.find(c => c.name?.trim().toLowerCase() === newCustomer.name.trim().toLowerCase());
             }
 
 
