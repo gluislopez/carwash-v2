@@ -19,6 +19,7 @@ import MembershipSettings from './pages/MembershipSettings';
 import BusinessSettings from './pages/BusinessSettings';
 import RegisterBusiness from './pages/RegisterBusiness';
 import OnboardingWizard from './pages/OnboardingWizard';
+import SuperAdminPanel from './pages/SuperAdminPanel';
 
 import Commissions from './pages/Commissions';
 
@@ -204,6 +205,7 @@ const AppRoot = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<RegisterBusiness />} />
                 <Route path="/onboarding" element={<OnboardingGate />} />
+                <Route path="/superadmin" element={<SuperAdminPanel />} />
 
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
