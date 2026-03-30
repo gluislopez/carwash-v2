@@ -930,7 +930,7 @@ const Dashboard = () => {
 
         // Clean values
         const cleanPlate = newCustomer.vehicle_plate.trim().toUpperCase();
-        const cleanPhone = newCustomer.phone.replace(/\D/g, '');
+        const cleanPhone = (newCustomer.phone || '').replace(/\D/g, '');
 
         try {
             // 1. Check if customer exists by phone, plate, or name
@@ -1820,7 +1820,9 @@ const Dashboard = () => {
         calculateTxTotal,
         getTransactionCategory,
         handleCustomerSelect,
+        handleCreateCustomer,
         handleSubmit,
+        handleRemoveExtra,
         handleStartService,
         handleAssignMembership,
         handleRemoveMembership,
@@ -1851,7 +1853,7 @@ const Dashboard = () => {
         debugInfo, setDebugInfo,
     };
 
-    console.log("VERSION 4.72 NUCLEAR LOADED");
+    console.log("VERSION 4.73 NUCLEAR LOADED");
     return (
         <DashboardProvider value={dashboardContextValue}>
         <div>
