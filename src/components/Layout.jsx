@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User, Package, Megaphone, Award } from 'lucide-react';
+import { Home, Users, Car, Settings, Menu, X, LogOut, FileText, DollarSign, Trophy, LayoutDashboard, ShoppingBag, User, Package, Megaphone, Award, Crown } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Layout = ({ children }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
     const [userRole, setUserRole] = useState(null);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [employeeName, setEmployeeName] = useState('');
 
     // Business Status State
@@ -75,6 +76,14 @@ const Layout = ({ children }) => {
                 } else if (error) {
                     console.error("Error fetching employee in Layout:", error);
                 }
+
+                // Also check if superadmin via user_profiles
+                const { data: profile } = await supabase
+                    .from('user_profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .single();
+                if (profile?.role === 'superadmin') setIsSuperAdmin(true);
             }
         };
         getUser();
@@ -99,10 +108,14 @@ const Layout = ({ children }) => {
     if (userRole === 'admin') {
         navItems.push({ path: '/employees', label: 'Empleados', icon: <Users size={20} /> });
         navItems.push({ path: '/expenses', label: 'Gastos', icon: <DollarSign size={20} /> });
-
         navItems.push({ path: '/promotions', label: 'Promociones', icon: <Megaphone size={20} /> });
         navItems.push({ path: '/memberships', label: 'Membresías', icon: <Award size={20} /> });
         navItems.push({ path: '/settings', label: 'Configuración Negocio', icon: <Settings size={20} /> });
+    }
+
+    // SuperAdmin special link
+    if (isSuperAdmin) {
+        navItems.push({ path: '/superadmin', label: '👑 Super Admin', icon: <Crown size={20} />, special: true });
     }
 
         if (userRole === 'admin' || userRole === 'manager') {
@@ -241,9 +254,16 @@ const Layout = ({ children }) => {
                                     padding: '0.75rem 1rem',
                                     borderRadius: '0.5rem',
                                     textDecoration: 'none',
-                                    color: isActive ? 'white' : 'var(--text-muted)',
-                                    backgroundColor: isActive ? 'var(--primary)' : 'transparent',
-                                    transition: 'all 0.2s ease'
+                                    color: item.special
+                                        ? '#f59e0b'
+                                        : isActive ? 'white' : 'var(--text-muted)',
+                                    backgroundColor: item.special
+                                        ? 'rgba(245,158,11,0.1)'
+                                        : isActive ? 'var(--primary)' : 'transparent',
+                                    border: item.special ? '1px solid rgba(245,158,11,0.2)' : 'none',
+                                    transition: 'all 0.2s ease',
+                                    fontWeight: item.special ? '700' : undefined,
+                                    marginTop: item.special ? '0.5rem' : undefined,
                                 }}
                             >
                                 {item.icon}
