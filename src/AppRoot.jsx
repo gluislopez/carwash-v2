@@ -17,6 +17,7 @@ import CustomerPortal from './pages/CustomerPortal';
 import SmartRoot from './pages/SmartRoot';
 import MembershipSettings from './pages/MembershipSettings';
 import BusinessSettings from './pages/BusinessSettings';
+import RegisterBusiness from './pages/RegisterBusiness';
 
 import Commissions from './pages/Commissions';
 
@@ -156,6 +157,7 @@ const AppRoot = () => {
         <ErrorBoundary>
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<RegisterBusiness />} />
 
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
