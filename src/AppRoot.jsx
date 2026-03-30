@@ -20,6 +20,7 @@ import BusinessSettings from './pages/BusinessSettings';
 import RegisterBusiness from './pages/RegisterBusiness';
 import OnboardingWizard from './pages/OnboardingWizard';
 import SuperAdminPanel from './pages/SuperAdminPanel';
+import BillingPage from './pages/BillingPage';
 
 import Commissions from './pages/Commissions';
 
@@ -206,6 +207,7 @@ const AppRoot = () => {
                 <Route path="/register" element={<RegisterBusiness />} />
                 <Route path="/onboarding" element={<OnboardingGate />} />
                 <Route path="/superadmin" element={<SuperAdminPanel />} />
+                <Route path="/billing" element={<BillingPage />} />
 
                 <Route path="/feedback/:transactionId" element={<CustomerFeedback />} />
                 <Route path="/portal/:customerId" element={<CustomerPortal />} />
