@@ -1,0 +1,9 @@
+{
+  "appId": "com.sistemapro.carwash",
+  "appName": "Express CarWash",
+  "webDir": "dist",
+  "server": {
+    "url": "https://carwash-v2.vercel.app",
+    "cleartext": true
+  }
+}

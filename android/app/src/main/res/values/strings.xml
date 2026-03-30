@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Express CarWash</string>
+    <string name="title_activity_main">Express CarWash</string>
+    <string name="package_name">com.sistemapro.carwash</string>
+    <string name="custom_url_scheme">com.sistemapro.carwash</string>
+</resources>
