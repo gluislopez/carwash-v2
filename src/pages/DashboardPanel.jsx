@@ -1853,7 +1853,7 @@ const Dashboard = () => {
         debugInfo, setDebugInfo,
     };
 
-    console.log("VERSION 4.73 NUCLEAR LOADED");
+    console.log("VERSION 4.74 NUCLEAR LOADED");
     return (
         <DashboardProvider value={dashboardContextValue}>
         <div>
