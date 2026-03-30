@@ -118,10 +118,12 @@ const SuperAdminPanel = () => {
         setActionLoading(null);
     };
 
-    /* ── Derived Stats ── */
+    /* ── Derived Stats — exclude owner accounts from revenue ── */
+    const billingOrgs = orgs.filter(o => !o.is_owner_account);  // exclude superadmin's own org
     const activeOrgs = orgs.filter(o => o.status === 'active');
-    const mrr = activeOrgs.reduce((sum, o) => sum + (PLAN_PRICES[o.plan] || 0), 0);
-    const trialOrgs = orgs.filter(o => o.plan === 'trial').length;
+    const activeBillingOrgs = billingOrgs.filter(o => o.status === 'active');
+    const mrr = activeBillingOrgs.reduce((sum, o) => sum + (PLAN_PRICES[o.plan] || 0), 0);
+    const trialOrgs = billingOrgs.filter(o => o.plan === 'trial').length;
 
     /* ── Filter ── */
     const filtered = orgs.filter(o => {
@@ -171,7 +173,7 @@ const SuperAdminPanel = () => {
 
             {/* ── Stats Row ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                <StatCard icon={<Building2 size={18} />} label="Negocios Totales" value={orgs.length} sub={`${activeOrgs.length} activos`} color="#6366f1" />
+                <StatCard icon={<Building2 size={18} />} label="Clientes Activos" value={billingOrgs.length} sub={`${activeBillingOrgs.length} activos`} color="#6366f1" />
                 <StatCard icon={<DollarSign size={18} />} label="MRR" value={`$${mrr}`} sub="Ingresos mensuales recurrentes" color="#22c55e" />
                 <StatCard icon={<AlertTriangle size={18} />} label="En Trial" value={trialOrgs} sub="Sin plan activo" color="#f59e0b" />
                 <StatCard icon={<TrendingUp size={18} />} label="ARR Estimado" value={`$${mrr * 12}`} sub="Proyección anual" color="#8b5cf6" />
@@ -226,7 +228,10 @@ const SuperAdminPanel = () => {
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                     >
                                         <td style={tableCell}>
-                                            <div style={{ fontWeight: '700', color: 'white' }}>{org.name}</div>
+                                            <div style={{ fontWeight: '700', color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                {org.is_owner_account && <span title="Cuenta principal" style={{ fontSize: '0.7rem', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>👑 OWNER</span>}
+                                                {org.name}
+                                            </div>
                                             {org.address && <div style={{ fontSize: '0.75rem', color: '#475569' }}>{org.address}</div>}
                                         </td>
                                         <td style={tableCell}>{org.owner_email}</td>
@@ -242,19 +247,20 @@ const SuperAdminPanel = () => {
                                             {org.created_at ? new Date(org.created_at).toLocaleDateString('es-PR') : '—'}
                                         </td>
                                         <td style={tableCell}>
-                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'nowrap' }}>
+                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'nowrap', alignItems: 'center' }}>
                                                 {/* Change Plan */}
                                                 <button onClick={() => setSelectedOrg(selectedOrg?.id === org.id ? null : org)} style={actionBtn('99,102,241', '#6366f1')}>
                                                     <BarChart3 size={13} /> Plan
                                                 </button>
-                                                {/* Suspend / Activate */}
-                                                <button onClick={() => toggleStatus(org)} disabled={actionLoading === org.id} style={actionBtn(org.status === 'active' ? '239,68,68' : '34,197,94')}>
-                                                    {org.status === 'active'
-                                                        ? <><Ban size={13} /> Suspender</>
-                                                        : <><CheckCircle2 size={13} /> Activar</>}
-                                                </button>
+                                                {/* Suspend / Activate — hidden for owner account */}
+                                                {!org.is_owner_account && (
+                                                    <button onClick={() => toggleStatus(org)} disabled={actionLoading === org.id} style={actionBtn(org.status === 'active' ? '239,68,68' : '34,197,94')}>
+                                                        {org.status === 'active'
+                                                            ? <><Ban size={13} /> Suspender</>
+                                                            : <><CheckCircle2 size={13} /> Activar</>}
+                                                    </button>
+                                                )}
                                             </div>
-
                                             {/* Plan selector dropdown */}
                                             {selectedOrg?.id === org.id && (
                                                 <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: '140px' }}>
